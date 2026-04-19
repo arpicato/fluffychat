@@ -105,11 +105,14 @@ class MessieTodoService {
     }
 
     final decoded = jsonDecode(response.body);
-    final items = switch (decoded) {
-      List<dynamic> list => list,
-      {'data': List<dynamic> list} => list,
-      _ => throw const FormatException('Unexpected todos response shape'),
-    };
+    late final List<dynamic> items;
+    if (decoded is List<dynamic>) {
+      items = decoded;
+    } else if (decoded is Map<String, Object?> && decoded['data'] is List) {
+      items = List<dynamic>.from(decoded['data']! as List);
+    } else {
+      throw const FormatException('Unexpected todos response shape');
+    }
 
     return items
         .map((item) => MessieTodoList.fromJson(Map<String, Object?>.from(item)))
@@ -133,11 +136,14 @@ class MessieTodoService {
     }
 
     final decoded = jsonDecode(response.body);
-    final items = switch (decoded) {
-      List<dynamic> list => list,
-      {'data': List<dynamic> list} => list,
-      _ => throw const FormatException('Unexpected todo items response shape'),
-    };
+    late final List<dynamic> items;
+    if (decoded is List<dynamic>) {
+      items = decoded;
+    } else if (decoded is Map<String, Object?> && decoded['data'] is List) {
+      items = List<dynamic>.from(decoded['data']! as List);
+    } else {
+      throw const FormatException('Unexpected todo items response shape');
+    }
 
     return items
         .map((item) => MessieTodoItem.fromJson(Map<String, Object?>.from(item)))
