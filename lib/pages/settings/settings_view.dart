@@ -177,6 +177,14 @@ class SettingsView extends StatelessWidget {
                   : null,
             ),
             ListTile(
+              leading: const Icon(Icons.checklist_outlined),
+              title: const Text('Todos'),
+              onTap: () => context.go('/rooms/todos'),
+              tileColor: activeRoute.startsWith('/rooms/todos')
+                  ? theme.colorScheme.surfaceContainerHigh
+                  : null,
+            ),
+            ListTile(
               leading: const Icon(Icons.shield_outlined),
               title: Text(L10n.of(context).security),
               onTap: () => context.go('/rooms/settings/security'),

@@ -2,15 +2,18 @@ import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_item.dart';
+import 'package:fluffychat/pages/chat_list/chat_list_todo_item.dart';
 import 'package:fluffychat/pages/chat_list/dummy_chat_list_item.dart';
 import 'package:fluffychat/pages/chat_list/search_title.dart';
 import 'package:fluffychat/pages/chat_list/space_view.dart';
 import 'package:fluffychat/pages/chat_list/status_msg_list.dart';
+import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/utils/stream_extension.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/public_room_dialog.dart';
 import 'package:fluffychat/widgets/avatar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../config/themes.dart';
@@ -26,6 +29,7 @@ class ChatListViewBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final activeRoute = GoRouterState.of(context).uri.path;
 
     final client = Matrix.of(context).client;
     final activeSpace = controller.activeSpaceId;
@@ -64,6 +68,21 @@ class ChatListViewBody extends StatelessWidget {
           .rateLimit(const Duration(seconds: 1)),
       builder: (context, _) {
         final rooms = controller.filteredRooms;
+        final includeTodoLists =
+            !controller.isSearchMode &&
+            controller.activeFilter == ActiveFilter.allChats;
+        final visibleTodoLists = includeTodoLists
+            ? controller.todoLists.where((todoList) {
+                if (filter.isEmpty) return true;
+                final title = todoList.title.toLowerCase();
+                final description = todoList.description.toLowerCase();
+                return title.contains(filter) || description.contains(filter);
+              }).toList()
+            : const <MessieTodoList>[];
+        final entries = <_ChatListEntry>[
+          ...rooms.map(_ChatListEntry.room),
+          ...visibleTodoLists.map(_ChatListEntry.todo),
+        ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
 
         return SafeArea(
           child: CustomScrollView(
@@ -176,8 +195,9 @@ class ChatListViewBody extends StatelessWidget {
                       icon: const Icon(Icons.forum_outlined),
                     ),
                   if (client.prevBatch != null &&
-                      rooms.isEmpty &&
-                      !controller.isSearchMode) ...[
+                      entries.isEmpty &&
+                      !controller.isSearchMode &&
+                      !controller.isLoadingTodoLists) ...[
                     Column(
                       mainAxisAlignment: .center,
                       children: [
@@ -201,7 +221,7 @@ class ChatListViewBody extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Text(
-                            client.rooms.isEmpty
+                            client.rooms.isEmpty && controller.todoLists.isEmpty
                                 ? L10n.of(context).noChatsFoundHere
                                 : L10n.of(context).noMoreChatsFound,
                             textAlign: TextAlign.center,
@@ -228,20 +248,40 @@ class ChatListViewBody extends StatelessWidget {
                 ),
               if (client.prevBatch != null)
                 SliverList.builder(
-                  itemCount: rooms.length,
+                  itemCount: entries.length,
                   itemBuilder: (BuildContext context, int i) {
-                    final room = rooms[i];
-                    final space = spaceDelegateCandidates[room.id];
-                    return ChatListItem(
-                      room,
-                      space: space,
-                      key: Key('chat_list_item_${room.id}'),
-                      filter: filter,
-                      onTap: () => controller.onChatTap(room),
-                      onLongPress: (context) =>
-                          controller.chatContextAction(room, context, space),
-                      activeChat: controller.activeChat == room.id,
-                    );
+                    final entry = entries[i];
+                    return switch (entry) {
+                      _RoomChatListEntry(:final room) => ChatListItem(
+                        room,
+                        space: spaceDelegateCandidates[room.id],
+                        key: Key('chat_list_item_${room.id}'),
+                        filter: filter,
+                        onTap: () => controller.onChatTap(room),
+                        onLongPress: (context) => controller.chatContextAction(
+                          room,
+                          context,
+                          spaceDelegateCandidates[room.id],
+                        ),
+                        activeChat: controller.activeChat == room.id,
+                      ),
+                      _TodoChatListEntry(:final todoList) => ChatListTodoItem(
+                        key: Key('chat_list_todo_${todoList.id}'),
+                        todoList: todoList,
+                        active:
+                            activeRoute == '/rooms/todos/${todoList.id}' ||
+                            activeRoute.startsWith(
+                              '/rooms/todos/${todoList.id}/',
+                            ),
+                        onTap: () => context.go(
+                          '/rooms/todos/${todoList.id}',
+                          extra: <String, Object?>{
+                            'title': todoList.title,
+                            'description': todoList.description,
+                          },
+                        ),
+                      ),
+                    };
                   },
                 ),
             ],
@@ -250,6 +290,36 @@ class ChatListViewBody extends StatelessWidget {
       },
     );
   }
+}
+
+sealed class _ChatListEntry {
+  const _ChatListEntry();
+
+  factory _ChatListEntry.room(Room room) = _RoomChatListEntry;
+  factory _ChatListEntry.todo(MessieTodoList todoList) = _TodoChatListEntry;
+
+  DateTime get sortTime;
+}
+
+class _RoomChatListEntry extends _ChatListEntry {
+  const _RoomChatListEntry(this.room);
+
+  final Room room;
+
+  @override
+  DateTime get sortTime => room.latestEventReceivedTime;
+}
+
+class _TodoChatListEntry extends _ChatListEntry {
+  const _TodoChatListEntry(this.todoList);
+
+  final MessieTodoList todoList;
+
+  @override
+  DateTime get sortTime =>
+      todoList.updatedAt ??
+      todoList.createdAt ??
+      DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 class PublicRoomsHorizontalList extends StatelessWidget {

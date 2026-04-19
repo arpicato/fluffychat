@@ -27,6 +27,8 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 import '../../../utils/account_bundles.dart';
 import '../../config/setting_keys.dart';
+import '../../services/backend_session_service.dart';
+import '../../services/messie_todo_service.dart';
 import '../../utils/url_launcher.dart';
 import '../../widgets/matrix.dart';
 
@@ -291,6 +293,12 @@ class ChatListController extends State<ChatList>
   final ValueNotifier<bool> scrolledToTop = ValueNotifier(true);
 
   final StreamController<Client> _clientStream = StreamController.broadcast();
+  final BackendSessionService _backendSessionService = BackendSessionService();
+  final MessieTodoService _messieTodoService = MessieTodoService();
+
+  List<MessieTodoList> todoLists = const [];
+  bool isLoadingTodoLists = false;
+  Object? todoListsError;
 
   Stream<Client> get clientStream => _clientStream.stream;
 
@@ -365,6 +373,40 @@ class ChatListController extends State<ChatList>
 
   StreamSubscription? _onRoomTagUpdate;
 
+  Future<void> refreshTodoLists() async {
+    if (isLoadingTodoLists || !mounted) return;
+
+    setState(() {
+      isLoadingTodoLists = true;
+      todoListsError = null;
+    });
+
+    try {
+      final matrix = Matrix.of(context);
+      final session = await _backendSessionService.ensureSession(
+        matrix.client,
+        matrix.store,
+      );
+      final todoLists = await _messieTodoService.getTodoLists(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.token,
+        userId: session.userId,
+      );
+      if (!mounted) return;
+      setState(() {
+        this.todoLists = todoLists;
+        isLoadingTodoLists = false;
+      });
+    } catch (error, stackTrace) {
+      Logs().w('Unable to load Messie todo lists', error, stackTrace);
+      if (!mounted) return;
+      setState(() {
+        isLoadingTodoLists = false;
+        todoListsError = error;
+      });
+    }
+  }
+
   @override
   void initState() {
     _initReceiveSharingIntent();
@@ -416,6 +458,7 @@ class ChatListController extends State<ChatList>
     }
 
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => refreshTodoLists());
   }
 
   @override

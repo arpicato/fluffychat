@@ -59,10 +59,14 @@ Future<void> connectToHomeserverFlow(
         await launchUrlString(regLink);
       }
       if (!context.mounted) return;
-      final pathSegments = List.of(
+      final currentSegments = List.of(
         GoRouter.of(context).routeInformationProvider.value.uri.pathSegments,
       );
-      pathSegments.removeLast();
+      final pathSegments = List.of(currentSegments);
+      final lastSegment = pathSegments.isEmpty ? null : pathSegments.last;
+      if (lastSegment == 'sign_in' || lastSegment == 'sign_up') {
+        pathSegments.removeLast();
+      }
       pathSegments.add('login');
       context.go('/${pathSegments.join('/')}', extra: client);
       setState(AsyncSnapshot.withData(ConnectionState.done, true));
