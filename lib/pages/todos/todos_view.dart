@@ -12,21 +12,19 @@ class TodosPageView extends StatelessWidget {
   TodosPageView(this.controller, {super.key});
 
   final TodosPageController controller;
-  final BackendSessionService _sessionService = BackendSessionService();
   final MessieTodoService _todoService = MessieTodoService();
 
-  Future<_TodosViewData> _load(BuildContext context) async {
+  Future<List<MessieTodoList>> _load(BuildContext context) async {
     final matrix = Matrix.of(context);
-    final session = await _sessionService.ensureSession(
+    final session = await BackendSessionService().ensureSession(
       matrix.client,
       matrix.store,
     );
-    final todoLists = await _todoService.getTodoLists(
+    return _todoService.getTodoLists(
       apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
       jwt: session.token,
       userId: session.userId,
     );
-    return _TodosViewData(session: session, todoLists: todoLists);
   }
 
   @override
@@ -38,7 +36,7 @@ class TodosPageView extends StatelessWidget {
         automaticallyImplyLeading: !FluffyThemes.isColumnMode(context),
         centerTitle: FluffyThemes.isColumnMode(context),
       ),
-      body: FutureBuilder<_TodosViewData>(
+      body: FutureBuilder<List<MessieTodoList>>(
         future: _load(context),
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
@@ -77,19 +75,12 @@ class TodosPageView extends StatelessWidget {
             );
           }
 
-          final data = snapshot.requireData;
+          final todoLists = snapshot.requireData;
           return MaxWidthBody(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                ListTile(
-                  leading: const Icon(Icons.cloud_done_outlined),
-                  title: const Text('Messie backend connected'),
-                  subtitle: Text(
-                    '${data.session.mxid}\nuserId: ${data.session.userId}\nlists: ${data.todoLists.length}',
-                  ),
-                ),
-                if (data.todoLists.isEmpty)
+                if (todoLists.isEmpty)
                   Card(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -99,7 +90,7 @@ class TodosPageView extends StatelessWidget {
                       leading: const Icon(Icons.checklist_outlined),
                       title: const Text('No todo lists yet'),
                       subtitle: Text(
-                        'FluffyChat is connected to Messie, but this account does not have any todo lists yet. Create one in Messie and then refresh this page.',
+                        'This account does not have any todo lists yet. Create one in Messie and then refresh this page.',
                         style: theme.textTheme.bodyMedium,
                       ),
                       trailing: FilledButton.tonal(
@@ -108,7 +99,7 @@ class TodosPageView extends StatelessWidget {
                       ),
                     ),
                   ),
-                ...data.todoLists.map(
+                ...todoLists.map(
                   (todo) => Card(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -155,11 +146,4 @@ class TodosPageView extends StatelessWidget {
     final day = local.day.toString().padLeft(2, '0');
     return '${local.year}-$month-$day';
   }
-}
-
-class _TodosViewData {
-  _TodosViewData({required this.session, required this.todoLists});
-
-  final BackendSession session;
-  final List<MessieTodoList> todoLists;
 }
