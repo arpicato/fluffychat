@@ -49,7 +49,9 @@ class ChatListView extends StatelessWidget {
                     !controller.isSearchMode &&
                         controller.activeSpaceId == null &&
                         !FluffyThemes.isColumnMode(context)
-                    ? StartChatFab()
+                    ? StartChatFab(
+                        onCreateTodoList: controller.refreshTodoLists,
+                      )
                     : const SizedBox.shrink(),
               ),
             ),

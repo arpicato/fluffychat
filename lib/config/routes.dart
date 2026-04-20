@@ -28,7 +28,6 @@ import 'package:fluffychat/pages/settings_password/settings_password.dart';
 import 'package:fluffychat/pages/settings_security/settings_security.dart';
 import 'package:fluffychat/pages/settings_style/settings_style.dart';
 import 'package:fluffychat/pages/sign_in/sign_in_page.dart';
-import 'package:fluffychat/pages/todos/todos.dart';
 import 'package:fluffychat/pages/todos/todo_list_detail.dart';
 import 'package:fluffychat/widgets/config_viewer.dart';
 import 'package:fluffychat/widgets/layouts/empty_page.dart';
@@ -202,34 +201,26 @@ abstract class AppRoutes {
               redirect: loggedOutRedirect,
             ),
             GoRoute(
-              path: 'todos',
-              pageBuilder: (context, state) =>
-                  defaultPageBuilder(context, state, const TodosPage()),
+              path: 'todos/:listId',
+              pageBuilder: (context, state) {
+                final extra = state.extra;
+                final initialTitle = extra is Map<String, Object?>
+                    ? extra['title'] as String?
+                    : null;
+                final initialDescription = extra is Map<String, Object?>
+                    ? extra['description'] as String?
+                    : null;
+                return defaultPageBuilder(
+                  context,
+                  state,
+                  TodoListDetailPage(
+                    listId: state.pathParameters['listId']!,
+                    initialTitle: initialTitle,
+                    initialDescription: initialDescription,
+                  ),
+                );
+              },
               redirect: loggedOutRedirect,
-              routes: [
-                GoRoute(
-                  path: ':listId',
-                  pageBuilder: (context, state) {
-                    final extra = state.extra;
-                    final initialTitle = extra is Map<String, Object?>
-                        ? extra['title'] as String?
-                        : null;
-                    final initialDescription = extra is Map<String, Object?>
-                        ? extra['description'] as String?
-                        : null;
-                    return defaultPageBuilder(
-                      context,
-                      state,
-                      TodoListDetailPage(
-                        listId: state.pathParameters['listId']!,
-                        initialTitle: initialTitle,
-                        initialDescription: initialDescription,
-                      ),
-                    );
-                  },
-                  redirect: loggedOutRedirect,
-                ),
-              ],
             ),
             ShellRoute(
               pageBuilder: (context, state, child) => defaultPageBuilder(

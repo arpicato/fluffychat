@@ -23,6 +23,14 @@ class TodoListDetailPageView extends StatelessWidget {
 
   final TodoListDetailPageController controller;
 
+  void _navigateBack(BuildContext context) {
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/rooms');
+  }
+
   Future<void> _editList(BuildContext context, MessieTodoList list) async {
     final titleController = TextEditingController(text: list.title);
     final descriptionController = TextEditingController(text: list.description);
@@ -432,7 +440,10 @@ class TodoListDetailPageView extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: Text(title),
-            automaticallyImplyLeading: !FluffyThemes.isColumnMode(context),
+            automaticallyImplyLeading: false,
+            leading: FluffyThemes.isColumnMode(context)
+                ? null
+                : BackButton(onPressed: () => _navigateBack(context)),
             centerTitle: FluffyThemes.isColumnMode(context),
           ),
           body: const Center(child: CircularProgressIndicator()),
@@ -446,7 +457,10 @@ class TodoListDetailPageView extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(
             title: Text(title),
-            automaticallyImplyLeading: !FluffyThemes.isColumnMode(context),
+            automaticallyImplyLeading: false,
+            leading: FluffyThemes.isColumnMode(context)
+                ? null
+                : BackButton(onPressed: () => _navigateBack(context)),
             centerTitle: FluffyThemes.isColumnMode(context),
           ),
           body: MaxWidthBody(
@@ -486,7 +500,10 @@ class TodoListDetailPageView extends StatelessWidget {
       return Scaffold(
         appBar: AppBar(
           title: Text(data.list.title.isEmpty ? 'Todo list' : data.list.title),
-          automaticallyImplyLeading: !FluffyThemes.isColumnMode(context),
+          automaticallyImplyLeading: false,
+          leading: FluffyThemes.isColumnMode(context)
+              ? null
+              : BackButton(onPressed: () => _navigateBack(context)),
           centerTitle: FluffyThemes.isColumnMode(context),
           actions: [
             IconButton(
