@@ -20,6 +20,7 @@ dependencies:
   desktop_drop: ^0.7.0
   desktop_notifications: ^0.6.3
   device_info_plus: ^12.3.0
+  dio: ^5.9.2
   dynamic_color: ^1.8.1
   emoji_picker_flutter: ^4.4.0
   file_picker: ^11.0.2
@@ -50,6 +51,8 @@ dependencies:
   just_audio: ^0.10.5
   latlong2: ^0.9.1
   matrix: ^6.2.0
+  messie_api:
+    path: packages/messie_api
   mime: ^2.0.0
   native_imaging: ^0.4.0
   opus_caf_converter_dart: ^1.0.1

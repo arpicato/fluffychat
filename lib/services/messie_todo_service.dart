@@ -1,10 +1,12 @@
 import 'dart:convert';
 
-import 'package:fluffychat/utils/custom_http_client.dart';
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
+import 'package:messie_api/messie_api.dart' as api;
 
-DateTime? _parseMessieDateTime(String? value) =>
-    value == null || value.isEmpty ? null : DateTime.tryParse(value);
+DateTime? _normalizeMessieDateTime(DateTime? value) => value?.toUtc();
+
+String _normalizeMessieApiBaseUrl(String value) =>
+    value.endsWith('/') ? value : '$value/';
 
 class MessieTodoList {
   MessieTodoList({
@@ -23,17 +25,13 @@ class MessieTodoList {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  factory MessieTodoList.fromJson(Map<String, Object?> json) => MessieTodoList(
-    id: (json['id'] ?? '').toString(),
-    ownerId: (json['ownerId'] ?? json['owner_id'] ?? '').toString(),
-    title: (json['title'] ?? '').toString(),
-    description: (json['description'] ?? '').toString(),
-    createdAt: _parseMessieDateTime(
-      (json['createdAt'] ?? json['created_at'])?.toString(),
-    ),
-    updatedAt: _parseMessieDateTime(
-      (json['updatedAt'] ?? json['updated_at'])?.toString(),
-    ),
+  factory MessieTodoList.fromApi(api.TodoList list) => MessieTodoList(
+    id: list.id,
+    ownerId: list.ownerId,
+    title: list.title,
+    description: list.description,
+    createdAt: list.createdAt,
+    updatedAt: list.updatedAt,
   );
 }
 
@@ -60,93 +58,467 @@ class MessieTodoItem {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
-  factory MessieTodoItem.fromJson(Map<String, Object?> json) => MessieTodoItem(
-    id: (json['id'] ?? '').toString(),
-    listId: (json['listId'] ?? json['list_id'] ?? '').toString(),
-    title: (json['title'] ?? '').toString(),
-    description: (json['description'] ?? '').toString(),
-    completed: json['completed'] == true,
-    position: (json['position'] ?? '').toString(),
-    dueDate: _parseMessieDateTime(
-      (json['dueDate'] ?? json['due_date'])?.toString(),
-    ),
-    createdAt: _parseMessieDateTime(
-      (json['createdAt'] ?? json['created_at'])?.toString(),
-    ),
-    updatedAt: _parseMessieDateTime(
-      (json['updatedAt'] ?? json['updated_at'])?.toString(),
-    ),
+  factory MessieTodoItem.fromApi(api.TodoItem item) => MessieTodoItem(
+    id: item.id,
+    listId: item.listId,
+    title: item.title,
+    description: item.description,
+    completed: item.completed,
+    position: item.position,
+    dueDate: item.dueDate,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
   );
 }
 
-class MessieTodoService {
-  MessieTodoService({http.Client? httpClient})
-    : _httpClient = httpClient ?? CustomHttpClient.createHTTPClient();
+class MessieTodoCollaborator {
+  MessieTodoCollaborator({
+    required this.listId,
+    required this.collaboratorId,
+    required this.username,
+  });
 
-  final http.Client _httpClient;
+  final String listId;
+  final String collaboratorId;
+  final String username;
+
+  factory MessieTodoCollaborator.fromApi(api.CollaboratorDetail collaborator) =>
+      MessieTodoCollaborator(
+        listId: collaborator.listId,
+        collaboratorId: collaborator.collaboratorId,
+        username: collaborator.username,
+      );
+}
+
+abstract class MessieTodoSdk {
+  Future<List<api.TodoList>> getTodoLists({required String userId});
+
+  Future<api.TodoList> getTodoListById({required String listId});
+
+  Future<api.TodoList> createTodoList({
+    required String title,
+    required String description,
+  });
+
+  Future<api.TodoList> updateTodoList({
+    required String listId,
+    required String title,
+    required String description,
+  });
+
+  Future<void> deleteTodoList({required String listId});
+
+  Future<List<api.TodoItem>> getTodoItems({required String listId});
+
+  Future<api.TodoItem> createTodoItem({
+    required String listId,
+    required String title,
+    required String description,
+    required bool completed,
+    required String position,
+    DateTime? dueDate,
+  });
+
+  Future<api.TodoItem> updateTodoItem({
+    required String listId,
+    required String itemId,
+    required String title,
+    required String description,
+    required bool completed,
+    required String position,
+    DateTime? dueDate,
+  });
+
+  Future<void> deleteTodoItem({required String listId, required String itemId});
+
+  Future<List<api.CollaboratorDetail>> getCollaborators({
+    required String listId,
+  });
+
+  Future<void> addCollaborator({
+    required String listId,
+    required String userId,
+  });
+
+  Future<void> removeCollaborator({
+    required String listId,
+    required String userId,
+  });
+}
+
+class GeneratedMessieTodoSdk implements MessieTodoSdk {
+  GeneratedMessieTodoSdk({required String apiBaseUrl, required String jwt})
+    : _api = _createApi(apiBaseUrl: apiBaseUrl, jwt: jwt);
+
+  final api.DefaultApi _api;
+
+  static api.DefaultApi _createApi({
+    required String apiBaseUrl,
+    required String jwt,
+  }) {
+    final sdk = api.MessieApi(
+      basePathOverride: _normalizeMessieApiBaseUrl(apiBaseUrl),
+    );
+    sdk.setBearerAuth('bearerAuth', jwt);
+    return sdk.getDefaultApi();
+  }
+
+  @override
+  Future<List<api.TodoList>> getTodoLists({required String userId}) async {
+    final response = await _api.getTodoListsByUserId(userId: userId);
+    return response.data?.toList() ?? const [];
+  }
+
+  @override
+  Future<api.TodoList> getTodoListById({required String listId}) async {
+    final response = await _api.getTodoListById(listId: listId);
+    return response.data!;
+  }
+
+  @override
+  Future<api.TodoList> createTodoList({
+    required String title,
+    required String description,
+  }) async {
+    final response = await _api.createTodoList(
+      newTodoList: api.NewTodoList(
+        (builder) => builder
+          ..title = title
+          ..description = description,
+      ),
+    );
+    return response.data!;
+  }
+
+  @override
+  Future<api.TodoList> updateTodoList({
+    required String listId,
+    required String title,
+    required String description,
+  }) async {
+    final response = await _api.updateTodoList(
+      listId: listId,
+      updateTodoList: api.UpdateTodoList(
+        (builder) => builder
+          ..title = title
+          ..description = description,
+      ),
+    );
+    return response.data!;
+  }
+
+  @override
+  Future<void> deleteTodoList({required String listId}) async {
+    await _api.deleteTodoList(listId: listId);
+  }
+
+  @override
+  Future<List<api.TodoItem>> getTodoItems({required String listId}) async {
+    final response = await _api.getTodoItemsByListId(listId: listId);
+    return response.data?.toList() ?? const [];
+  }
+
+  @override
+  Future<api.TodoItem> createTodoItem({
+    required String listId,
+    required String title,
+    required String description,
+    required bool completed,
+    required String position,
+    DateTime? dueDate,
+  }) async {
+    final response = await _api.createTodoItem(
+      listId: listId,
+      newTodoItem: api.NewTodoItem(
+        (builder) => builder
+          ..listId = listId
+          ..title = title
+          ..description = description
+          ..completed = completed
+          ..position = position
+          ..dueDate = _normalizeMessieDateTime(dueDate),
+      ),
+    );
+    return response.data!;
+  }
+
+  @override
+  Future<api.TodoItem> updateTodoItem({
+    required String listId,
+    required String itemId,
+    required String title,
+    required String description,
+    required bool completed,
+    required String position,
+    DateTime? dueDate,
+  }) async {
+    final response = await _api.updateTodoItem(
+      listId: listId,
+      itemId: itemId,
+      updateTodoItem: api.UpdateTodoItem(
+        (builder) => builder
+          ..title = title
+          ..description = description
+          ..completed = completed
+          ..position = position
+          ..dueDate = _normalizeMessieDateTime(dueDate),
+      ),
+    );
+    return response.data!;
+  }
+
+  @override
+  Future<void> deleteTodoItem({
+    required String listId,
+    required String itemId,
+  }) async {
+    await _api.deleteTodoItem(listId: listId, itemId: itemId);
+  }
+
+  @override
+  Future<List<api.CollaboratorDetail>> getCollaborators({
+    required String listId,
+  }) async {
+    final response = await _api.getCollaborators(listId: listId);
+    return response.data?.toList() ?? const [];
+  }
+
+  @override
+  Future<void> addCollaborator({
+    required String listId,
+    required String userId,
+  }) async {
+    await _api.addCollaborator(
+      listId: listId,
+      newCollaborator: api.NewCollaborator(
+        (builder) => builder..userId = userId,
+      ),
+    );
+  }
+
+  @override
+  Future<void> removeCollaborator({
+    required String listId,
+    required String userId,
+  }) async {
+    await _api.removeCollaborator(listId: listId, userId: userId);
+  }
+}
+
+typedef MessieTodoSdkFactory =
+    MessieTodoSdk Function({required String apiBaseUrl, required String jwt});
+
+class MessieTodoService {
+  MessieTodoService({MessieTodoSdkFactory? sdkFactory})
+    : _sdkFactory = sdkFactory ?? GeneratedMessieTodoSdk.new;
+
+  final MessieTodoSdkFactory _sdkFactory;
+
+  Exception _requestException(String message, DioException error) {
+    final statusCode = error.response?.statusCode?.toString() ?? 'unknown';
+    final data = error.response?.data;
+    final body = data == null
+        ? ''
+        : data is String
+        ? data
+        : jsonEncode(data);
+    return Exception('$message ($statusCode): $body');
+  }
+
+  Future<T> _wrapRequest<T>(
+    String message,
+    Future<T> Function(MessieTodoSdk sdk) callback, {
+    required String apiBaseUrl,
+    required String jwt,
+  }) async {
+    final sdk = _sdkFactory(apiBaseUrl: apiBaseUrl, jwt: jwt);
+    try {
+      return await callback(sdk);
+    } on DioException catch (error) {
+      throw _requestException(message, error);
+    }
+  }
 
   Future<List<MessieTodoList>> getTodoLists({
     required String apiBaseUrl,
     required String jwt,
     required String userId,
-  }) async {
-    final uri = Uri.parse(
-      '$apiBaseUrl/todolists',
-    ).replace(queryParameters: {'userId': userId});
-    final response = await _httpClient.get(
-      uri,
-      headers: {'authorization': 'Bearer $jwt'},
-    );
+  }) async => _wrapRequest(
+    'Failed to load todos',
+    (sdk) async => (await sdk.getTodoLists(
+      userId: userId,
+    )).map(MessieTodoList.fromApi).toList(),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        'Failed to load todos (${response.statusCode}): ${response.body}',
-      );
-    }
+  Future<MessieTodoList> getTodoListById({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+  }) async => _wrapRequest(
+    'Failed to load todo list',
+    (sdk) async =>
+        MessieTodoList.fromApi(await sdk.getTodoListById(listId: listId)),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
 
-    final decoded = jsonDecode(response.body);
-    late final List<dynamic> items;
-    if (decoded is List<dynamic>) {
-      items = decoded;
-    } else if (decoded is Map<String, Object?> && decoded['data'] is List) {
-      items = List<dynamic>.from(decoded['data']! as List);
-    } else {
-      throw const FormatException('Unexpected todos response shape');
-    }
+  Future<MessieTodoList> createTodoList({
+    required String apiBaseUrl,
+    required String jwt,
+    required String title,
+    required String description,
+  }) async => _wrapRequest(
+    'Failed to create todo list',
+    (sdk) async => MessieTodoList.fromApi(
+      await sdk.createTodoList(title: title, description: description),
+    ),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
 
-    return items
-        .map((item) => MessieTodoList.fromJson(Map<String, Object?>.from(item)))
-        .toList();
-  }
+  Future<MessieTodoList> updateTodoList({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+    required String title,
+    required String description,
+  }) async => _wrapRequest(
+    'Failed to update todo list',
+    (sdk) async => MessieTodoList.fromApi(
+      await sdk.updateTodoList(
+        listId: listId,
+        title: title,
+        description: description,
+      ),
+    ),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
+
+  Future<void> deleteTodoList({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+  }) async => _wrapRequest(
+    'Failed to delete todo list',
+    (sdk) => sdk.deleteTodoList(listId: listId),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
 
   Future<List<MessieTodoItem>> getTodoItems({
     required String apiBaseUrl,
     required String jwt,
     required String listId,
-  }) async {
-    final response = await _httpClient.get(
-      Uri.parse('$apiBaseUrl/todolists/$listId/items'),
-      headers: {'authorization': 'Bearer $jwt'},
-    );
+  }) async => _wrapRequest(
+    'Failed to load todo items',
+    (sdk) async => (await sdk.getTodoItems(
+      listId: listId,
+    )).map(MessieTodoItem.fromApi).toList(),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        'Failed to load todo items (${response.statusCode}): ${response.body}',
-      );
-    }
+  Future<MessieTodoItem> createTodoItem({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+    required String title,
+    required String description,
+    required bool completed,
+    required String position,
+    DateTime? dueDate,
+  }) async => _wrapRequest(
+    'Failed to create todo item',
+    (sdk) async => MessieTodoItem.fromApi(
+      await sdk.createTodoItem(
+        listId: listId,
+        title: title,
+        description: description,
+        completed: completed,
+        position: position,
+        dueDate: _normalizeMessieDateTime(dueDate),
+      ),
+    ),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
 
-    final decoded = jsonDecode(response.body);
-    late final List<dynamic> items;
-    if (decoded is List<dynamic>) {
-      items = decoded;
-    } else if (decoded is Map<String, Object?> && decoded['data'] is List) {
-      items = List<dynamic>.from(decoded['data']! as List);
-    } else {
-      throw const FormatException('Unexpected todo items response shape');
-    }
+  Future<MessieTodoItem> updateTodoItem({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+    required String itemId,
+    required String title,
+    required String description,
+    required bool completed,
+    required String position,
+    DateTime? dueDate,
+  }) async => _wrapRequest(
+    'Failed to update todo item',
+    (sdk) async => MessieTodoItem.fromApi(
+      await sdk.updateTodoItem(
+        listId: listId,
+        itemId: itemId,
+        title: title,
+        description: description,
+        completed: completed,
+        position: position,
+        dueDate: _normalizeMessieDateTime(dueDate),
+      ),
+    ),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
 
-    return items
-        .map((item) => MessieTodoItem.fromJson(Map<String, Object?>.from(item)))
-        .toList();
-  }
+  Future<void> deleteTodoItem({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+    required String itemId,
+  }) async => _wrapRequest(
+    'Failed to delete todo item',
+    (sdk) => sdk.deleteTodoItem(listId: listId, itemId: itemId),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
+
+  Future<List<MessieTodoCollaborator>> getCollaborators({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+  }) async => _wrapRequest(
+    'Failed to load collaborators',
+    (sdk) async => (await sdk.getCollaborators(
+      listId: listId,
+    )).map(MessieTodoCollaborator.fromApi).toList(),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
+
+  Future<void> addCollaborator({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+    required String userId,
+  }) async => _wrapRequest(
+    'Failed to add collaborator',
+    (sdk) => sdk.addCollaborator(listId: listId, userId: userId),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
+
+  Future<void> removeCollaborator({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+    required String userId,
+  }) async => _wrapRequest(
+    'Failed to remove collaborator',
+    (sdk) => sdk.removeCollaborator(listId: listId, userId: userId),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
 }
