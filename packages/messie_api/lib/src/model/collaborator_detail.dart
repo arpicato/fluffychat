@@ -14,6 +14,8 @@ part 'collaborator_detail.g.dart';
 /// * [listId] - ID of the todo list
 /// * [username] - Collaborator username
 /// * [collaboratorId] - ID of the collaborator user
+/// * [matrixId] - Matrix ID of the collaborator
+/// * [displayName] - Human-friendly collaborator name when available
 @BuiltValue()
 abstract class CollaboratorDetail implements Built<CollaboratorDetail, CollaboratorDetailBuilder> {
   /// ID of the todo list
@@ -27,6 +29,14 @@ abstract class CollaboratorDetail implements Built<CollaboratorDetail, Collabora
   /// ID of the collaborator user
   @BuiltValueField(wireName: r'collaborator_id')
   String get collaboratorId;
+
+  /// Matrix ID of the collaborator
+  @BuiltValueField(wireName: r'matrix_id')
+  String get matrixId;
+
+  /// Human-friendly collaborator name when available
+  @BuiltValueField(wireName: r'display_name')
+  String? get displayName;
 
   CollaboratorDetail._();
 
@@ -66,6 +76,18 @@ class _$CollaboratorDetailSerializer implements PrimitiveSerializer<Collaborator
       object.collaboratorId,
       specifiedType: const FullType(String),
     );
+    yield r'matrix_id';
+    yield serializers.serialize(
+      object.matrixId,
+      specifiedType: const FullType(String),
+    );
+    if (object.displayName != null) {
+      yield r'display_name';
+      yield serializers.serialize(
+        object.displayName,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
   }
 
   @override
@@ -109,6 +131,21 @@ class _$CollaboratorDetailSerializer implements PrimitiveSerializer<Collaborator
             specifiedType: const FullType(String),
           ) as String;
           result.collaboratorId = valueDes;
+          break;
+        case r'matrix_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.matrixId = valueDes;
+          break;
+        case r'display_name':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          if (valueDes == null) continue;
+          result.displayName = valueDes;
           break;
         default:
           unhandled.add(key);

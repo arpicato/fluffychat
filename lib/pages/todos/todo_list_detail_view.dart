@@ -712,6 +712,9 @@ class _CollaboratorsDialog extends StatefulWidget {
 }
 
 class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
+  static const _collaboratorsSectionMaxHeight = 200.0;
+  static const _searchResultsSectionHeight = 180.0;
+
   late final TextEditingController _searchController;
   Future<List<Profile>>? _searchFuture;
   Timer? _searchCooldown;
@@ -814,6 +817,106 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
     }
   }
 
+  Widget _buildCollaboratorsList() {
+    if (widget.data.collaborators.isEmpty) {
+      return const Align(
+        alignment: Alignment.centerLeft,
+        child: Text('No collaborators yet.'),
+      );
+    }
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(
+        maxHeight: _collaboratorsSectionMaxHeight,
+      ),
+      child: ListView(
+        shrinkWrap: true,
+        children: widget.data.collaborators
+            .map(
+              (collaborator) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  collaborator.displayName?.trim().isNotEmpty == true
+                      ? collaborator.displayName!
+                      : collaborator.username,
+                ),
+                subtitle: Text(collaborator.matrixId),
+                trailing: IconButton(
+                  icon: const Icon(Icons.person_remove_outlined),
+                  tooltip: 'Remove collaborator',
+                  onPressed: () =>
+                      _removeCollaborator(collaborator.collaboratorId),
+                ),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildSearchResults(BuildContext context) {
+    if (_resolving) {
+      return const Center(child: CircularProgressIndicator.adaptive());
+    }
+
+    if (_searchFuture == null) {
+      return const Align(
+        alignment: Alignment.topLeft,
+        child: Text('Search Matrix users to add them as collaborators.'),
+      );
+    }
+
+    return FutureBuilder<List<Profile>>(
+      future: _searchFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator.adaptive());
+        }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Text(snapshot.error!.toLocalizedString(context)),
+            ),
+          );
+        }
+
+        final profiles = snapshot.data ?? const <Profile>[];
+        if (profiles.isEmpty) {
+          return const Align(
+            alignment: Alignment.topLeft,
+            child: Text('No users found.'),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: profiles.length,
+          itemBuilder: (context, index) {
+            final profile = profiles[index];
+            final displayName =
+                profile.displayName ??
+                profile.userId.localpart ??
+                profile.userId;
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: Avatar(
+                name: displayName,
+                mxContent: profile.avatarUrl,
+                presenceUserId: profile.userId,
+              ),
+              title: Text(displayName),
+              subtitle: Text(profile.userId),
+              trailing: const Icon(Icons.person_add_outlined),
+              onTap: () => _addCollaborator(profile),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('Collaborators'),
@@ -822,32 +925,7 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (widget.data.collaborators.isEmpty)
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Text('No collaborators yet.'),
-            )
-          else
-            Flexible(
-              child: ListView(
-                shrinkWrap: true,
-                children: widget.data.collaborators
-                    .map(
-                      (collaborator) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(collaborator.username),
-                        subtitle: Text(collaborator.collaboratorId),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.person_remove_outlined),
-                          tooltip: 'Remove collaborator',
-                          onPressed: () =>
-                              _removeCollaborator(collaborator.collaboratorId),
-                        ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ),
+          _buildCollaboratorsList(),
           const SizedBox(height: 12),
           TextField(
             controller: _searchController,
@@ -871,66 +949,11 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
               ),
             ),
           ],
-          if (_resolving) ...[
-            const SizedBox(height: 12),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              child: CircularProgressIndicator.adaptive(),
-            ),
-          ] else if (_searchFuture != null) ...[
-            const SizedBox(height: 12),
-            Flexible(
-              child: FutureBuilder<List<Profile>>(
-                future: _searchFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(
-                      child: CircularProgressIndicator.adaptive(),
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(snapshot.error!.toLocalizedString(context)),
-                    );
-                  }
-
-                  final profiles = snapshot.data ?? const <Profile>[];
-                  if (profiles.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Text('No users found.'),
-                    );
-                  }
-
-                  return ListView.builder(
-                    shrinkWrap: true,
-                    itemCount: profiles.length,
-                    itemBuilder: (context, index) {
-                      final profile = profiles[index];
-                      final displayName =
-                          profile.displayName ??
-                          profile.userId.localpart ??
-                          profile.userId;
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Avatar(
-                          name: displayName,
-                          mxContent: profile.avatarUrl,
-                          presenceUserId: profile.userId,
-                        ),
-                        title: Text(displayName),
-                        subtitle: Text(profile.userId),
-                        trailing: const Icon(Icons.person_add_outlined),
-                        onTap: () => _addCollaborator(profile),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            height: _searchResultsSectionHeight,
+            child: _buildSearchResults(context),
+          ),
         ],
       ),
     ),

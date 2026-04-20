@@ -76,17 +76,23 @@ class MessieTodoCollaborator {
     required this.listId,
     required this.collaboratorId,
     required this.username,
+    required this.matrixId,
+    this.displayName,
   });
 
   final String listId;
   final String collaboratorId;
   final String username;
+  final String matrixId;
+  final String? displayName;
 
   factory MessieTodoCollaborator.fromApi(api.CollaboratorDetail collaborator) =>
       MessieTodoCollaborator(
         listId: collaborator.listId,
         collaboratorId: collaborator.collaboratorId,
         username: collaborator.username,
+        matrixId: collaborator.matrixId,
+        displayName: collaborator.displayName,
       );
 }
 

@@ -109,6 +109,23 @@ class RecordingMessieTodoSdk implements MessieTodoSdk {
 
 void main() {
   group('MessieTodoService', () {
+    test('maps collaborator identity fields for UI display', () {
+      final collaborator = MessieTodoCollaborator.fromApi(
+        api.CollaboratorDetail(
+          (builder) => builder
+            ..listId = 'list-1'
+            ..collaboratorId = 'user-1'
+            ..username = 'todochat2'
+            ..matrixId = '@todochat2:messie.localhost'
+            ..displayName = 'Todo Chat 2',
+        ),
+      );
+
+      expect(collaborator.displayName, 'Todo Chat 2');
+      expect(collaborator.matrixId, '@todochat2:messie.localhost');
+      expect(collaborator.collaboratorId, 'user-1');
+    });
+
     test('normalizes created due dates to UTC', () async {
       final sdk = RecordingMessieTodoSdk();
       final service = MessieTodoService(

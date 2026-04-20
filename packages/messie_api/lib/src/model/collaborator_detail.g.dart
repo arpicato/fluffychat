@@ -13,6 +13,10 @@ class _$CollaboratorDetail extends CollaboratorDetail {
   final String username;
   @override
   final String collaboratorId;
+  @override
+  final String matrixId;
+  @override
+  final String? displayName;
 
   factory _$CollaboratorDetail(
           [void Function(CollaboratorDetailBuilder)? updates]) =>
@@ -21,7 +25,9 @@ class _$CollaboratorDetail extends CollaboratorDetail {
   _$CollaboratorDetail._(
       {required this.listId,
       required this.username,
-      required this.collaboratorId})
+      required this.collaboratorId,
+      required this.matrixId,
+      this.displayName})
       : super._();
   @override
   CollaboratorDetail rebuild(
@@ -38,7 +44,9 @@ class _$CollaboratorDetail extends CollaboratorDetail {
     return other is CollaboratorDetail &&
         listId == other.listId &&
         username == other.username &&
-        collaboratorId == other.collaboratorId;
+        collaboratorId == other.collaboratorId &&
+        matrixId == other.matrixId &&
+        displayName == other.displayName;
   }
 
   @override
@@ -47,6 +55,8 @@ class _$CollaboratorDetail extends CollaboratorDetail {
     _$hash = $jc(_$hash, listId.hashCode);
     _$hash = $jc(_$hash, username.hashCode);
     _$hash = $jc(_$hash, collaboratorId.hashCode);
+    _$hash = $jc(_$hash, matrixId.hashCode);
+    _$hash = $jc(_$hash, displayName.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -56,7 +66,9 @@ class _$CollaboratorDetail extends CollaboratorDetail {
     return (newBuiltValueToStringHelper(r'CollaboratorDetail')
           ..add('listId', listId)
           ..add('username', username)
-          ..add('collaboratorId', collaboratorId))
+          ..add('collaboratorId', collaboratorId)
+          ..add('matrixId', matrixId)
+          ..add('displayName', displayName))
         .toString();
   }
 }
@@ -78,6 +90,14 @@ class CollaboratorDetailBuilder
   set collaboratorId(String? collaboratorId) =>
       _$this._collaboratorId = collaboratorId;
 
+  String? _matrixId;
+  String? get matrixId => _$this._matrixId;
+  set matrixId(String? matrixId) => _$this._matrixId = matrixId;
+
+  String? _displayName;
+  String? get displayName => _$this._displayName;
+  set displayName(String? displayName) => _$this._displayName = displayName;
+
   CollaboratorDetailBuilder() {
     CollaboratorDetail._defaults(this);
   }
@@ -88,6 +108,8 @@ class CollaboratorDetailBuilder
       _listId = $v.listId;
       _username = $v.username;
       _collaboratorId = $v.collaboratorId;
+      _matrixId = $v.matrixId;
+      _displayName = $v.displayName;
       _$v = null;
     }
     return this;
@@ -115,6 +137,9 @@ class CollaboratorDetailBuilder
               username, r'CollaboratorDetail', 'username'),
           collaboratorId: BuiltValueNullFieldError.checkNotNull(
               collaboratorId, r'CollaboratorDetail', 'collaboratorId'),
+          matrixId: BuiltValueNullFieldError.checkNotNull(
+              matrixId, r'CollaboratorDetail', 'matrixId'),
+          displayName: displayName,
         );
     replace(_$result);
     return _$result;

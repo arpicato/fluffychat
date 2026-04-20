@@ -11,6 +11,8 @@ Name | Type | Description | Notes
 **listId** | **String** | ID of the todo list | 
 **username** | **String** | Collaborator username | 
 **collaboratorId** | **String** | ID of the collaborator user | 
+**matrixId** | **String** | Matrix ID of the collaborator | 
+**displayName** | **String** | Human-friendly collaborator name when available | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

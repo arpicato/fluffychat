@@ -957,6 +957,7 @@ components:
         - list_id
         - collaborator_id
         - username
+        - matrix_id
       properties:
         list_id:
           type: string
@@ -971,6 +972,15 @@ components:
           format: uuid
           description: ID of the collaborator user
           example: "123e4567-e89b-12d3-a456-426614174000"
+        matrix_id:
+          type: string
+          description: Matrix ID of the collaborator
+          example: "@alice:messie.localhost"
+        display_name:
+          type: string
+          nullable: true
+          description: Human-friendly collaborator name when available
+          example: "Alice"
     RegisterRequest:
       type: object
       required:
