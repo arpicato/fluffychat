@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
+import '../../widgets/matrix.dart';
 import 'todo_list_detail.dart';
 
 void _showTodoError(BuildContext context, String message, Object error) {
@@ -712,7 +713,6 @@ class _CollaboratorsDialog extends StatefulWidget {
 }
 
 class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
-  static const _collaboratorsSectionMaxHeight = 200.0;
   static const _searchResultsSectionHeight = 180.0;
 
   late final TextEditingController _searchController;
@@ -817,40 +817,122 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
     }
   }
 
+  MessieTodoCollaborator? _findCollaboratorByMatrixId(String matrixId) {
+    for (final collaborator in widget.data.collaborators) {
+      if (collaborator.matrixId == matrixId) {
+        return collaborator;
+      }
+    }
+    return null;
+  }
+
+  String _matrixLocalpart(String matrixId) =>
+      matrixId.localpart ?? matrixId.replaceFirst('@', '').split(':').first;
+
+  String _collaboratorUsername(MessieTodoCollaborator collaborator) {
+    final username = collaborator.username.trim();
+    if (username.isNotEmpty) return username;
+    return _matrixLocalpart(collaborator.matrixId);
+  }
+
+  String _collaboratorTitle(MessieTodoCollaborator collaborator) {
+    final displayName = collaborator.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+    return _collaboratorUsername(collaborator);
+  }
+
+  String _rowTitle({
+    Profile? profile,
+    MessieTodoCollaborator? collaborator,
+    required String matrixId,
+  }) {
+    final displayName = profile?.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+    if (collaborator != null) {
+      return _collaboratorTitle(collaborator);
+    }
+    return _matrixLocalpart(matrixId);
+  }
+
+  String _rowUsername({
+    required String matrixId,
+    MessieTodoCollaborator? collaborator,
+  }) {
+    if (collaborator != null) {
+      return _collaboratorUsername(collaborator);
+    }
+    return _matrixLocalpart(matrixId);
+  }
+
+  Widget _buildCollaboratorRow({
+    required String title,
+    required String username,
+    required String matrixId,
+    required IconData actionIcon,
+    required String actionTooltip,
+    required VoidCallback onAction,
+    Uri? avatarUrl,
+  }) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: Avatar(
+      name: title,
+      mxContent: avatarUrl,
+      presenceUserId: matrixId,
+    ),
+    title: Text(title),
+    subtitle: Text('$username\n$matrixId'),
+    isThreeLine: true,
+    trailing: IconButton(
+      icon: Icon(actionIcon),
+      tooltip: actionTooltip,
+      onPressed: onAction,
+    ),
+    onTap: onAction,
+  );
+
   Widget _buildCollaboratorsList() {
     if (widget.data.collaborators.isEmpty) {
       return const Align(
-        alignment: Alignment.centerLeft,
+        alignment: Alignment.topLeft,
         child: Text('No collaborators yet.'),
       );
     }
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(
-        maxHeight: _collaboratorsSectionMaxHeight,
-      ),
-      child: ListView(
-        shrinkWrap: true,
-        children: widget.data.collaborators
-            .map(
-              (collaborator) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  collaborator.displayName?.trim().isNotEmpty == true
-                      ? collaborator.displayName!
-                      : collaborator.username,
-                ),
-                subtitle: Text(collaborator.matrixId),
-                trailing: IconButton(
-                  icon: const Icon(Icons.person_remove_outlined),
-                  tooltip: 'Remove collaborator',
-                  onPressed: () =>
+    return ListView(
+      itemExtent: 84,
+      children: widget.data.collaborators
+          .map(
+            (collaborator) => FutureBuilder<Profile>(
+              future: Matrix.of(
+                context,
+              ).client.getProfileFromUserId(collaborator.matrixId),
+              builder: (context, snapshot) {
+                final profile = snapshot.data;
+                return _buildCollaboratorRow(
+                  title: _rowTitle(
+                    profile: profile,
+                    collaborator: collaborator,
+                    matrixId: collaborator.matrixId,
+                  ),
+                  username: _rowUsername(
+                    matrixId: collaborator.matrixId,
+                    collaborator: collaborator,
+                  ),
+                  matrixId: collaborator.matrixId,
+                  avatarUrl: profile?.avatarUrl,
+                  actionIcon: Icons.person_remove_outlined,
+                  actionTooltip: 'Remove collaborator',
+                  onAction: () =>
                       _removeCollaborator(collaborator.collaboratorId),
-                ),
-              ),
-            )
-            .toList(),
-      ),
+                );
+              },
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -895,21 +977,29 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
           itemCount: profiles.length,
           itemBuilder: (context, index) {
             final profile = profiles[index];
-            final displayName =
-                profile.displayName ??
-                profile.userId.localpart ??
-                profile.userId;
-            return ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Avatar(
-                name: displayName,
-                mxContent: profile.avatarUrl,
-                presenceUserId: profile.userId,
+            final collaborator = _findCollaboratorByMatrixId(profile.userId);
+            final alreadyCollaborator = collaborator != null;
+            return _buildCollaboratorRow(
+              title: _rowTitle(
+                profile: profile,
+                collaborator: collaborator,
+                matrixId: profile.userId,
               ),
-              title: Text(displayName),
-              subtitle: Text(profile.userId),
-              trailing: const Icon(Icons.person_add_outlined),
-              onTap: () => _addCollaborator(profile),
+              username: _rowUsername(
+                matrixId: profile.userId,
+                collaborator: collaborator,
+              ),
+              matrixId: profile.userId,
+              avatarUrl: profile.avatarUrl,
+              actionIcon: alreadyCollaborator
+                  ? Icons.person_remove_outlined
+                  : Icons.person_add_outlined,
+              actionTooltip: alreadyCollaborator
+                  ? 'Remove collaborator'
+                  : 'Add collaborator',
+              onAction: alreadyCollaborator
+                  ? () => _removeCollaborator(collaborator.collaboratorId)
+                  : () => _addCollaborator(profile),
             );
           },
         );
@@ -925,8 +1015,6 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildCollaboratorsList(),
-          const SizedBox(height: 12),
           TextField(
             controller: _searchController,
             autofocus: true,
@@ -952,7 +1040,9 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
           const SizedBox(height: 12),
           SizedBox(
             height: _searchResultsSectionHeight,
-            child: _buildSearchResults(context),
+            child: _searchFuture == null
+                ? _buildCollaboratorsList()
+                : _buildSearchResults(context),
           ),
         ],
       ),
