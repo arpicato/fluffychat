@@ -90,6 +90,30 @@ class MessieTodoCollaborator {
       );
 }
 
+class MessieUser {
+  MessieUser({
+    required this.id,
+    required this.email,
+    required this.matrixId,
+    this.createdAt,
+    this.updatedAt,
+  });
+
+  final String id;
+  final String email;
+  final String matrixId;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
+  factory MessieUser.fromApi(api.User user) => MessieUser(
+    id: user.id,
+    email: user.email,
+    matrixId: user.matrixId,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt,
+  );
+}
+
 abstract class MessieTodoSdk {
   Future<List<api.TodoList>> getTodoLists({required String userId});
 
@@ -144,6 +168,8 @@ abstract class MessieTodoSdk {
     required String listId,
     required String userId,
   });
+
+  Future<api.User?> getUserByMatrixId({required String matrixId});
 }
 
 class GeneratedMessieTodoSdk implements MessieTodoSdk {
@@ -302,6 +328,19 @@ class GeneratedMessieTodoSdk implements MessieTodoSdk {
     required String userId,
   }) async {
     await _api.removeCollaborator(listId: listId, userId: userId);
+  }
+
+  @override
+  Future<api.User?> getUserByMatrixId({required String matrixId}) async {
+    try {
+      final response = await _api.getUserByMatrixId(matrixId: matrixId);
+      return response.data;
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return null;
+      }
+      rethrow;
+    }
   }
 }
 
@@ -521,4 +560,19 @@ class MessieTodoService {
     apiBaseUrl: apiBaseUrl,
     jwt: jwt,
   );
+
+  Future<MessieUser?> getUserByMatrixId({
+    required String apiBaseUrl,
+    required String jwt,
+    required String matrixId,
+  }) async {
+    final sdk = _sdkFactory(apiBaseUrl: apiBaseUrl, jwt: jwt);
+    try {
+      final user = await sdk.getUserByMatrixId(matrixId: matrixId);
+      if (user == null) return null;
+      return MessieUser.fromApi(user);
+    } on DioException catch (error) {
+      throw _requestException('Failed to look up user', error);
+    }
+  }
 }

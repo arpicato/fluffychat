@@ -49,16 +49,17 @@ class BackendSessionService {
     SharedPreferences store, {
     String apiBaseUrl = defaultApiBaseUrl,
   }) async {
-    final cached = _readStoredSession(store);
-    if (cached != null &&
-        cached.userId.isNotEmpty &&
-        !_isExpiringSoon(cached)) {
-      return cached;
-    }
-
     final userId = client.userID;
     if (userId == null || userId.isEmpty) {
       throw Exception('Matrix user is not logged in.');
+    }
+
+    final cached = _readStoredSession(store);
+    if (cached != null &&
+        cached.mxid == userId &&
+        cached.userId.isNotEmpty &&
+        !_isExpiringSoon(cached)) {
+      return cached;
     }
 
     final openId = await client.requestOpenIdToken(userId, const {});

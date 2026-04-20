@@ -31,6 +31,7 @@ Method | HTTP request | Description
 [**getTodoItemsByListId**](DefaultApi.md#gettodoitemsbylistid) | **GET** /todolists/{listId}/items | Get todo items by list ID
 [**getTodoListById**](DefaultApi.md#gettodolistbyid) | **GET** /todolists/{listId} | Get a todo list by ID
 [**getTodoListsByUserId**](DefaultApi.md#gettodolistsbyuserid) | **GET** /todolists | Get todo lists by owner ID
+[**getUserByMatrixId**](DefaultApi.md#getuserbymatrixid) | **GET** /users/by-matrix-id | Get user by Matrix ID
 [**loginPost**](DefaultApi.md#loginpost) | **POST** /login | Log in a user
 [**postMatrixAuth**](DefaultApi.md#postmatrixauth) | **POST** /auth/matrix/openid | Authenticate using Matrix OpenID
 [**registerPost**](DefaultApi.md#registerpost) | **POST** /register | Register a new user
@@ -944,6 +945,47 @@ Name | Type | Description  | Notes
 ### Return type
 
 [**BuiltList&lt;TodoList&gt;**](TodoList.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getUserByMatrixId**
+> User getUserByMatrixId(matrixId)
+
+Get user by Matrix ID
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String matrixId = matrixId_example; // String | Matrix user ID
+
+try {
+    final response = api.getUserByMatrixId(matrixId);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->getUserByMatrixId: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **matrixId** | **String**| Matrix user ID | 
+
+### Return type
+
+[**User**](User.md)
 
 ### Authorization
 

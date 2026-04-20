@@ -129,6 +129,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /users/by-matrix-id:
+    get:
+      security:
+        - bearerAuth: []
+      summary: Get user by Matrix ID
+      operationId: getUserByMatrixId
+      parameters:
+        - in: query
+          name: matrixId
+          schema:
+            type: string
+          required: true
+          description: Matrix user ID
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
   /email/login-test:
     post:
       summary: Test email login and fetch recent message headers

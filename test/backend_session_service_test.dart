@@ -36,5 +36,15 @@ void main() {
       expect(json['userId'], '7abe04b7-9ae8-454a-b89f-4a3f53b7a8b9');
       expect(json['user_id'], '7abe04b7-9ae8-454a-b89f-4a3f53b7a8b9');
     });
+
+    test('retains mxid for cache validation across account switches', () {
+      final session = BackendSession.fromJson({
+        'token': 'test-token',
+        'mxid': '@alice:messie.localhost',
+        'user_id': '7abe04b7-9ae8-454a-b89f-4a3f53b7a8b9',
+      });
+
+      expect(session.mxid, '@alice:messie.localhost');
+    });
   });
 }

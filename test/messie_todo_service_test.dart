@@ -90,6 +90,10 @@ class RecordingMessieTodoSdk implements MessieTodoSdk {
       throw UnimplementedError();
 
   @override
+  Future<api.User?> getUserByMatrixId({required String matrixId}) =>
+      throw UnimplementedError();
+
+  @override
   Future<void> removeCollaborator({
     required String listId,
     required String userId,

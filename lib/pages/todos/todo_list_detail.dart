@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:matrix/matrix.dart';
 
 import '../../services/backend_session_service.dart';
 import '../../services/messie_todo_service.dart';
@@ -49,7 +50,7 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
       listId: widget.listId,
     );
 
-    List<MessieTodoCollaborator> collaborators = const [];
+    var collaborators = const <MessieTodoCollaborator>[];
     Object? collaboratorsError;
     try {
       collaborators = await _todoService.getCollaborators(
@@ -182,7 +183,11 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     );
   }
 
-  Future<void> addCollaborator(BuildContext context, String userId) async {
+  Future<void> addCollaborator(
+    BuildContext context,
+    String userId, {
+    bool refreshAfter = true,
+  }) async {
     final session = await _session(context);
     await _todoService.addCollaborator(
       apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
@@ -190,10 +195,44 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
       listId: widget.listId,
       userId: userId,
     );
-    refresh();
+    if (refreshAfter) refresh();
   }
 
-  Future<void> removeCollaborator(BuildContext context, String userId) async {
+  Future<MessieUser?> findMessieUserByMatrixId(
+    BuildContext context,
+    String matrixId,
+  ) async {
+    final session = await _session(context);
+    return _todoService.getUserByMatrixId(
+      apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+      jwt: session.jwt,
+      matrixId: matrixId,
+    );
+  }
+
+  Future<List<Profile>> searchMatrixUsers(
+    BuildContext context,
+    String searchTerm,
+  ) async {
+    final result = await Matrix.of(
+      context,
+    ).client.searchUserDirectory(searchTerm, limit: 10);
+    final profiles = List<Profile>.from(result.results);
+
+    if (searchTerm.isValidMatrixId &&
+        searchTerm.sigil == '@' &&
+        !profiles.any((profile) => profile.userId == searchTerm)) {
+      profiles.add(Profile(userId: searchTerm));
+    }
+
+    return profiles;
+  }
+
+  Future<void> removeCollaborator(
+    BuildContext context,
+    String userId, {
+    bool refreshAfter = true,
+  }) async {
     final session = await _session(context);
     await _todoService.removeCollaborator(
       apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
@@ -201,7 +240,7 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
       listId: widget.listId,
       userId: userId,
     );
-    refresh();
+    if (refreshAfter) refresh();
   }
 
   String _positionForIndex(int index) =>

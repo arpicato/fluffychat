@@ -1,10 +1,21 @@
+import 'dart:async';
+
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
+import 'package:fluffychat/utils/localized_exception_extension.dart';
+import 'package:fluffychat/widgets/avatar.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
 
 import 'todo_list_detail.dart';
+
+void _showTodoError(BuildContext context, String message, Object error) {
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text('$message: $error')));
+}
 
 class TodoListDetailPageView extends StatelessWidget {
   const TodoListDetailPageView(this.controller, {super.key});
@@ -65,7 +76,7 @@ class TodoListDetailPageView extends StatelessWidget {
       );
     } catch (error) {
       if (!context.mounted) return;
-      _showError(context, 'Could not update todo list', error);
+      _showTodoError(context, 'Could not update todo list', error);
     }
   }
 
@@ -98,105 +109,25 @@ class TodoListDetailPageView extends StatelessWidget {
       context.go('/rooms');
     } catch (error) {
       if (!context.mounted) return;
-      _showError(context, 'Could not delete todo list', error);
+      _showTodoError(context, 'Could not delete todo list', error);
     }
   }
 
   Future<void> _showCollaboratorsDialog(
-    BuildContext context,
+    BuildContext pageContext,
     TodoListDetailData data,
   ) async {
-    final userIdController = TextEditingController();
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Collaborators'),
-          content: SizedBox(
-            width: 420,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (data.collaborators.isEmpty)
-                  const Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('No collaborators yet.'),
-                  )
-                else
-                  Flexible(
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: data.collaborators
-                          .map(
-                            (collaborator) => ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(collaborator.username),
-                              subtitle: Text(collaborator.collaboratorId),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.person_remove_outlined),
-                                tooltip: 'Remove collaborator',
-                                onPressed: () async {
-                                  try {
-                                    await controller.removeCollaborator(
-                                      dialogContext,
-                                      collaborator.collaboratorId,
-                                    );
-                                    if (!dialogContext.mounted) return;
-                                    Navigator.of(dialogContext).pop();
-                                  } catch (error) {
-                                    if (!dialogContext.mounted) return;
-                                    _showError(
-                                      dialogContext,
-                                      'Could not remove collaborator',
-                                      error,
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: userIdController,
-                  decoration: const InputDecoration(
-                    labelText: 'Collaborator user ID',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Close'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final userId = userIdController.text.trim();
-                if (userId.isEmpty) return;
-                try {
-                  await controller.addCollaborator(dialogContext, userId);
-                  if (!dialogContext.mounted) return;
-                  Navigator.of(dialogContext).pop();
-                } catch (error) {
-                  if (!dialogContext.mounted) return;
-                  _showError(
-                    dialogContext,
-                    'Could not add collaborator',
-                    error,
-                  );
-                  setState(() {});
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
-        ),
+    final changed = await showDialog<bool>(
+      context: pageContext,
+      builder: (dialogContext) => _CollaboratorsDialog(
+        controller: controller,
+        data: data,
+        pageContext: pageContext,
       ),
     );
+    if (changed == true && pageContext.mounted) {
+      controller.refresh();
+    }
   }
 
   Future<void> _createItem(
@@ -281,7 +212,7 @@ class TodoListDetailPageView extends StatelessWidget {
       );
     } catch (error) {
       if (!context.mounted) return;
-      _showError(context, 'Could not create todo item', error);
+      _showTodoError(context, 'Could not create todo item', error);
     }
   }
 
@@ -393,7 +324,7 @@ class TodoListDetailPageView extends StatelessWidget {
       );
     } catch (error) {
       if (!context.mounted) return;
-      _showError(context, 'Could not update todo item', error);
+      _showTodoError(context, 'Could not update todo item', error);
     }
   }
 
@@ -424,7 +355,7 @@ class TodoListDetailPageView extends StatelessWidget {
       await controller.deleteItem(context, item.id);
     } catch (error) {
       if (!context.mounted) return;
-      _showError(context, 'Could not delete todo item', error);
+      _showTodoError(context, 'Could not delete todo item', error);
     }
   }
 
@@ -437,7 +368,7 @@ class TodoListDetailPageView extends StatelessWidget {
       await controller.updateItem(context, item: item, completed: completed);
     } catch (error) {
       if (!context.mounted) return;
-      _showError(context, 'Could not update todo item', error);
+      _showTodoError(context, 'Could not update todo item', error);
     }
   }
 
@@ -456,14 +387,8 @@ class TodoListDetailPageView extends StatelessWidget {
       );
     } catch (error) {
       if (!context.mounted) return;
-      _showError(context, 'Could not reorder todo item', error);
+      _showTodoError(context, 'Could not reorder todo item', error);
     }
-  }
-
-  void _showError(BuildContext context, String message, Object error) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$message: $error')));
   }
 
   static String _formatDateInput(DateTime? value) {
@@ -768,5 +693,252 @@ class TodoListDetailPageView extends StatelessWidget {
         ),
       );
     },
+  );
+}
+
+class _CollaboratorsDialog extends StatefulWidget {
+  const _CollaboratorsDialog({
+    required this.controller,
+    required this.data,
+    required this.pageContext,
+  });
+
+  final TodoListDetailPageController controller;
+  final TodoListDetailData data;
+  final BuildContext pageContext;
+
+  @override
+  State<_CollaboratorsDialog> createState() => _CollaboratorsDialogState();
+}
+
+class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
+  late final TextEditingController _searchController;
+  Future<List<Profile>>? _searchFuture;
+  Timer? _searchCooldown;
+  bool _resolving = false;
+  String? _statusMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchCooldown?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _updateSearch(String value) {
+    _searchCooldown?.cancel();
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      setState(() {
+        _searchFuture = null;
+        _statusMessage = null;
+      });
+      return;
+    }
+    _searchCooldown = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = null;
+        _searchFuture = widget.controller.searchMatrixUsers(context, trimmed);
+      });
+    });
+  }
+
+  Future<void> _removeCollaborator(String collaboratorId) async {
+    try {
+      await widget.controller.removeCollaborator(
+        context,
+        collaboratorId,
+        refreshAfter: false,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      _showTodoError(context, 'Could not remove collaborator', error);
+    }
+  }
+
+  Future<void> _addCollaborator(Profile profile) async {
+    setState(() {
+      _resolving = true;
+      _statusMessage = null;
+    });
+    try {
+      final messieUser = await widget.controller.findMessieUserByMatrixId(
+        context,
+        profile.userId,
+      );
+      if (!mounted) return;
+
+      if (messieUser == null) {
+        setState(() {
+          _statusMessage =
+              '${profile.userId} exists in Matrix, but does not have a Messie account yet. Invites are not available here yet.';
+        });
+        return;
+      }
+
+      final alreadyCollaborator =
+          messieUser.id == widget.data.list.ownerId ||
+          widget.data.collaborators.any(
+            (collaborator) => collaborator.collaboratorId == messieUser.id,
+          );
+      if (alreadyCollaborator) {
+        setState(() {
+          _statusMessage = 'This user already has access to the list.';
+        });
+        return;
+      }
+
+      await widget.controller.addCollaborator(
+        context,
+        messieUser.id,
+        refreshAfter: false,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!widget.pageContext.mounted) return;
+      _showTodoError(widget.pageContext, 'Could not add collaborator', error);
+    } finally {
+      if (mounted) {
+        setState(() => _resolving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Collaborators'),
+    content: SizedBox(
+      width: 420,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.data.collaborators.isEmpty)
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('No collaborators yet.'),
+            )
+          else
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: widget.data.collaborators
+                    .map(
+                      (collaborator) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(collaborator.username),
+                        subtitle: Text(collaborator.collaboratorId),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.person_remove_outlined),
+                          tooltip: 'Remove collaborator',
+                          onPressed: () =>
+                              _removeCollaborator(collaborator.collaboratorId),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _searchController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Search by Matrix user',
+              hintText: '@alice:messie.localhost',
+              prefixIcon: Icon(Icons.search_outlined),
+            ),
+            onChanged: _updateSearch,
+          ),
+          if (_statusMessage != null) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _statusMessage!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+              ),
+            ),
+          ],
+          if (_resolving) ...[
+            const SizedBox(height: 12),
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: CircularProgressIndicator.adaptive(),
+            ),
+          ] else if (_searchFuture != null) ...[
+            const SizedBox(height: 12),
+            Flexible(
+              child: FutureBuilder<List<Profile>>(
+                future: _searchFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(
+                      child: CircularProgressIndicator.adaptive(),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(snapshot.error!.toLocalizedString(context)),
+                    );
+                  }
+
+                  final profiles = snapshot.data ?? const <Profile>[];
+                  if (profiles.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Text('No users found.'),
+                    );
+                  }
+
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: profiles.length,
+                    itemBuilder: (context, index) {
+                      final profile = profiles[index];
+                      final displayName =
+                          profile.displayName ??
+                          profile.userId.localpart ??
+                          profile.userId;
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Avatar(
+                          name: displayName,
+                          mxContent: profile.avatarUrl,
+                          presenceUserId: profile.userId,
+                        ),
+                        title: Text(displayName),
+                        subtitle: Text(profile.userId),
+                        trailing: const Icon(Icons.person_add_outlined),
+                        onTap: () => _addCollaborator(profile),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Close'),
+      ),
+    ],
   );
 }

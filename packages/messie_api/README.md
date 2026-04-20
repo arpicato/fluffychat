@@ -87,6 +87,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**getTodoItemsByListId**](doc/DefaultApi.md#gettodoitemsbylistid) | **GET** /todolists/{listId}/items | Get todo items by list ID
 [*DefaultApi*](doc/DefaultApi.md) | [**getTodoListById**](doc/DefaultApi.md#gettodolistbyid) | **GET** /todolists/{listId} | Get a todo list by ID
 [*DefaultApi*](doc/DefaultApi.md) | [**getTodoListsByUserId**](doc/DefaultApi.md#gettodolistsbyuserid) | **GET** /todolists | Get todo lists by owner ID
+[*DefaultApi*](doc/DefaultApi.md) | [**getUserByMatrixId**](doc/DefaultApi.md#getuserbymatrixid) | **GET** /users/by-matrix-id | Get user by Matrix ID
 [*DefaultApi*](doc/DefaultApi.md) | [**loginPost**](doc/DefaultApi.md#loginpost) | **POST** /login | Log in a user
 [*DefaultApi*](doc/DefaultApi.md) | [**postMatrixAuth**](doc/DefaultApi.md#postmatrixauth) | **POST** /auth/matrix/openid | Authenticate using Matrix OpenID
 [*DefaultApi*](doc/DefaultApi.md) | [**registerPost**](doc/DefaultApi.md#registerpost) | **POST** /register | Register a new user
