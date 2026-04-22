@@ -2070,7 +2070,12 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                           children: [
                             InkWell(
                               borderRadius: BorderRadius.circular(18),
-                              onTap: () {},
+                              onTap: () => _showMobileMonthPicker(
+                                context,
+                                theme,
+                                eventsByDay,
+                                sourceColors,
+                              ),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 4,
@@ -2400,6 +2405,168 @@ class _CalendarPageViewState extends State<CalendarPageView> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _showMobileMonthPicker(
+    BuildContext context,
+    ThemeData theme,
+    Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
+    Map<String, Color> sourceColors,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      backgroundColor: theme.colorScheme.surface,
+      builder: (sheetContext) {
+        return AnimatedBuilder(
+          animation: Listenable.merge([
+            _visibilityVersionNotifier,
+            _visibleMonthNotifier,
+            _selectedDayNotifier,
+          ]),
+          builder: (context, _) {
+            final weeks = _monthWeeks(_visibleMonth);
+            final labelStyle = theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w700,
+            );
+            const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        DateFormat.yMMMM().format(_visibleMonth),
+                        style: theme.textTheme.headlineSmall,
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => _setVisibleMonth(
+                          DateTime(_visibleMonth.year, _visibleMonth.month - 1),
+                        ),
+                        icon: const Icon(Icons.chevron_left),
+                      ),
+                      IconButton(
+                        onPressed: () => _setVisibleMonth(
+                          DateTime(_visibleMonth.year, _visibleMonth.month + 1),
+                        ),
+                        icon: const Icon(Icons.chevron_right),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: weekdays
+                        .map(
+                          (label) => Expanded(
+                            child: Center(
+                              child: Text(label, style: labelStyle),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 8),
+                  ...weeks.map(
+                    (week) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: week
+                            .map(
+                              (day) => Expanded(
+                                child: _buildMobileMonthPickerDay(
+                                  context,
+                                  theme,
+                                  day: day,
+                                  eventsByDay: eventsByDay,
+                                  sourceColors: sourceColors,
+                                  onSelected: () {
+                                    _selectDay(day);
+                                    Navigator.of(sheetContext).pop();
+                                    _scrollMobileScheduleToDay(day);
+                                  },
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileMonthPickerDay(
+    BuildContext context,
+    ThemeData theme, {
+    required DateTime day,
+    required Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
+    required Map<String, Color> sourceColors,
+    required VoidCallback onSelected,
+  }) {
+    final isCurrentMonth = day.month == _visibleMonth.month;
+    final isSelected = _isSameDay(day, _selectedDay);
+    final isToday = _isSameDay(day, DateTime.now());
+    final hasEvents = _eventsForDay(eventsByDay, day).isNotEmpty;
+
+    return Center(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onSelected,
+        child: SizedBox(
+          width: 38,
+          height: 44,
+          child: Column(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : isToday
+                      ? theme.colorScheme.primaryContainer
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${day.day}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : isCurrentMonth
+                        ? null
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              if (hasEvents)
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color:
+                        sourceColors.values.firstOrNull ??
+                        theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
