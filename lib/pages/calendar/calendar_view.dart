@@ -2145,7 +2145,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         ),
                         const SizedBox(height: 16),
                         SizedBox(
-                          height: 132,
+                          height: 92,
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Row(
@@ -2157,8 +2157,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                       MediaQuery.sizeOf(context).width * 0.42,
                                   icon: Icons.calendar_view_day_outlined,
                                   label: 'Calendars',
-                                  value:
-                                      '${_visibleSourceIds.length}/${data.sources.length}',
+                                  value: '${_visibleSourceIds.length}',
                                   onTap: () => _showMobileCalendarsSheet(
                                     context,
                                     theme,
@@ -2279,42 +2278,36 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(icon, size: 18, color: theme.colorScheme.primary),
-                const Spacer(),
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Flexible(
-                      child: Text(
-                        value,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.headlineMedium?.copyWith(
-                          height: 1.0,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                    Icon(icon, size: 18, color: theme.colorScheme.primary),
                     const SizedBox(width: 8),
                     Flexible(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            height: 1.0,
-                          ),
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.0,
                         ),
                       ),
                     ),
                   ],
+                ),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.headlineMedium?.copyWith(
+                    height: 1.0,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
