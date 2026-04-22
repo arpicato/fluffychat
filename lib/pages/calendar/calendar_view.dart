@@ -2159,9 +2159,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   label: 'Calendars',
                                   value:
                                       '${_visibleSourceIds.length}/${data.sources.length}',
-                                  detail: data.sources.isEmpty
-                                      ? 'Import and manage'
-                                      : 'Visible sources',
                                   onTap: () => _showMobileCalendarsSheet(
                                     context,
                                     theme,
@@ -2179,9 +2176,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   label: 'Today',
                                   value:
                                       '${DateTime.now().day}',
-                                  detail: DateFormat.MMMEd().format(
-                                    DateTime.now(),
-                                  ),
                                   onTap: _jumpMobileScheduleToToday,
                                 ),
                                 const SizedBox(width: 12),
@@ -2198,9 +2192,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                           context,
                                           nextEvent,
                                         ),
-                                  detail: nextEvent == null
-                                      ? 'No upcoming events'
-                                      : nextEvent.title,
                                   onTap: nextEvent == null
                                       ? null
                                       : () => context.push(
@@ -2278,7 +2269,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     required IconData icon,
     required String label,
     required String value,
-    required String detail,
     required VoidCallback? onTap,
   }) {
     return SizedBox(
@@ -2289,34 +2279,42 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(icon, size: 18, color: theme.colorScheme.primary),
-                const SizedBox(height: 10),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineSmall?.copyWith(height: 1.0),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleSmall?.copyWith(height: 1.0),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  detail,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    height: 1.1,
-                  ),
+                const Spacer(),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        value,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          height: 1.0,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            height: 1.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
