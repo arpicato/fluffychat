@@ -19,7 +19,7 @@ dependencies:
   chewie: ^1.13.1
   collection: ^1.18.0
   cross_file: ^0.3.5
-  desktop_drop: ^0.7.0
+  desktop_drop: ^0.7.1
   desktop_notifications: ^0.6.3
   device_info_plus: ^12.3.0
   dio: ^5.9.2
@@ -42,7 +42,7 @@ dependencies:
   flutter_web_auth_2: ^5.0.2
   flutter_webrtc: ^1.4.1
   geolocator: ^14.0.2
-  go_router: ^17.2.1
+  go_router: ^17.2.2
   handy_window: ^0.4.2
   highlight: ^0.7.0
   html: ^0.15.4
@@ -52,7 +52,7 @@ dependencies:
   intl: any
   just_audio: ^0.10.5
   latlong2: ^0.9.1
-  matrix: ^6.2.0
+  matrix: ^7.0.0
   messie_api:
     path: packages/messie_api
   mime: ^2.0.0
