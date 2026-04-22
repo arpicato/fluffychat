@@ -1,8 +1,12 @@
 import 'dart:async';
 
 import 'package:fluffychat/config/themes.dart';
+import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/archive/archive.dart';
 import 'package:fluffychat/pages/bootstrap/bootstrap_dialog.dart';
+import 'package:fluffychat/pages/bridge_connections/bridge_connections.dart';
+import 'package:fluffychat/pages/calendar/calendar.dart';
+import 'package:fluffychat/pages/calendar/calendar_event_detail.dart';
 import 'package:fluffychat/pages/chat/chat.dart';
 import 'package:fluffychat/pages/chat_access_settings/chat_access_settings_controller.dart';
 import 'package:fluffychat/pages/chat_details/chat_details.dart';
@@ -28,6 +32,7 @@ import 'package:fluffychat/pages/settings_password/settings_password.dart';
 import 'package:fluffychat/pages/settings_security/settings_security.dart';
 import 'package:fluffychat/pages/settings_style/settings_style.dart';
 import 'package:fluffychat/pages/sign_in/sign_in_page.dart';
+import 'package:fluffychat/pages/todos/todo_list_detail.dart';
 import 'package:fluffychat/widgets/config_viewer.dart';
 import 'package:fluffychat/widgets/layouts/empty_page.dart';
 import 'package:fluffychat/widgets/layouts/two_column_layout.dart';
@@ -129,7 +134,10 @@ abstract class AppRoutes {
                 ),
                 sideView: child,
               )
-            : child,
+            : _MobileWorkspaceBottomBar(
+                currentPath: state.uri.path,
+                child: child,
+              ),
       ),
       routes: [
         GoRoute(
@@ -199,6 +207,61 @@ abstract class AppRoutes {
               ),
               redirect: loggedOutRedirect,
             ),
+            GoRoute(
+              path: 'calendar',
+              pageBuilder: (context, state) => defaultPageBuilder(
+                context,
+                state,
+                const CalendarPage(),
+              ),
+              routes: [
+                GoRoute(
+                  path: 'events/:eventId',
+                  pageBuilder: (context, state) {
+                    final extra = state.extra;
+                    final initialTitle = extra is Map<String, Object?>
+                        ? extra['title'] as String?
+                        : null;
+                    final initialSourceDisplayName = extra is Map<String, Object?>
+                        ? extra['sourceDisplayName'] as String?
+                        : null;
+                    return defaultPageBuilder(
+                      context,
+                      state,
+                      CalendarEventDetailPage(
+                        eventId: state.pathParameters['eventId']!,
+                        initialTitle: initialTitle,
+                        initialSourceDisplayName: initialSourceDisplayName,
+                      ),
+                    );
+                  },
+                  redirect: loggedOutRedirect,
+                ),
+              ],
+              redirect: loggedOutRedirect,
+            ),
+            GoRoute(
+              path: 'todos/:listId',
+              pageBuilder: (context, state) {
+                final extra = state.extra;
+                final initialTitle = extra is Map<String, Object?>
+                    ? extra['title'] as String?
+                    : null;
+                final initialDescription = extra is Map<String, Object?>
+                    ? extra['description'] as String?
+                    : null;
+                return defaultPageBuilder(
+                  context,
+                  state,
+                  TodoListDetailPage(
+                    listId: state.pathParameters['listId']!,
+                    initialTitle: initialTitle,
+                    initialDescription: initialDescription,
+                  ),
+                );
+              },
+              redirect: loggedOutRedirect,
+            ),
             ShellRoute(
               pageBuilder: (context, state, child) => defaultPageBuilder(
                 context,
@@ -246,6 +309,15 @@ abstract class AppRoutes {
                         context,
                         state,
                         const DevicesSettings(),
+                      ),
+                      redirect: loggedOutRedirect,
+                    ),
+                    GoRoute(
+                      path: 'connections',
+                      pageBuilder: (context, state) => defaultPageBuilder(
+                        context,
+                        state,
+                        const BridgeConnectionsPage(),
                       ),
                       redirect: loggedOutRedirect,
                     ),
@@ -511,4 +583,70 @@ abstract class AppRoutes {
           restorationId: state.pageKey.value,
           child: child,
         );
+}
+
+class _MobileWorkspaceBottomBar extends StatelessWidget {
+  const _MobileWorkspaceBottomBar({
+    required this.currentPath,
+    required this.child,
+  });
+
+  final String currentPath;
+  final Widget child;
+
+  bool get _showBottomBar =>
+      currentPath == '/rooms' ||
+      currentPath.startsWith('/rooms/calendar') ||
+      currentPath == '/rooms/settings' ||
+      currentPath.startsWith('/rooms/settings/');
+
+  int get _selectedIndex {
+    if (currentPath.startsWith('/rooms/calendar')) return 1;
+    if (currentPath.startsWith('/rooms/settings')) return 2;
+    return 0;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (FluffyThemes.isColumnMode(context) || !_showBottomBar) {
+      return child;
+    }
+
+    return Scaffold(
+      body: child,
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) {
+          switch (index) {
+            case 0:
+              context.go('/rooms');
+              break;
+            case 1:
+              context.go('/rooms/calendar');
+              break;
+            case 2:
+              context.go('/rooms/settings');
+              break;
+          }
+        },
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.forum_outlined),
+            selectedIcon: const Icon(Icons.forum),
+            label: L10n.of(context).chats,
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'Calendar',
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.settings_outlined),
+            selectedIcon: const Icon(Icons.settings),
+            label: L10n.of(context).settings,
+          ),
+        ],
+      ),
+    );
+  }
 }

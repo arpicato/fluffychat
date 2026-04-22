@@ -14,11 +14,13 @@ import 'package:matrix/matrix.dart';
 class SpacesNavigationRail extends StatelessWidget {
   final String? activeSpaceId;
   final void Function() onGoToChats;
+  final void Function() onGoToCalendar;
   final void Function(String) onGoToSpaceId;
 
   const SpacesNavigationRail({
     required this.activeSpaceId,
     required this.onGoToChats,
+    required this.onGoToCalendar,
     required this.onGoToSpaceId,
     super.key,
   });
@@ -26,6 +28,7 @@ class SpacesNavigationRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final client = Matrix.of(context).client;
+    final activePath = GoRouterState.of(context).uri.path;
     return Material(
       child: SafeArea(
         child: StreamBuilder(
@@ -44,28 +47,50 @@ class SpacesNavigationRail extends StatelessWidget {
                   : FluffyThemes.navRailWidth * 0.75,
               child: Column(
                 children: [
+                  NaviRailItem(
+                    isSelected:
+                        activeSpaceId == null &&
+                        !activePath.startsWith('/rooms/calendar'),
+                    onTap: onGoToChats,
+                    icon: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Icon(Icons.forum_outlined),
+                    ),
+                    selectedIcon: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Icon(Icons.forum),
+                    ),
+                    toolTip: L10n.of(context).chats,
+                    unreadBadgeFilter: (room) => true,
+                  ),
+                  NaviRailItem(
+                    isSelected: activePath.startsWith('/rooms/calendar'),
+                    onTap: onGoToCalendar,
+                    icon: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Icon(Icons.calendar_month_outlined),
+                    ),
+                    selectedIcon: const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Icon(Icons.calendar_month),
+                    ),
+                    toolTip: 'Calendar',
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0,
+                      vertical: 8.0,
+                    ),
+                    child: Divider(
+                      height: 1,
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
                   Expanded(
                     child: ListView.builder(
                       scrollDirection: Axis.vertical,
-                      itemCount: allSpaces.length + 2,
+                      itemCount: allSpaces.length + 1,
                       itemBuilder: (context, i) {
-                        if (i == 0) {
-                          return NaviRailItem(
-                            isSelected: activeSpaceId == null,
-                            onTap: onGoToChats,
-                            icon: const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Icon(Icons.forum_outlined),
-                            ),
-                            selectedIcon: const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Icon(Icons.forum),
-                            ),
-                            toolTip: L10n.of(context).chats,
-                            unreadBadgeFilter: (room) => true,
-                          );
-                        }
-                        i--;
                         if (i == allSpaces.length) {
                           return NaviRailItem(
                             isSelected: false,

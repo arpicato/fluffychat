@@ -1,5 +1,6 @@
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/utils/matrix_power_level.dart';
 import 'package:fluffychat/widgets/member_actions_popup_menu_button.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
@@ -23,16 +24,19 @@ class ParticipantListItem extends StatelessWidget {
       Membership.leave => L10n.of(context).leftTheChat,
     };
 
-    final permissionBatch = switch (user.powerLevel.role) {
-      PowerLevelRole.user => '',
-      PowerLevelRole.moderator => L10n.of(context).moderator,
-      PowerLevelRole.admin => L10n.of(context).admin,
-      PowerLevelRole.owner => L10n.of(context).owner,
+    final powerLevelRole = matrixPowerLevelRoleFor(user.powerLevel);
+
+    final permissionBatch = switch (powerLevelRole) {
+      MatrixPowerLevelRole.user => '',
+      MatrixPowerLevelRole.moderator => L10n.of(context).moderator,
+      MatrixPowerLevelRole.admin => L10n.of(context).admin,
+      MatrixPowerLevelRole.owner => L10n.of(context).owner,
     };
 
-    final isAdminOrOwner =
-        user.powerLevel.role == PowerLevelRole.admin ||
-        user.powerLevel.role == PowerLevelRole.owner;
+    final isAdminOrOwner = switch (powerLevelRole) {
+      MatrixPowerLevelRole.admin || MatrixPowerLevelRole.owner => true,
+      _ => false,
+    };
 
     return ListTile(
       onTap: () => showMemberActionsPopupMenu(context: context, user: user),

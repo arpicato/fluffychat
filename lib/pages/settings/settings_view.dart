@@ -169,6 +169,14 @@ class SettingsView extends StatelessWidget {
                   : null,
             ),
             ListTile(
+              leading: const Icon(Icons.link_outlined),
+              title: const Text('Connections'),
+              onTap: () => context.go('/rooms/settings/connections'),
+              tileColor: activeRoute.startsWith('/rooms/settings/connections')
+                  ? theme.colorScheme.surfaceContainerHigh
+                  : null,
+            ),
+            ListTile(
               leading: const Icon(Icons.forum_outlined),
               title: Text(L10n.of(context).chat),
               onTap: () => context.go('/rooms/settings/chat'),

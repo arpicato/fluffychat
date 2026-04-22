@@ -1,0 +1,1075 @@
+import 'dart:async';
+
+import 'package:fluffychat/config/themes.dart';
+import 'package:fluffychat/services/messie_todo_service.dart';
+import 'package:fluffychat/utils/localized_exception_extension.dart';
+import 'package:fluffychat/widgets/avatar.dart';
+import 'package:fluffychat/widgets/layouts/max_width_body.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:matrix/matrix.dart';
+
+import '../../widgets/matrix.dart';
+import 'todo_list_detail.dart';
+
+void _showTodoError(BuildContext context, String message, Object error) {
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text('$message: $error')));
+}
+
+class TodoListDetailPageView extends StatelessWidget {
+  const TodoListDetailPageView(this.controller, {super.key});
+
+  final TodoListDetailPageController controller;
+
+  void _navigateBack(BuildContext context) {
+    if (Navigator.of(context).canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/rooms');
+  }
+
+  Future<void> _editList(BuildContext context, MessieTodoList list) async {
+    final titleController = TextEditingController(text: list.title);
+    final descriptionController = TextEditingController(text: list.description);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit todo list'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descriptionController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    final title = titleController.text.trim();
+    final description = descriptionController.text.trim();
+    titleController.dispose();
+    descriptionController.dispose();
+
+    if (confirmed != true || title.isEmpty || !context.mounted) {
+      return;
+    }
+
+    try {
+      await controller.updateList(
+        context,
+        title: title,
+        description: description,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      _showTodoError(context, 'Could not update todo list', error);
+    }
+  }
+
+  Future<void> _deleteList(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete todo list?'),
+        content: const Text(
+          'This will permanently delete the list and all of its items.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await controller.deleteList(context);
+      if (!context.mounted) return;
+      context.go('/rooms');
+    } catch (error) {
+      if (!context.mounted) return;
+      _showTodoError(context, 'Could not delete todo list', error);
+    }
+  }
+
+  Future<void> _showCollaboratorsDialog(
+    BuildContext pageContext,
+    TodoListDetailData data,
+  ) async {
+    final changed = await showDialog<bool>(
+      context: pageContext,
+      builder: (dialogContext) => _CollaboratorsDialog(
+        controller: controller,
+        data: data,
+        pageContext: pageContext,
+      ),
+    );
+    if (changed == true && pageContext.mounted) {
+      controller.refresh();
+    }
+  }
+
+  Future<void> _createItem(
+    BuildContext context,
+    TodoListDetailData data,
+  ) async {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final dueDateController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Add todo item'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: titleController,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: 'Title'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: descriptionController,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: dueDateController,
+              readOnly: true,
+              decoration: const InputDecoration(
+                labelText: 'Due date',
+                suffixIcon: Icon(Icons.calendar_today_outlined),
+              ),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: dialogContext,
+                  initialDate: DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (picked != null) {
+                  dueDateController.text = _formatDateInput(picked);
+                }
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+
+    final title = titleController.text.trim();
+    final description = descriptionController.text.trim();
+    final dueDate = _parseDateInput(dueDateController.text);
+    titleController.dispose();
+    descriptionController.dispose();
+    dueDateController.dispose();
+
+    if (confirmed != true || title.isEmpty || !context.mounted) {
+      return;
+    }
+
+    try {
+      await controller.createItem(
+        context,
+        title: title,
+        description: description,
+        dueDate: dueDate,
+        existingItems: data.items,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      _showTodoError(context, 'Could not create todo item', error);
+    }
+  }
+
+  Future<void> _editItem(BuildContext context, MessieTodoItem item) async {
+    final titleController = TextEditingController(text: item.title);
+    final descriptionController = TextEditingController(text: item.description);
+    final dueDateController = TextEditingController(
+      text: _formatDateInput(item.dueDate),
+    );
+    var completed = item.completed;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Edit todo item'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                autofocus: true,
+                decoration: const InputDecoration(labelText: 'Title'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descriptionController,
+                minLines: 2,
+                maxLines: 4,
+                decoration: const InputDecoration(labelText: 'Description'),
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Completed'),
+                value: completed,
+                onChanged: (value) => setState(() => completed = value),
+              ),
+              TextField(
+                controller: dueDateController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  labelText: 'Due date',
+                  suffixIcon: Wrap(
+                    spacing: 4,
+                    children: [
+                      if (dueDateController.text.isNotEmpty)
+                        IconButton(
+                          onPressed: () => setState(() {
+                            dueDateController.text = '';
+                          }),
+                          icon: const Icon(Icons.clear),
+                        ),
+                      IconButton(
+                        onPressed: () async {
+                          final picked = await showDatePicker(
+                            context: dialogContext,
+                            initialDate: item.dueDate ?? DateTime.now(),
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime(2100),
+                          );
+                          if (picked != null) {
+                            setState(() {
+                              dueDateController.text = _formatDateInput(picked);
+                            });
+                          }
+                        },
+                        icon: const Icon(Icons.calendar_today_outlined),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final title = titleController.text.trim();
+    final description = descriptionController.text.trim();
+    final dueDate = _parseDateInput(dueDateController.text);
+    titleController.dispose();
+    descriptionController.dispose();
+    dueDateController.dispose();
+
+    if (confirmed != true || title.isEmpty || !context.mounted) {
+      return;
+    }
+
+    try {
+      await controller.updateItem(
+        context,
+        item: item,
+        title: title,
+        description: description,
+        completed: completed,
+        dueDate: dueDate,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      _showTodoError(context, 'Could not update todo item', error);
+    }
+  }
+
+  Future<void> _deleteItem(BuildContext context, MessieTodoItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete todo item?'),
+        content: Text(
+          'Delete "${item.title.isEmpty ? 'Untitled item' : item.title}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await controller.deleteItem(context, item.id);
+    } catch (error) {
+      if (!context.mounted) return;
+      _showTodoError(context, 'Could not delete todo item', error);
+    }
+  }
+
+  Future<void> _toggleItem(
+    BuildContext context,
+    MessieTodoItem item,
+    bool completed,
+  ) async {
+    try {
+      await controller.updateItem(context, item: item, completed: completed);
+    } catch (error) {
+      if (!context.mounted) return;
+      _showTodoError(context, 'Could not update todo item', error);
+    }
+  }
+
+  Future<void> _moveItem(
+    BuildContext context,
+    TodoListDetailData data,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    try {
+      await controller.reorderItems(
+        context,
+        items: data.items,
+        oldIndex: oldIndex,
+        newIndex: newIndex,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      _showTodoError(context, 'Could not reorder todo item', error);
+    }
+  }
+
+  static String _formatDateInput(DateTime? value) {
+    if (value == null) return '';
+    final utc = value.toUtc();
+    final month = utc.month.toString().padLeft(2, '0');
+    final day = utc.day.toString().padLeft(2, '0');
+    return '${utc.year}-$month-$day';
+  }
+
+  static DateTime? _parseDateInput(String value) {
+    if (value.isEmpty) return null;
+    final parts = value.split('-');
+    if (parts.length != 3) return null;
+    final year = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final day = int.tryParse(parts[2]);
+    if (year == null || month == null || day == null) return null;
+    return DateTime.utc(year, month, day);
+  }
+
+  String _formatTimestamp(DateTime? dateTime) {
+    if (dateTime == null) return '';
+    final utc = dateTime.toUtc();
+    final month = utc.month.toString().padLeft(2, '0');
+    final day = utc.day.toString().padLeft(2, '0');
+    return '${utc.year}-$month-$day';
+  }
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<TodoListDetailData>(
+    future: controller.loadFuture,
+    builder: (context, snapshot) {
+      final theme = Theme.of(context);
+
+      if (snapshot.connectionState != ConnectionState.done) {
+        final title = controller.widget.initialTitle?.trim().isNotEmpty == true
+            ? controller.widget.initialTitle!
+            : 'Todo list';
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(title),
+            automaticallyImplyLeading: false,
+            leading: FluffyThemes.isColumnMode(context)
+                ? null
+                : BackButton(onPressed: () => _navigateBack(context)),
+            centerTitle: FluffyThemes.isColumnMode(context),
+          ),
+          body: const Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      if (snapshot.hasError) {
+        final title = controller.widget.initialTitle?.trim().isNotEmpty == true
+            ? controller.widget.initialTitle!
+            : 'Todo list';
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(title),
+            automaticallyImplyLeading: false,
+            leading: FluffyThemes.isColumnMode(context)
+                ? null
+                : BackButton(onPressed: () => _navigateBack(context)),
+            centerTitle: FluffyThemes.isColumnMode(context),
+          ),
+          body: MaxWidthBody(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.cloud_off_outlined, size: 48),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Could not load todo list.',
+                      style: theme.textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${snapshot.error}',
+                      style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: controller.refresh,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      final data = snapshot.requireData;
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(data.list.title.isEmpty ? 'Todo list' : data.list.title),
+          automaticallyImplyLeading: false,
+          leading: FluffyThemes.isColumnMode(context)
+              ? null
+              : BackButton(onPressed: () => _navigateBack(context)),
+          centerTitle: FluffyThemes.isColumnMode(context),
+          actions: [
+            IconButton(
+              onPressed: () => _createItem(context, data),
+              icon: const Icon(Icons.add),
+              tooltip: 'Add item',
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    _editList(context, data.list);
+                  case 'collaborators':
+                    _showCollaboratorsDialog(context, data);
+                  case 'delete':
+                    _deleteList(context);
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'edit', child: Text('Edit list')),
+                PopupMenuItem(
+                  value: 'collaborators',
+                  child: Text('Manage collaborators'),
+                ),
+                PopupMenuItem(value: 'delete', child: Text('Delete list')),
+              ],
+            ),
+          ],
+        ),
+        body: MaxWidthBody(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.list.title.isEmpty
+                            ? 'Untitled list'
+                            : data.list.title,
+                        style: theme.textTheme.titleLarge,
+                      ),
+                      if (data.list.description.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          data.list.description,
+                          style: theme.textTheme.bodyMedium,
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          Chip(
+                            avatar: const Icon(
+                              Icons.format_list_bulleted,
+                              size: 18,
+                            ),
+                            label: Text('${data.items.length} items'),
+                          ),
+                          Chip(
+                            avatar: const Icon(
+                              Icons.check_circle_outline,
+                              size: 18,
+                            ),
+                            label: Text(
+                              '${data.items.where((item) => item.completed).length} completed',
+                            ),
+                          ),
+                          Chip(
+                            avatar: const Icon(Icons.group_outlined, size: 18),
+                            label: Text(
+                              '${data.collaborators.length} collaborator${data.collaborators.length == 1 ? '' : 's'}',
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (data.collaboratorsError != null) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          'Collaborators are temporarily unavailable. You can still work with the list and items.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              Card(
+                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: ListTile(
+                  leading: const Icon(Icons.add_task_outlined),
+                  title: const Text('Add todo item'),
+                  subtitle: const Text('Create a new item in this list.'),
+                  trailing: FilledButton.tonal(
+                    onPressed: () => _createItem(context, data),
+                    child: const Text('Add'),
+                  ),
+                ),
+              ),
+              if (data.items.isEmpty)
+                Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    leading: const Icon(Icons.playlist_add_check_outlined),
+                    title: const Text('No items yet'),
+                    subtitle: const Text(
+                      'This list exists, but it does not have any todo items yet.',
+                    ),
+                    trailing: FilledButton.tonal(
+                      onPressed: () => _createItem(context, data),
+                      child: const Text('Add first item'),
+                    ),
+                  ),
+                ),
+              ...data.items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final item = entry.value;
+                final descriptionParts = <String>[
+                  if (item.description.isNotEmpty) item.description,
+                  if (item.dueDate != null)
+                    'Due ${_formatTimestamp(item.dueDate)}',
+                ];
+                return Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    leading: Checkbox(
+                      value: item.completed,
+                      onChanged: (value) {
+                        if (value == null) return;
+                        _toggleItem(context, item, value);
+                      },
+                    ),
+                    title: Text(
+                      item.title.isEmpty ? 'Untitled item' : item.title,
+                      style: item.completed
+                          ? theme.textTheme.titleMedium?.copyWith(
+                              decoration: TextDecoration.lineThrough,
+                            )
+                          : theme.textTheme.titleMedium,
+                    ),
+                    subtitle: descriptionParts.isEmpty
+                        ? const Text('No description')
+                        : Text(descriptionParts.join('\n')),
+                    isThreeLine: descriptionParts.length > 1,
+                    trailing: Wrap(
+                      spacing: 4,
+                      children: [
+                        IconButton(
+                          onPressed: index == 0
+                              ? null
+                              : () =>
+                                    _moveItem(context, data, index, index - 1),
+                          icon: const Icon(Icons.arrow_upward_outlined),
+                          tooltip: 'Move up',
+                        ),
+                        IconButton(
+                          onPressed: index == data.items.length - 1
+                              ? null
+                              : () =>
+                                    _moveItem(context, data, index, index + 1),
+                          icon: const Icon(Icons.arrow_downward_outlined),
+                          tooltip: 'Move down',
+                        ),
+                        PopupMenuButton<String>(
+                          onSelected: (value) {
+                            switch (value) {
+                              case 'edit':
+                                _editItem(context, item);
+                              case 'delete':
+                                _deleteItem(context, item);
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Edit item'),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Delete item'),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _CollaboratorsDialog extends StatefulWidget {
+  const _CollaboratorsDialog({
+    required this.controller,
+    required this.data,
+    required this.pageContext,
+  });
+
+  final TodoListDetailPageController controller;
+  final TodoListDetailData data;
+  final BuildContext pageContext;
+
+  @override
+  State<_CollaboratorsDialog> createState() => _CollaboratorsDialogState();
+}
+
+class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
+  static const _searchResultsSectionHeight = 180.0;
+
+  late final TextEditingController _searchController;
+  Future<List<Profile>>? _searchFuture;
+  Timer? _searchCooldown;
+  bool _resolving = false;
+  String? _statusMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _searchCooldown?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _updateSearch(String value) {
+    _searchCooldown?.cancel();
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) {
+      setState(() {
+        _searchFuture = null;
+        _statusMessage = null;
+      });
+      return;
+    }
+    _searchCooldown = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = null;
+        _searchFuture = widget.controller.searchMatrixUsers(context, trimmed);
+      });
+    });
+  }
+
+  Future<void> _removeCollaborator(String collaboratorId) async {
+    try {
+      await widget.controller.removeCollaborator(
+        context,
+        collaboratorId,
+        refreshAfter: false,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!mounted) return;
+      _showTodoError(context, 'Could not remove collaborator', error);
+    }
+  }
+
+  Future<void> _addCollaborator(Profile profile) async {
+    setState(() {
+      _resolving = true;
+      _statusMessage = null;
+    });
+    try {
+      final messieUser = await widget.controller.findMessieUserByMatrixId(
+        context,
+        profile.userId,
+      );
+      if (!mounted) return;
+
+      if (messieUser == null) {
+        setState(() {
+          _statusMessage =
+              '${profile.userId} exists in Matrix, but does not have a Messie account yet. Invites are not available here yet.';
+        });
+        return;
+      }
+
+      final alreadyCollaborator =
+          messieUser.id == widget.data.list.ownerId ||
+          widget.data.collaborators.any(
+            (collaborator) => collaborator.collaboratorId == messieUser.id,
+          );
+      if (alreadyCollaborator) {
+        setState(() {
+          _statusMessage = 'This user already has access to the list.';
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      await widget.controller.addCollaborator(
+        context,
+        messieUser.id,
+        refreshAfter: false,
+      );
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (error) {
+      if (!widget.pageContext.mounted) return;
+      _showTodoError(widget.pageContext, 'Could not add collaborator', error);
+    } finally {
+      if (mounted) {
+        setState(() => _resolving = false);
+      }
+    }
+  }
+
+  MessieTodoCollaborator? _findCollaboratorByMatrixId(String matrixId) {
+    for (final collaborator in widget.data.collaborators) {
+      if (collaborator.matrixId == matrixId) {
+        return collaborator;
+      }
+    }
+    return null;
+  }
+
+  String _matrixLocalpart(String matrixId) =>
+      matrixId.localpart ?? matrixId.replaceFirst('@', '').split(':').first;
+
+  String _collaboratorUsername(MessieTodoCollaborator collaborator) {
+    final username = collaborator.username.trim();
+    if (username.isNotEmpty) return username;
+    return _matrixLocalpart(collaborator.matrixId);
+  }
+
+  String _collaboratorTitle(MessieTodoCollaborator collaborator) {
+    final displayName = collaborator.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+    return _collaboratorUsername(collaborator);
+  }
+
+  String _rowTitle({
+    Profile? profile,
+    MessieTodoCollaborator? collaborator,
+    required String matrixId,
+  }) {
+    final displayName = profile?.displayName?.trim();
+    if (displayName != null && displayName.isNotEmpty) {
+      return displayName;
+    }
+    if (collaborator != null) {
+      return _collaboratorTitle(collaborator);
+    }
+    return _matrixLocalpart(matrixId);
+  }
+
+  String _rowUsername({
+    required String matrixId,
+    MessieTodoCollaborator? collaborator,
+  }) {
+    if (collaborator != null) {
+      return _collaboratorUsername(collaborator);
+    }
+    return _matrixLocalpart(matrixId);
+  }
+
+  Widget _buildCollaboratorRow({
+    required String title,
+    required String username,
+    required String matrixId,
+    required IconData actionIcon,
+    required String actionTooltip,
+    required VoidCallback onAction,
+    Uri? avatarUrl,
+  }) => ListTile(
+    contentPadding: EdgeInsets.zero,
+    leading: Avatar(
+      name: title,
+      mxContent: avatarUrl,
+      presenceUserId: matrixId,
+    ),
+    title: Text(title),
+    subtitle: Text('$username\n$matrixId'),
+    isThreeLine: true,
+    trailing: IconButton(
+      icon: Icon(actionIcon),
+      tooltip: actionTooltip,
+      onPressed: onAction,
+    ),
+    onTap: onAction,
+  );
+
+  Widget _buildCollaboratorsList() {
+    if (widget.data.collaborators.isEmpty) {
+      return const Align(
+        alignment: Alignment.topLeft,
+        child: Text('No collaborators yet.'),
+      );
+    }
+
+    return ListView(
+      itemExtent: 84,
+      children: widget.data.collaborators
+          .map(
+            (collaborator) => FutureBuilder<Profile>(
+              future: Matrix.of(
+                context,
+              ).client.getProfileFromUserId(collaborator.matrixId),
+              builder: (context, snapshot) {
+                final profile = snapshot.data;
+                return _buildCollaboratorRow(
+                  title: _rowTitle(
+                    profile: profile,
+                    collaborator: collaborator,
+                    matrixId: collaborator.matrixId,
+                  ),
+                  username: _rowUsername(
+                    matrixId: collaborator.matrixId,
+                    collaborator: collaborator,
+                  ),
+                  matrixId: collaborator.matrixId,
+                  avatarUrl: profile?.avatarUrl,
+                  actionIcon: Icons.person_remove_outlined,
+                  actionTooltip: 'Remove collaborator',
+                  onAction: () =>
+                      _removeCollaborator(collaborator.collaboratorId),
+                );
+              },
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildSearchResults(BuildContext context) {
+    if (_resolving) {
+      return const Center(child: CircularProgressIndicator.adaptive());
+    }
+
+    if (_searchFuture == null) {
+      return const Align(
+        alignment: Alignment.topLeft,
+        child: Text('Search Matrix users to add them as collaborators.'),
+      );
+    }
+
+    return FutureBuilder<List<Profile>>(
+      future: _searchFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator.adaptive());
+        }
+
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: Text(snapshot.error!.toLocalizedString(context)),
+            ),
+          );
+        }
+
+        final profiles = snapshot.data ?? const <Profile>[];
+        if (profiles.isEmpty) {
+          return const Align(
+            alignment: Alignment.topLeft,
+            child: Text('No users found.'),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: profiles.length,
+          itemBuilder: (context, index) {
+            final profile = profiles[index];
+            final collaborator = _findCollaboratorByMatrixId(profile.userId);
+            final alreadyCollaborator = collaborator != null;
+            return _buildCollaboratorRow(
+              title: _rowTitle(
+                profile: profile,
+                collaborator: collaborator,
+                matrixId: profile.userId,
+              ),
+              username: _rowUsername(
+                matrixId: profile.userId,
+                collaborator: collaborator,
+              ),
+              matrixId: profile.userId,
+              avatarUrl: profile.avatarUrl,
+              actionIcon: alreadyCollaborator
+                  ? Icons.person_remove_outlined
+                  : Icons.person_add_outlined,
+              actionTooltip: alreadyCollaborator
+                  ? 'Remove collaborator'
+                  : 'Add collaborator',
+              onAction: alreadyCollaborator
+                  ? () => _removeCollaborator(collaborator.collaboratorId)
+                  : () => _addCollaborator(profile),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Collaborators'),
+    content: SizedBox(
+      width: 420,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _searchController,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Search by Matrix user',
+              hintText: '@alice:messie.localhost',
+              prefixIcon: Icon(Icons.search_outlined),
+            ),
+            onChanged: _updateSearch,
+          ),
+          if (_statusMessage != null) ...[
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _statusMessage!,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          SizedBox(
+            height: _searchResultsSectionHeight,
+            child: _searchFuture == null
+                ? _buildCollaboratorsList()
+                : _buildSearchResults(context),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Close'),
+      ),
+    ],
+  );
+}
