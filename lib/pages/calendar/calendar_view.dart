@@ -2187,10 +2187,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   label: 'Next up',
                                   value: nextEvent == null
                                       ? 'None'
-                                      : _formatEventRangeLabel(
-                                          context,
-                                          nextEvent,
-                                        ),
+                                      : nextEvent.title,
                                   onTap: nextEvent == null
                                       ? null
                                       : () => context.push(
@@ -2281,7 +2278,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
             padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
                   children: [
@@ -2300,6 +2296,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 10),
                 Text(
                   value,
                   maxLines: 1,
