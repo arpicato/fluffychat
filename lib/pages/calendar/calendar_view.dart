@@ -2498,7 +2498,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       barrierDismissible: true,
       barrierLabel: 'Close calendar picker',
       barrierColor: Colors.black54,
-      pageBuilder: (dialogContext, _, __) {
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
         return SafeArea(
           child: Align(
             alignment: Alignment.topCenter,
