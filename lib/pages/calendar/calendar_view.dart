@@ -2122,7 +2122,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                     ValueListenableBuilder<DateTime>(
                                       valueListenable: _visibleMonthNotifier,
                                       builder: (context, visibleMonth, _) => Text(
-                                        DateFormat.yMMMM().format(visibleMonth),
+                                        _formatMobileHeaderMonth(visibleMonth),
                                         style: theme.textTheme.headlineSmall,
                                       ),
                                     ),
@@ -2493,93 +2493,134 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
     Map<String, Color> sourceColors,
   ) {
-    return showModalBottomSheet<void>(
+    return showGeneralDialog<void>(
       context: context,
-      useSafeArea: true,
-      backgroundColor: theme.colorScheme.surface,
-      builder: (sheetContext) {
-        return AnimatedBuilder(
-          animation: Listenable.merge([
-            _visibilityVersionNotifier,
-            _visibleMonthNotifier,
-            _selectedDayNotifier,
-          ]),
-          builder: (context, _) {
-            final weeks = _monthWeeks(_visibleMonth);
-            final labelStyle = theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            );
-            const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+      barrierDismissible: true,
+      barrierLabel: 'Close calendar picker',
+      barrierColor: Colors.black54,
+      pageBuilder: (dialogContext, _, __) {
+        return SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: Material(
+                color: theme.colorScheme.surface,
+                elevation: 12,
+                borderRadius: BorderRadius.circular(24),
+                clipBehavior: Clip.antiAlias,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([
+                      _visibilityVersionNotifier,
+                      _visibleMonthNotifier,
+                      _selectedDayNotifier,
+                    ]),
+                    builder: (context, _) {
+                      final weeks = _monthWeeks(_visibleMonth);
+                      final labelStyle = theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      );
+                      const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-            return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        DateFormat.yMMMM().format(_visibleMonth),
-                        style: theme.textTheme.headlineSmall,
-                      ),
-                      const Spacer(),
-                      IconButton(
-                        onPressed: () => _setVisibleMonth(
-                          DateTime(_visibleMonth.year, _visibleMonth.month - 1),
-                        ),
-                        icon: const Icon(Icons.chevron_left),
-                      ),
-                      IconButton(
-                        onPressed: () => _setVisibleMonth(
-                          DateTime(_visibleMonth.year, _visibleMonth.month + 1),
-                        ),
-                        icon: const Icon(Icons.chevron_right),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: weekdays
-                        .map(
-                          (label) => Expanded(
-                            child: Center(
-                              child: Text(label, style: labelStyle),
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  DateFormat.yMMMM().format(_visibleMonth),
+                                  style: theme.textTheme.headlineSmall,
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  onPressed: () => _setVisibleMonth(
+                                    DateTime(
+                                      _visibleMonth.year,
+                                      _visibleMonth.month - 1,
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.chevron_left),
+                                ),
+                                IconButton(
+                                  onPressed: () => _setVisibleMonth(
+                                    DateTime(
+                                      _visibleMonth.year,
+                                      _visibleMonth.month + 1,
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.chevron_right),
+                                ),
+                              ],
                             ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  ...weeks.map(
-                    (week) => Padding(
-                      padding: const EdgeInsets.only(bottom: 6),
-                      child: Row(
-                        children: week
-                            .map(
-                              (day) => Expanded(
-                                child: _buildMobileMonthPickerDay(
-                                  context,
-                                  theme,
-                                  day: day,
-                                  eventsByDay: eventsByDay,
-                                  sourceColors: sourceColors,
-                                  onSelected: () {
-                                    _selectDay(day);
-                                    Navigator.of(sheetContext).pop();
-                                    _scrollMobileScheduleToDay(day);
-                                  },
+                            const SizedBox(height: 12),
+                            Row(
+                              children: weekdays
+                                  .map(
+                                    (label) => Expanded(
+                                      child: Center(
+                                        child: Text(label, style: labelStyle),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 8),
+                            ...weeks.map(
+                              (week) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: week
+                                      .map(
+                                        (day) => Expanded(
+                                          child: _buildMobileMonthPickerDay(
+                                            context,
+                                            theme,
+                                            day: day,
+                                            eventsByDay: eventsByDay,
+                                            sourceColors: sourceColors,
+                                            onSelected: () {
+                                              _selectDay(day);
+                                              Navigator.of(dialogContext).pop();
+                                              _scrollMobileScheduleToDay(day);
+                                            },
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
                                 ),
                               ),
-                            )
-                            .toList(),
-                      ),
-                    ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
                   ),
-                ],
+                ),
               ),
-            );
-          },
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, -0.08),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
         );
       },
     );
@@ -2901,6 +2942,13 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final weekStart = day.subtract(Duration(days: day.weekday - DateTime.monday));
     final weekEnd = weekStart.add(const Duration(days: 6));
     return '${DateFormat('d MMM').format(weekStart)} – ${DateFormat('d MMM').format(weekEnd)}';
+  }
+
+  String _formatMobileHeaderMonth(DateTime month) {
+    final now = DateTime.now();
+    return month.year == now.year
+        ? DateFormat.MMMM().format(month)
+        : DateFormat.yMMMM().format(month);
   }
 
   bool _isSameDay(DateTime left, DateTime right) =>
