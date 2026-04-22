@@ -2694,7 +2694,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         SizedBox(
           width: 48,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
                 DateFormat.E().format(day),
