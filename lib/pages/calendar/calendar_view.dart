@@ -603,6 +603,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   Set<String> _knownCategoryNames = <String>{};
   final Map<String, GlobalKey> _mobileDaySectionKeys = <String, GlobalKey>{};
   bool _hasInitializedSourceSelection = false;
+  bool _hasAutoScrolledMobileSchedule = false;
   _CalendarPageData? _latestPageData;
 
   CalendarPageController get controller => widget.controller;
@@ -677,6 +678,19 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     _scrollMobileScheduleToDay(today);
   }
 
+  void _autoScrollMobileScheduleToToday(List<DateTime> visibleDays) {
+    if (_hasAutoScrolledMobileSchedule) return;
+    _hasAutoScrolledMobileSchedule = true;
+    if (visibleDays.isEmpty) return;
+
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    final targetDay =
+        visibleDays.where((day) => !day.isBefore(normalizedToday)).firstOrNull ??
+        visibleDays.last;
+    _scrollMobileScheduleToDay(targetDay);
+  }
+
   Future<_CalendarPageData> _load() async {
     final matrix = Matrix.of(context);
     final session = await BackendSessionService().ensureSession(
@@ -705,6 +719,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
 
   void _refreshPage() {
     setState(() {
+      _hasAutoScrolledMobileSchedule = false;
       _loadFuture = _load();
     });
     controller.refresh();
@@ -2044,6 +2059,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         final eventsByDay = _buildEventsByDay(visibleEvents);
         final groupedEntries = eventsByDay.entries.toList()
           ..sort((left, right) => left.key.compareTo(right.key));
+        _autoScrollMobileScheduleToToday(
+          groupedEntries.map((entry) => entry.key).toList(),
+        );
         MessieCalendarEvent? nextUpcomingEvent;
         for (final event in visibleEvents) {
           if (!calendarEventDisplayRange(event).end.isAfter(DateTime.now())) {
