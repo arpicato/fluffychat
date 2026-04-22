@@ -2830,16 +2830,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     return parts.join(' · ');
   }
 
-  String _formatEventRangeLabel(
-    BuildContext context,
-    MessieCalendarEvent event,
-  ) {
-    if (event.allDay) {
-      return 'All day';
-    }
-    return _formatTime(context, event.startsAt);
-  }
-
   String _formatMobileWeekRange(DateTime day) {
     final weekStart = day.subtract(Duration(days: day.weekday - DateTime.monday));
     final weekEnd = weekStart.add(const Duration(days: 6));
