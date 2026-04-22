@@ -596,6 +596,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   late Future<_CalendarPageData> _loadFuture;
   late final ValueNotifier<DateTime> _visibleMonthNotifier;
   late final ValueNotifier<DateTime> _selectedDayNotifier;
+  late final ValueNotifier<int> _visibilityVersionNotifier;
   Set<String> _visibleSourceIds = <String>{};
   Set<String> _visibleCategoryNames = <String>{};
   Set<String> _knownSourceIds = <String>{};
@@ -615,6 +616,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     _selectedDayNotifier = ValueNotifier<DateTime>(
       DateTime(now.year, now.month, now.day),
     );
+    _visibilityVersionNotifier = ValueNotifier<int>(0);
     _loadFuture = _load();
   }
 
@@ -622,6 +624,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   void dispose() {
     _visibleMonthNotifier.dispose();
     _selectedDayNotifier.dispose();
+    _visibilityVersionNotifier.dispose();
     super.dispose();
   }
 
@@ -1018,13 +1021,12 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   }
 
   void _toggleSourceVisibility(String sourceId) {
-    setState(() {
-      if (_visibleSourceIds.contains(sourceId)) {
-        _visibleSourceIds.remove(sourceId);
-      } else {
-        _visibleSourceIds.add(sourceId);
-      }
-    });
+    if (_visibleSourceIds.contains(sourceId)) {
+      _visibleSourceIds.remove(sourceId);
+    } else {
+      _visibleSourceIds.add(sourceId);
+    }
+    _visibilityVersionNotifier.value++;
   }
 
   Map<String, List<MessieCalendarSource>> _sourcesByCategory(
@@ -1062,13 +1064,12 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   ) {
     if (sources.isEmpty) return;
     final category = _normalizeCalendarCategory(sources.first.category);
-    setState(() {
-      if (visible) {
-        _visibleCategoryNames.add(category);
-      } else {
-        _visibleCategoryNames.remove(category);
-      }
-    });
+    if (visible) {
+      _visibleCategoryNames.add(category);
+    } else {
+      _visibleCategoryNames.remove(category);
+    }
+    _visibilityVersionNotifier.value++;
   }
 
   Future<void> _showCreateEventPlaceholder(DateTime day) async {
@@ -1252,28 +1253,13 @@ class _CalendarPageViewState extends State<CalendarPageView> {
 
           final data = snapshot.requireData;
           _syncVisibleSources(data.sources);
-          final visibleEvents = _visibleEvents(data.events);
-          final eventsByDay = _buildEventsByDay(visibleEvents);
           final sourceColors = _sourceColors(data.sources);
 
           if (isDesktopLayout) {
-            return _buildDesktopCalendar(
-              context,
-              theme,
-              data,
-              visibleEvents,
-              eventsByDay,
-              sourceColors,
-            );
+            return _buildDesktopCalendar(context, theme, data, sourceColors);
           }
 
-          return _buildMobileCalendar(
-            context,
-            theme,
-            data,
-            visibleEvents,
-            eventsByDay,
-          );
+          return _buildMobileCalendar(context, theme, data);
         },
       ),
     );
@@ -1283,8 +1269,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     BuildContext context,
     ThemeData theme,
     _CalendarPageData data,
-    List<MessieCalendarEvent> visibleEvents,
-    Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
     Map<String, Color> sourceColors,
   ) {
     return Column(
@@ -1351,205 +1335,210 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         ),
         const Divider(height: 1),
         Expanded(
-          child: Row(
-            children: [
-              Container(
-                width: 320,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerLowest,
-                  border: Border(right: BorderSide(color: theme.dividerColor)),
-                ),
-                child: ListView(
-                  padding: const EdgeInsets.all(20),
-                  children: [
-                    AnimatedBuilder(
-                      animation: Listenable.merge([
-                        _visibleMonthNotifier,
-                        _selectedDayNotifier,
-                      ]),
-                      builder: (context, _) => _buildMiniMonth(
-                        context,
-                        theme,
-                        eventsByDay,
-                        sourceColors,
+          child: AnimatedBuilder(
+            animation: Listenable.merge([
+              _visibilityVersionNotifier,
+              _visibleMonthNotifier,
+              _selectedDayNotifier,
+            ]),
+            builder: (context, _) {
+              final visibleEvents = _visibleEvents(data.events);
+              final eventsByDay = _buildEventsByDay(visibleEvents);
+              return Row(
+                children: [
+                  Container(
+                    width: 320,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surfaceContainerLowest,
+                      border: Border(
+                        right: BorderSide(color: theme.dividerColor),
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    Wrap(
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      spacing: 6,
-                      runSpacing: 6,
+                    child: ListView(
+                      padding: const EdgeInsets.all(20),
                       children: [
-                        Text(
-                          'Imported calendars',
-                          style: theme.textTheme.titleMedium,
+                        _buildMiniMonth(
+                          context,
+                          theme,
+                          eventsByDay,
+                          sourceColors,
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    if (data.sources.isEmpty)
-                      Card(
-                        margin: EdgeInsets.zero,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'No calendars imported yet',
-                                style: theme.textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 6),
-                              Text(
-                                'Import an .ics file or calendar link to populate this view.',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                              ),
-                            ],
-                          ),
+                        const SizedBox(height: 20),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: [
+                            Text(
+                              'Imported calendars',
+                              style: theme.textTheme.titleMedium,
+                            ),
+                          ],
                         ),
-                      ),
-                    ..._sourcesByCategory(data.sources).entries.map((entry) {
-                      final category = entry.key;
-                      final sources = entry.value;
-                      final isVisible = _isCategoryVisible(sources);
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          child: Column(
-                            children: [
-                              Row(
+                        const SizedBox(height: 8),
+                        if (data.sources.isEmpty)
+                          Card(
+                            margin: EdgeInsets.zero,
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Checkbox(
-                                    value: isVisible,
-                                    onChanged: (value) =>
-                                        _toggleCategoryVisibility(
-                                          sources,
-                                          value ?? false,
-                                        ),
+                                  Text(
+                                    'No calendars imported yet',
+                                    style: theme.textTheme.titleMedium,
                                   ),
-                                  Expanded(
-                                    child: Text(
-                                      category,
-                                      style: theme.textTheme.titleSmall,
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Import an .ics file or calendar link to populate this view.',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
                               ),
-                              const Divider(height: 12),
-                              ...sources.map(
-                                (source) => Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 2,
-                                  ),
-                                  child: Row(
+                            ),
+                          ),
+                        ..._sourcesByCategory(data.sources).entries.map((
+                          entry,
+                        ) {
+                          final category = entry.key;
+                          final sources = entry.value;
+                          final isVisible = _isCategoryVisible(sources);
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              child: Column(
+                                children: [
+                                  Row(
                                     children: [
                                       Checkbox(
-                                        value: _visibleSourceIds.contains(
-                                          source.id,
-                                        ),
-                                        onChanged: (_) =>
-                                            _toggleSourceVisibility(source.id),
+                                        value: isVisible,
+                                        onChanged: (value) =>
+                                            _toggleCategoryVisibility(
+                                              sources,
+                                              value ?? false,
+                                            ),
                                       ),
-                                      Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: BoxDecoration(
-                                          color:
-                                              sourceColors[source.id] ??
-                                              theme.colorScheme.primary,
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
-                                          source.displayName,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: theme.textTheme.bodyMedium,
+                                          category,
+                                          style: theme.textTheme.titleSmall,
                                         ),
-                                      ),
-                                      if (source.importMode == 'link')
-                                        IconButton(
-                                          tooltip: 'Refresh calendar',
-                                          visualDensity: VisualDensity.compact,
-                                          onPressed: () =>
-                                              _refreshSource(context, source),
-                                          icon: const Icon(
-                                            Icons.refresh_outlined,
-                                          ),
-                                        ),
-                                      PopupMenuButton<String>(
-                                        tooltip: 'Calendar actions',
-                                        onSelected: (action) =>
-                                            _handleSourceAction(
-                                              context,
-                                              source,
-                                              action,
-                                            ),
-                                        itemBuilder: (context) => [
-                                          const PopupMenuItem(
-                                            value: 'rename',
-                                            child: Text('Rename'),
-                                          ),
-                                          if (source.importMode == 'link')
-                                            const PopupMenuItem(
-                                              value: 'refresh',
-                                              child: Text('Refresh'),
-                                            ),
-                                          const PopupMenuItem(
-                                            value: 'delete',
-                                            child: Text('Delete'),
-                                          ),
-                                        ],
                                       ),
                                     ],
                                   ),
-                                ),
+                                  const Divider(height: 12),
+                                  ...sources.map(
+                                    (source) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 2,
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Checkbox(
+                                            value: _visibleSourceIds.contains(
+                                              source.id,
+                                            ),
+                                            onChanged: (_) =>
+                                                _toggleSourceVisibility(
+                                                  source.id,
+                                                ),
+                                          ),
+                                          Container(
+                                            width: 10,
+                                            height: 10,
+                                            decoration: BoxDecoration(
+                                              color:
+                                                  sourceColors[source.id] ??
+                                                  theme.colorScheme.primary,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          Expanded(
+                                            child: Text(
+                                              source.displayName,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: theme.textTheme.bodyMedium,
+                                            ),
+                                          ),
+                                          if (source.importMode == 'link')
+                                            IconButton(
+                                              tooltip: 'Refresh calendar',
+                                              visualDensity:
+                                                  VisualDensity.compact,
+                                              onPressed: () => _refreshSource(
+                                                context,
+                                                source,
+                                              ),
+                                              icon: const Icon(
+                                                Icons.refresh_outlined,
+                                              ),
+                                            ),
+                                          PopupMenuButton<String>(
+                                            tooltip: 'Calendar actions',
+                                            onSelected: (action) =>
+                                                _handleSourceAction(
+                                                  context,
+                                                  source,
+                                                  action,
+                                                ),
+                                            itemBuilder: (context) => [
+                                              const PopupMenuItem(
+                                                value: 'rename',
+                                                child: Text('Rename'),
+                                              ),
+                                              if (source.importMode == 'link')
+                                                const PopupMenuItem(
+                                                  value: 'refresh',
+                                                  child: Text('Refresh'),
+                                                ),
+                                              const PopupMenuItem(
+                                                value: 'delete',
+                                                child: Text('Delete'),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                          );
+                        }),
+                        const SizedBox(height: 20),
+                        _buildSelectedDayCard(
+                          context,
+                          theme,
+                          eventsByDay,
+                          sourceColors,
                         ),
-                      );
-                    }),
-                    const SizedBox(height: 20),
-                    ValueListenableBuilder<DateTime>(
-                      valueListenable: _selectedDayNotifier,
-                      builder: (context, _, _) => _buildSelectedDayCard(
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      child: _buildMonthGrid(
                         context,
                         theme,
+                        visibleEvents,
                         eventsByDay,
                         sourceColors,
                       ),
                     ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([
-                      _visibleMonthNotifier,
-                      _selectedDayNotifier,
-                    ]),
-                    builder: (context, _) => _buildMonthGrid(
-                      context,
-                      theme,
-                      visibleEvents,
-                      eventsByDay,
-                      sourceColors,
-                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
         ),
       ],
@@ -2002,129 +1991,149 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     BuildContext context,
     ThemeData theme,
     _CalendarPageData data,
-    List<MessieCalendarEvent> visibleEvents,
-    Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
   ) {
-    final groupedEvents = <DateTime, List<MessieCalendarEvent>>{};
-    groupedEvents.addAll(eventsByDay);
-    final groupedEntries = groupedEvents.entries.toList()
-      ..sort((left, right) => left.key.compareTo(right.key));
+    return AnimatedBuilder(
+      animation: _visibilityVersionNotifier,
+      builder: (context, _) {
+        final visibleEvents = _visibleEvents(data.events);
+        final eventsByDay = _buildEventsByDay(visibleEvents);
+        final groupedEvents = <DateTime, List<MessieCalendarEvent>>{};
+        groupedEvents.addAll(eventsByDay);
+        final groupedEntries = groupedEvents.entries.toList()
+          ..sort((left, right) => left.key.compareTo(right.key));
 
-    return MaxWidthBody(
-      withScrolling: false,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'Imported calendars',
-              style: theme.textTheme.titleMedium,
-            ),
-          ),
-          const SizedBox(height: 8),
-          if (data.sources.isEmpty)
-            Card(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: ListTile(
-                leading: const Icon(Icons.calendar_month_outlined),
-                title: const Text('No calendars imported yet'),
-                subtitle: const Text(
-                  'Import an .ics file to bring your existing calendar events into FluffyChat.',
-                ),
-                trailing: FilledButton.tonal(
-                  onPressed: () => _openImportCalendarFlow(context),
-                  child: const Text('Import'),
+        return MaxWidthBody(
+          withScrolling: false,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Imported calendars',
+                  style: theme.textTheme.titleMedium,
                 ),
               ),
-            ),
-          ...data.sources.map(
-            (source) => Card(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: ListTile(
-                leading: const Icon(Icons.calendar_today_outlined),
-                title: Text(_sourceLabel(source)),
-                subtitle: Text(
-                  _formatSourceSubtitle(source),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 8),
+              if (data.sources.isEmpty)
+                Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    leading: const Icon(Icons.calendar_month_outlined),
+                    title: const Text('No calendars imported yet'),
+                    subtitle: const Text(
+                      'Import an .ics file to bring your existing calendar events into FluffyChat.',
+                    ),
+                    trailing: FilledButton.tonal(
+                      onPressed: () => _openImportCalendarFlow(context),
+                      child: const Text('Import'),
+                    ),
+                  ),
                 ),
-                trailing: PopupMenuButton<String>(
-                  onSelected: (action) =>
-                      _handleSourceAction(context, source, action),
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'rename', child: Text('Rename')),
-                    if (source.importMode == 'link')
-                      const PopupMenuItem(
-                        value: 'refresh',
-                        child: Text('Refresh'),
+              ...data.sources.map(
+                (source) => Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: ListTile(
+                    leading: const Icon(Icons.calendar_today_outlined),
+                    title: Text(_sourceLabel(source)),
+                    subtitle: Text(
+                      _formatSourceSubtitle(source),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (action) =>
+                          _handleSourceAction(context, source, action),
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'rename',
+                          child: Text('Rename'),
+                        ),
+                        if (source.importMode == 'link')
+                          const PopupMenuItem(
+                            value: 'refresh',
+                            child: Text('Refresh'),
+                          ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text('Events', style: theme.textTheme.titleMedium),
+              ),
+              const SizedBox(height: 8),
+              if (groupedEntries.isEmpty)
+                const Card(
+                  margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: ListTile(
+                    leading: Icon(Icons.event_note_outlined),
+                    title: Text('No upcoming imported events'),
+                    subtitle: Text(
+                      'Imported events will appear here and in the main workspace list.',
+                    ),
+                  ),
+                ),
+              for (final entry in groupedEntries) ...[
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                  child: Text(
+                    _formatShortDate(entry.key),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+                ...entry.value.map(
+                  (event) => Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: ListTile(
+                      onTap: () => context.push(
+                        '/rooms/calendar/events/${event.id}',
+                        extra: <String, Object?>{
+                          'title': event.title,
+                          'sourceDisplayName': event.sourceDisplayName,
+                        },
                       ),
-                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                  ],
+                      leading: const Icon(Icons.event_outlined),
+                      title: Text(event.title),
+                      subtitle: Text(
+                        [
+                          if (event.sourceDisplayName.isNotEmpty)
+                            event.sourceDisplayName,
+                          if (event.location.isNotEmpty) event.location,
+                          if (event.description.isNotEmpty) event.description,
+                        ].join(' · '),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Text(
+                        event.allDay
+                            ? 'All day'
+                            : _formatTime(context, event.startsAt),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              ],
+            ],
           ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text('Events', style: theme.textTheme.titleMedium),
-          ),
-          const SizedBox(height: 8),
-          if (groupedEntries.isEmpty)
-            const Card(
-              margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: ListTile(
-                leading: Icon(Icons.event_note_outlined),
-                title: Text('No upcoming imported events'),
-                subtitle: Text(
-                  'Imported events will appear here and in the main workspace list.',
-                ),
-              ),
-            ),
-          for (final entry in groupedEntries) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text(
-                _formatShortDate(entry.key),
-                style: theme.textTheme.titleSmall,
-              ),
-            ),
-            ...entry.value.map(
-              (event) => Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  onTap: () => context.push(
-                    '/rooms/calendar/events/${event.id}',
-                    extra: <String, Object?>{
-                      'title': event.title,
-                      'sourceDisplayName': event.sourceDisplayName,
-                    },
-                  ),
-                  leading: const Icon(Icons.event_outlined),
-                  title: Text(event.title),
-                  subtitle: Text(
-                    [
-                      if (event.sourceDisplayName.isNotEmpty)
-                        event.sourceDisplayName,
-                      if (event.location.isNotEmpty) event.location,
-                      if (event.description.isNotEmpty) event.description,
-                    ].join(' · '),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: Text(
-                    event.allDay
-                        ? 'All day'
-                        : _formatTime(context, event.startsAt),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 
