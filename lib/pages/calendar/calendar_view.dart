@@ -2145,7 +2145,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         ),
                         const SizedBox(height: 16),
                         SizedBox(
-                          height: 92,
+                          height: 80,
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Row(
