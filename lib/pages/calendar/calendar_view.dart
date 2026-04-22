@@ -2145,7 +2145,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         ),
                         const SizedBox(height: 16),
                         SizedBox(
-                          height: 118,
+                          height: 132,
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
                             child: Row(
@@ -2224,7 +2224,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
               const Divider(height: 1),
               Expanded(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(8, 10, 8, 24),
+                  padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
                   children: [
                     if (groupedEntries.isEmpty)
                       const Card(
@@ -2240,7 +2240,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                       if (index > 0 &&
                           groupedEntries[index].key.weekday == DateTime.monday)
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(60, 6, 12, 14),
+                          padding: const EdgeInsets.fromLTRB(52, 4, 8, 12),
                           child: Text(
                             _formatMobileWeekRange(groupedEntries[index].key),
                             style: theme.textTheme.labelLarge?.copyWith(
@@ -2251,7 +2251,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         ),
                       Padding(
                         key: _mobileDaySectionKey(groupedEntries[index].key),
-                        padding: const EdgeInsets.only(bottom: 18),
+                        padding: const EdgeInsets.only(bottom: 12),
                         child: _buildMobileScheduleDaySection(
                           context,
                           theme,
@@ -2282,34 +2282,40 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     required VoidCallback? onTap,
   }) {
     return SizedBox(
-      width: width.clamp(156, 220),
+      width: width.clamp(150, 210),
       child: Card(
         margin: EdgeInsets.zero,
         clipBehavior: Clip.hardEdge,
         child: InkWell(
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(icon, size: 18, color: theme.colorScheme.primary),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Text(
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineSmall,
+                  style: theme.textTheme.headlineSmall?.copyWith(height: 1.0),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(height: 1.0),
                 ),
                 const SizedBox(height: 4),
-                Text(label, style: theme.textTheme.titleSmall),
-                const SizedBox(height: 6),
                 Text(
                   detail,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.1,
                   ),
                 ),
               ],
@@ -2686,7 +2692,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 54,
+          width: 48,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2697,10 +2703,10 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               Container(
-                width: 36,
-                height: 36,
+                width: 34,
+                height: 34,
                 decoration: BoxDecoration(
                   color: isToday || isSelected
                       ? theme.colorScheme.primaryContainer
@@ -2721,7 +2727,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
             ],
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
           child: Stack(
             children: [
@@ -2735,10 +2741,11 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                 ),
               ),
               Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: events
                     .map(
                       (event) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
+                        padding: const EdgeInsets.only(bottom: 8),
                         child: _buildMobileScheduleEventCard(
                           context,
                           theme,
@@ -2774,9 +2781,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         : theme.colorScheme.onSurface;
     return Material(
       color: color.withValues(alpha: 0.88),
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         onTap: () => context.push(
           '/rooms/calendar/events/${event.id}',
           extra: <String, Object?>{
@@ -2785,7 +2792,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
           },
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -2796,15 +2803,17 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: textColor,
+                  height: 1.05,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 _formatMobileScheduleSubtitle(context, event, isContinuation),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: textColor.withValues(alpha: 0.82),
+                  height: 1.0,
                 ),
               ),
             ],
@@ -2827,7 +2836,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       else
         _formatTime(context, event.startsAt),
       if (!event.allDay && !isContinuation) _formatTime(context, event.endsAt),
-      if (event.sourceDisplayName.isNotEmpty) event.sourceDisplayName,
     ];
     return parts.join(' · ');
   }
