@@ -2158,6 +2158,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   icon: Icons.calendar_view_day_outlined,
                                   label: 'Calendars',
                                   value: '${_visibleSourceIds.length}',
+                                  compactValue: false,
                                   onTap: () => _showMobileCalendarsSheet(
                                     context,
                                     theme,
@@ -2175,6 +2176,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   label: 'Today',
                                   value:
                                       '${DateTime.now().day}',
+                                  compactValue: false,
                                   onTap: _jumpMobileScheduleToToday,
                                 ),
                                 const SizedBox(width: 12),
@@ -2188,6 +2190,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   value: nextEvent == null
                                       ? 'None'
                                       : nextEvent.title,
+                                  compactValue: true,
                                   onTap: nextEvent == null
                                       ? null
                                       : () => context.push(
@@ -2265,6 +2268,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     required IconData icon,
     required String label,
     required String value,
+    required bool compactValue,
     required VoidCallback? onTap,
   }) {
     return SizedBox(
@@ -2301,7 +2305,10 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.headlineMedium?.copyWith(
+                  style: (compactValue
+                          ? theme.textTheme.titleMedium
+                          : theme.textTheme.headlineMedium)
+                      ?.copyWith(
                     height: 1.0,
                     fontWeight: FontWeight.w600,
                   ),
