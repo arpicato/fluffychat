@@ -597,6 +597,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   late final ValueNotifier<DateTime> _visibleMonthNotifier;
   late final ValueNotifier<DateTime> _selectedDayNotifier;
   Set<String> _visibleSourceIds = <String>{};
+  Set<String> _visibleCategoryNames = <String>{};
   Set<String> _knownSourceIds = <String>{};
   bool _hasInitializedSourceSelection = false;
   _CalendarPageData? _latestPageData;
@@ -989,8 +990,12 @@ class _CalendarPageViewState extends State<CalendarPageView> {
 
   void _syncVisibleSources(List<MessieCalendarSource> sources) {
     final sourceIds = sources.map((source) => source.id).toSet();
+    final categoryNames = sources
+        .map((source) => _normalizeCalendarCategory(source.category))
+        .toSet();
     if (!_hasInitializedSourceSelection) {
       _visibleSourceIds = sourceIds;
+      _visibleCategoryNames = categoryNames;
       _knownSourceIds = sourceIds;
       _hasInitializedSourceSelection = true;
       return;
@@ -1000,6 +1005,10 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     _visibleSourceIds = {
       ..._visibleSourceIds.where(sourceIds.contains),
       ...newSourceIds,
+    };
+    _visibleCategoryNames = {
+      ..._visibleCategoryNames.where(categoryNames.contains),
+      ...categoryNames.difference(_visibleCategoryNames),
     };
     _knownSourceIds = sourceIds;
   }
@@ -1038,19 +1047,22 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   }
 
   bool _isCategoryVisible(List<MessieCalendarSource> sources) =>
-      sources.every((source) => _visibleSourceIds.contains(source.id));
+      sources.isNotEmpty &&
+      _visibleCategoryNames.contains(
+        _normalizeCalendarCategory(sources.first.category),
+      );
 
   void _toggleCategoryVisibility(
     List<MessieCalendarSource> sources,
     bool visible,
   ) {
+    if (sources.isEmpty) return;
+    final category = _normalizeCalendarCategory(sources.first.category);
     setState(() {
-      for (final source in sources) {
-        if (visible) {
-          _visibleSourceIds.add(source.id);
-        } else {
-          _visibleSourceIds.remove(source.id);
-        }
+      if (visible) {
+        _visibleCategoryNames.add(category);
+      } else {
+        _visibleCategoryNames.remove(category);
       }
     });
   }
@@ -1066,15 +1078,22 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   }
 
   List<MessieCalendarEvent> _visibleEvents(List<MessieCalendarEvent> events) =>
-      events
-          .where((event) => _visibleSourceIds.contains(event.sourceId))
-          .toList()
-        ..sort((left, right) {
-          if (left.allDay != right.allDay) {
-            return left.allDay ? -1 : 1;
-          }
-          return left.startsAt.compareTo(right.startsAt);
-        });
+      events.where((event) => _visibleSourceIds.contains(event.sourceId)).where(
+        (event) {
+          final source = _latestPageData?.sources
+              .where((source) => source.id == event.sourceId)
+              .firstOrNull;
+          if (source == null) return false;
+          return _visibleCategoryNames.contains(
+            _normalizeCalendarCategory(source.category),
+          );
+        },
+      ).toList()..sort((left, right) {
+        if (left.allDay != right.allDay) {
+          return left.allDay ? -1 : 1;
+        }
+        return left.startsAt.compareTo(right.startsAt);
+      });
 
   List<MessieCalendarEvent> _eventsForDay(
     Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
