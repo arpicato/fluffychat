@@ -74,21 +74,34 @@ class _CalendarEventDetailPageViewState
     return '$date · $hour:$minute $period';
   }
 
+  void _navigateBack(BuildContext context) {
+    if (context.canPop()) {
+      context.pop();
+      return;
+    }
+    context.go('/rooms/calendar');
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isColumnMode = FluffyThemes.isColumnMode(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(_page.initialTitle ?? 'Event'),
-        automaticallyImplyLeading: !FluffyThemes.isColumnMode(context),
-        centerTitle: FluffyThemes.isColumnMode(context),
-        leading: FluffyThemes.isColumnMode(context)
+        automaticallyImplyLeading: false,
+        centerTitle: isColumnMode,
+        leading: isColumnMode
             ? null
-            : BackButton(
-                onPressed: () => context.canPop()
-                    ? context.pop()
-                    : context.go('/rooms'),
-              ),
+            : BackButton(onPressed: () => _navigateBack(context)),
+        actions: [
+          if (isColumnMode)
+            IconButton(
+              onPressed: () => context.go('/rooms/calendar'),
+              icon: const Icon(Icons.close),
+              tooltip: 'Close',
+            ),
+        ],
       ),
       body: FutureBuilder<MessieCalendarEvent>(
         future: _future,
