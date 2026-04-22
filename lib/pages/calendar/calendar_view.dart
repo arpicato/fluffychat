@@ -599,6 +599,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   Set<String> _visibleSourceIds = <String>{};
   Set<String> _visibleCategoryNames = <String>{};
   Set<String> _knownSourceIds = <String>{};
+  Set<String> _knownCategoryNames = <String>{};
   bool _hasInitializedSourceSelection = false;
   _CalendarPageData? _latestPageData;
 
@@ -997,20 +998,23 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       _visibleSourceIds = sourceIds;
       _visibleCategoryNames = categoryNames;
       _knownSourceIds = sourceIds;
+      _knownCategoryNames = categoryNames;
       _hasInitializedSourceSelection = true;
       return;
     }
 
     final newSourceIds = sourceIds.difference(_knownSourceIds);
+    final newCategoryNames = categoryNames.difference(_knownCategoryNames);
     _visibleSourceIds = {
       ..._visibleSourceIds.where(sourceIds.contains),
       ...newSourceIds,
     };
     _visibleCategoryNames = {
       ..._visibleCategoryNames.where(categoryNames.contains),
-      ...categoryNames.difference(_visibleCategoryNames),
+      ...newCategoryNames,
     };
     _knownSourceIds = sourceIds;
+    _knownCategoryNames = categoryNames;
   }
 
   void _toggleSourceVisibility(String sourceId) {
