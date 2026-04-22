@@ -1157,35 +1157,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     DateTime day,
   ) => eventsByDay[DateTime(day.year, day.month, day.day)] ?? const [];
 
-  List<MapEntry<DateTime, List<MessieCalendarEvent>>> _buildMobileScheduleEntries(
-    Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
-  ) {
-    final today = DateTime.now();
-    final normalizedToday = DateTime(today.year, today.month, today.day);
-    final start = eventsByDay.keys.isEmpty
-        ? normalizedToday.subtract(const Duration(days: 30))
-        : [
-            eventsByDay.keys.reduce((left, right) => left.isBefore(right) ? left : right),
-            normalizedToday.subtract(const Duration(days: 30)),
-          ].reduce((left, right) => left.isBefore(right) ? left : right);
-    final end = eventsByDay.keys.isEmpty
-        ? normalizedToday.add(const Duration(days: 90))
-        : [
-            eventsByDay.keys.reduce((left, right) => left.isAfter(right) ? left : right),
-            normalizedToday.add(const Duration(days: 90)),
-          ].reduce((left, right) => left.isAfter(right) ? left : right);
-
-    final entries = <MapEntry<DateTime, List<MessieCalendarEvent>>>[];
-    for (
-      var cursor = DateTime(start.year, start.month, start.day);
-      !cursor.isAfter(end);
-      cursor = cursor.add(const Duration(days: 1))
-    ) {
-      entries.add(MapEntry(cursor, _eventsForDay(eventsByDay, cursor)));
-    }
-    return entries;
-  }
-
   Map<DateTime, List<MessieCalendarEvent>> _buildEventsByDay(
     List<MessieCalendarEvent> events,
   ) {
@@ -2096,7 +2067,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         final visibleEvents = _visibleEvents(data.events)
           ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
         final eventsByDay = _buildEventsByDay(visibleEvents);
-        final groupedEntries = _buildMobileScheduleEntries(eventsByDay);
+        final groupedEntries = eventsByDay.entries.toList()
+          ..sort((left, right) => left.key.compareTo(right.key));
         _autoScrollMobileScheduleToToday(
           groupedEntries.map((entry) => entry.key).toList(),
         );
