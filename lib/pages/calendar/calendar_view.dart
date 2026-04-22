@@ -22,10 +22,15 @@ String _normalizeCalendarCategory(String? value) {
 }
 
 class _CalendarPageData {
-  const _CalendarPageData({required this.sources, required this.events});
+  const _CalendarPageData({
+    required this.sources,
+    required this.events,
+    required this.mobileScheduleEvents,
+  });
 
   final List<MessieCalendarSource> sources;
   final List<MessieCalendarEvent> events;
+  final List<MessieCalendarEvent> mobileScheduleEvents;
 }
 
 class _CalendarSourceDraft {
@@ -592,6 +597,7 @@ class CalendarPageView extends StatefulWidget {
 }
 
 class _CalendarPageViewState extends State<CalendarPageView> {
+  static const int _mobileSchedulePageSize = 120;
   final MessieCalendarService _calendarService = MessieCalendarService();
   late Future<_CalendarPageData> _loadFuture;
   late final ValueNotifier<DateTime> _visibleMonthNotifier;
@@ -719,12 +725,53 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         from: now.subtract(const Duration(days: 30)),
         to: now.add(const Duration(days: 180)),
       ),
+      _calendarService.getCalendarEvents(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.token,
+        cursor: DateTime(now.year, now.month, now.day),
+        direction: 'before',
+        limit: _mobileSchedulePageSize,
+      ),
+      _calendarService.getCalendarEvents(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.token,
+        cursor: DateTime(now.year, now.month, now.day),
+        direction: 'after',
+        limit: _mobileSchedulePageSize,
+      ),
     ]);
     final sources = results[0] as List<MessieCalendarSource>;
     final events = results[1] as List<MessieCalendarEvent>;
-    final data = _CalendarPageData(sources: sources, events: events);
+    final mobileScheduleEvents = _mergeCalendarEvents([
+      results[2] as List<MessieCalendarEvent>,
+      results[3] as List<MessieCalendarEvent>,
+    ]);
+    final data = _CalendarPageData(
+      sources: sources,
+      events: events,
+      mobileScheduleEvents: mobileScheduleEvents,
+    );
     _latestPageData = data;
     return data;
+  }
+
+  List<MessieCalendarEvent> _mergeCalendarEvents(
+    Iterable<List<MessieCalendarEvent>> batches,
+  ) {
+    final mergedById = <String, MessieCalendarEvent>{};
+    for (final batch in batches) {
+      for (final event in batch) {
+        mergedById[event.id] = event;
+      }
+    }
+    final merged = mergedById.values.toList()
+      ..sort((left, right) {
+        final startComparison = left.startsAt.compareTo(right.startsAt);
+        if (startComparison != 0) return startComparison;
+        return left.createdAt?.compareTo(right.createdAt ?? left.startsAt) ??
+            0;
+      });
+    return merged;
   }
 
   void _refreshPage() {
@@ -2064,7 +2111,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         _selectedDayNotifier,
       ]),
       builder: (context, _) {
-        final visibleEvents = _visibleEvents(data.events)
+        final visibleEvents = _visibleEvents(data.mobileScheduleEvents)
           ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
         final eventsByDay = _buildEventsByDay(visibleEvents);
         final groupedEntries = eventsByDay.entries.toList()
