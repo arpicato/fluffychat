@@ -602,6 +602,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   Set<String> _knownSourceIds = <String>{};
   Set<String> _knownCategoryNames = <String>{};
   final Map<String, GlobalKey> _mobileDaySectionKeys = <String, GlobalKey>{};
+  final GlobalKey _mobileTodayAnchorKey = GlobalKey();
   bool _hasInitializedSourceSelection = false;
   bool _hasAutoScrolledMobileSchedule = false;
   _CalendarPageData? _latestPageData;
@@ -658,8 +659,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     _setVisibleMonth(normalizedDay);
   }
 
-  void _scrollMobileScheduleToDay(DateTime day) {
-    final targetKey = _mobileDaySectionKey(day);
+  void _scrollMobileScheduleToTarget(GlobalKey targetKey) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final targetContext = targetKey.currentContext;
       if (targetContext == null) return;
@@ -672,23 +672,33 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     });
   }
 
+  void _scrollMobileScheduleToDay(DateTime day) {
+    final targetKey = _mobileDaySectionKey(day);
+    _scrollMobileScheduleToTarget(targetKey);
+  }
+
   void _jumpMobileScheduleToToday() {
     final today = DateTime.now();
     _selectDay(today);
-    _scrollMobileScheduleToDay(today);
+    _scrollMobileScheduleToTarget(_mobileTodayAnchorKey);
   }
 
   void _autoScrollMobileScheduleToToday(List<DateTime> visibleDays) {
     if (_hasAutoScrolledMobileSchedule) return;
     _hasAutoScrolledMobileSchedule = true;
     if (visibleDays.isEmpty) return;
+    _scrollMobileScheduleToTarget(_mobileTodayAnchorKey);
+  }
 
+  int _mobileTodayAnchorIndex(List<DateTime> visibleDays) {
     final today = DateTime.now();
     final normalizedToday = DateTime(today.year, today.month, today.day);
-    final targetDay =
-        visibleDays.where((day) => !day.isBefore(normalizedToday)).firstOrNull ??
-        visibleDays.last;
-    _scrollMobileScheduleToDay(targetDay);
+    for (var index = 0; index < visibleDays.length; index++) {
+      if (!visibleDays[index].isBefore(normalizedToday)) {
+        return index;
+      }
+    }
+    return visibleDays.length;
   }
 
   Future<_CalendarPageData> _load() async {
@@ -2062,6 +2072,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         _autoScrollMobileScheduleToToday(
           groupedEntries.map((entry) => entry.key).toList(),
         );
+        final todayAnchorIndex = _mobileTodayAnchorIndex(
+          groupedEntries.map((entry) => entry.key).toList(),
+        );
         MessieCalendarEvent? nextUpcomingEvent;
         for (final event in visibleEvents) {
           if (!calendarEventDisplayRange(event).end.isAfter(DateTime.now())) {
@@ -2250,6 +2263,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         ),
                       ),
                     for (var index = 0; index < groupedEntries.length; index++) ...[
+                      if (index == todayAnchorIndex)
+                        SizedBox(key: _mobileTodayAnchorKey, height: 0),
                       if (index > 0 &&
                           groupedEntries[index].key.weekday == DateTime.monday)
                         Padding(
@@ -2274,6 +2289,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         ),
                       ),
                     ],
+                    if (todayAnchorIndex == groupedEntries.length)
+                      SizedBox(key: _mobileTodayAnchorKey, height: 0),
                   ],
                 ),
               ),
