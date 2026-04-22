@@ -42,7 +42,7 @@ abstract class CalendarSource implements Built<CalendarSource, CalendarSourceBui
   String get displayName;
 
   @BuiltValueField(wireName: r'category')
-  String? get category;
+  String get category;
 
   @BuiltValueField(wireName: r'import_mode')
   String get importMode;
@@ -120,13 +120,11 @@ class _$CalendarSourceSerializer implements PrimitiveSerializer<CalendarSource> 
       object.displayName,
       specifiedType: const FullType(String),
     );
-    if (object.category != null) {
-      yield r'category';
-      yield serializers.serialize(
-        object.category,
-        specifiedType: const FullType.nullable(String),
-      );
-    }
+    yield r'category';
+    yield serializers.serialize(
+      object.category,
+      specifiedType: const FullType(String),
+    );
     yield r'import_mode';
     yield serializers.serialize(
       object.importMode,
@@ -254,8 +252,8 @@ class _$CalendarSourceSerializer implements PrimitiveSerializer<CalendarSource> 
         case r'category':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
+            specifiedType: const FullType(String),
+          ) as String;
           result.category = valueDes;
           break;
         case r'import_mode':
@@ -366,3 +364,4 @@ class _$CalendarSourceSerializer implements PrimitiveSerializer<CalendarSource> 
     return result.build();
   }
 }
+

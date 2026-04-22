@@ -53,7 +53,7 @@ class MessieCalendarSource {
         userId: source.userId,
         kind: source.kind,
         displayName: source.displayName,
-        category: source.category ?? defaultMessieCalendarCategory,
+        category: source.category,
         importMode: source.importMode,
         refreshState: source.refreshState,
         sourceUrl: source.sourceUrl,
@@ -180,6 +180,9 @@ abstract class MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   });
 
   Future<api.CalendarEvent> getCalendarEventById({required String eventId});
@@ -213,7 +216,7 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
   }) async {
     final response = await _api.importCalendarSource(
       file: MultipartFile.fromBytes(bytes, filename: filename),
-      category: category,
+      category: category ?? defaultMessieCalendarCategory,
       displayName: displayName,
     );
     return response.data!;
@@ -285,11 +288,17 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) async {
     final response = await _api.getCalendarEvents(
       from: from,
       to: to,
       sourceId: sourceId,
+      cursor: cursor,
+      direction: direction,
+      limit: limit,
     );
     return response.data?.toList() ?? const [];
   }
@@ -519,12 +528,18 @@ class MessieCalendarService {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) async => _wrapRequest(
     'Failed to load calendar events',
     (sdk) async => (await sdk.getCalendarEvents(
       from: from?.toUtc(),
       to: to?.toUtc(),
       sourceId: sourceId,
+      cursor: cursor?.toUtc(),
+      direction: direction,
+      limit: limit,
     )).map(MessieCalendarEvent.fromApi).toList(),
     apiBaseUrl: apiBaseUrl,
     jwt: jwt,

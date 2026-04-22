@@ -107,5 +107,3 @@ lib/src/model/wa_status_response.dart
 lib/src/model/wa_status_response_account.dart
 lib/src/serializers.dart
 pubspec.yaml
-test/new_calendar_link_source_test.dart
-test/update_calendar_source_test.dart

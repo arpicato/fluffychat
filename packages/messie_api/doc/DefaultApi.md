@@ -840,7 +840,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **getCalendarEvents**
-> BuiltList<CalendarEvent> getCalendarEvents(from, to, sourceId)
+> BuiltList<CalendarEvent> getCalendarEvents(from, to, sourceId, cursor, direction, limit)
 
 Get imported calendar events for the current user
 
@@ -852,9 +852,12 @@ final api = MessieApi().getDefaultApi();
 final DateTime from = 2013-10-20T19:20:30+01:00; // DateTime | 
 final DateTime to = 2013-10-20T19:20:30+01:00; // DateTime | 
 final String sourceId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+final DateTime cursor = 2013-10-20T19:20:30+01:00; // DateTime | Anchor timestamp for cursor-based schedule pagination.
+final String direction = direction_example; // String | Fetch events before or after the cursor.
+final int limit = 56; // int | Maximum number of events to return for cursor-based queries.
 
 try {
-    final response = api.getCalendarEvents(from, to, sourceId);
+    final response = api.getCalendarEvents(from, to, sourceId, cursor, direction, limit);
     print(response);
 } catch on DioException (e) {
     print('Exception when calling DefaultApi->getCalendarEvents: $e\n');
@@ -868,6 +871,9 @@ Name | Type | Description  | Notes
  **from** | **DateTime**|  | [optional] 
  **to** | **DateTime**|  | [optional] 
  **sourceId** | **String**|  | [optional] 
+ **cursor** | **DateTime**| Anchor timestamp for cursor-based schedule pagination. | [optional] 
+ **direction** | **String**| Fetch events before or after the cursor. | [optional] 
+ **limit** | **int**| Maximum number of events to return for cursor-based queries. | [optional] 
 
 ### Return type
 
@@ -1291,7 +1297,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **importCalendarSource**
-> CalendarImportResponse importCalendarSource(file, displayName)
+> CalendarImportResponse importCalendarSource(file, category, displayName)
 
 Import a calendar source from an uploaded ICS file
 
@@ -1301,10 +1307,11 @@ import 'package:messie_api/api.dart';
 
 final api = MessieApi().getDefaultApi();
 final MultipartFile file = BINARY_DATA_HERE; // MultipartFile | 
+final String category = category_example; // String | 
 final String displayName = displayName_example; // String | 
 
 try {
-    final response = api.importCalendarSource(file, displayName);
+    final response = api.importCalendarSource(file, category, displayName);
     print(response);
 } catch on DioException (e) {
     print('Exception when calling DefaultApi->importCalendarSource: $e\n');
@@ -1316,6 +1323,7 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **file** | **MultipartFile**|  | 
+ **category** | **String**|  | 
  **displayName** | **String**|  | [optional] 
 
 ### Return type

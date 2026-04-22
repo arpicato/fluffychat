@@ -20,7 +20,7 @@ abstract class NewCalendarLinkSource implements Built<NewCalendarLinkSource, New
   String get url;
 
   @BuiltValueField(wireName: r'category')
-  String? get category;
+  String get category;
 
   @BuiltValueField(wireName: r'display_name')
   String? get displayName;
@@ -53,13 +53,11 @@ class _$NewCalendarLinkSourceSerializer implements PrimitiveSerializer<NewCalend
       object.url,
       specifiedType: const FullType(String),
     );
-    if (object.category != null) {
-      yield r'category';
-      yield serializers.serialize(
-        object.category,
-        specifiedType: const FullType(String),
-      );
-    }
+    yield r'category';
+    yield serializers.serialize(
+      object.category,
+      specifiedType: const FullType(String),
+    );
     if (object.displayName != null) {
       yield r'display_name';
       yield serializers.serialize(
@@ -139,3 +137,4 @@ class _$NewCalendarLinkSourceSerializer implements PrimitiveSerializer<NewCalend
     return result.build();
   }
 }
+
