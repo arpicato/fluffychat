@@ -7,6 +7,8 @@ import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'calendar_event_display.dart';
+
 class CalendarEventDetailPageView extends StatefulWidget {
   const CalendarEventDetailPageView(this.controller, {super.key});
 
@@ -142,6 +144,7 @@ class _CalendarEventDetailPageViewState
           }
 
           final event = snapshot.requireData;
+          final displayRange = calendarEventDisplayRange(event);
           return MaxWidthBody(
             withScrolling: false,
             child: ListView(
@@ -159,13 +162,19 @@ class _CalendarEventDetailPageViewState
                   context: context,
                   icon: Icons.schedule_outlined,
                   label: 'Starts',
-                  value: _formatDateTime(event.startsAt, allDay: event.allDay),
+                  value: _formatDateTime(
+                    displayRange.start,
+                    allDay: event.allDay,
+                  ),
                 ),
                 _infoTile(
                   context: context,
                   icon: Icons.schedule,
                   label: 'Ends',
-                  value: _formatDateTime(event.endsAt, allDay: event.allDay),
+                  value: _formatDateTime(
+                    displayRange.end,
+                    allDay: event.allDay,
+                  ),
                 ),
                 _infoTile(
                   context: context,

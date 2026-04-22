@@ -13,6 +13,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import 'calendar.dart';
+import 'calendar_event_display.dart';
 
 const _defaultCalendarCategory = 'My Calendars';
 
@@ -1110,11 +1111,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   ) {
     final grouped = <DateTime, List<MessieCalendarEvent>>{};
     for (final event in events) {
-      final start = event.startsAt.toLocal();
-      var end = event.endsAt.toLocal();
-      if (!end.isAfter(start)) {
-        end = start.add(const Duration(minutes: 1));
-      }
+      final range = calendarEventDisplayRange(event);
+      final start = range.start;
+      final end = range.end;
 
       var cursor = DateTime(start.year, start.month, start.day);
       final lastDay = DateTime(end.year, end.month, end.day);
@@ -2173,11 +2172,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   bool _eventSpansDay(MessieCalendarEvent event, DateTime day) {
     final dayStart = DateTime(day.year, day.month, day.day);
     final dayEnd = dayStart.add(const Duration(days: 1));
-    final start = event.startsAt.toLocal();
-    var end = event.endsAt.toLocal();
-    if (!end.isAfter(start)) {
-      end = start.add(const Duration(minutes: 1));
-    }
+    final range = calendarEventDisplayRange(event);
+    final start = range.start;
+    final end = range.end;
     return start.isBefore(dayEnd) && end.isAfter(dayStart);
   }
 
