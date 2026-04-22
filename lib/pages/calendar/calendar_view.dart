@@ -2806,16 +2806,18 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                   height: 1.05,
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                _formatMobileScheduleSubtitle(context, event, isContinuation),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: textColor.withValues(alpha: 0.82),
-                  height: 1.0,
+              if (!event.allDay) ...[
+                const SizedBox(height: 2),
+                Text(
+                  _formatMobileScheduleSubtitle(context, event, isContinuation),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: textColor.withValues(alpha: 0.82),
+                    height: 1.0,
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
