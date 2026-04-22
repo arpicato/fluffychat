@@ -2318,7 +2318,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                       overflow: TextOverflow.ellipsis,
                       style: (compactValue
                               ? theme.textTheme.titleMedium
-                              : theme.textTheme.headlineMedium)
+                              : theme.textTheme.headlineLarge)
                           ?.copyWith(
                         height: 1.0,
                         fontWeight: FontWeight.w600,
