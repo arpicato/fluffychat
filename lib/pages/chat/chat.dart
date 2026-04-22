@@ -1155,7 +1155,7 @@ class ChatController extends State<ChatPageWithRoom>
           true,
           false,
         );
-        users.sort((a, b) => a.powerLevel.level.compareTo(b.powerLevel.level));
+        users.sort((a, b) => a.powerLevel.compareTo(b.powerLevel));
         final via = users
             .map((user) => user.id.domain)
             .whereType<String>()
