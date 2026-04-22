@@ -2190,6 +2190,11 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   value: nextEvent == null
                                       ? 'None'
                                       : nextEvent.title,
+                                  secondaryValue: nextEvent == null
+                                      ? null
+                                      : nextEvent.allDay
+                                      ? 'All day'
+                                      : _formatTime(context, nextEvent.startsAt),
                                   compactValue: true,
                                   onTap: nextEvent == null
                                       ? null
@@ -2268,6 +2273,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     required IconData icon,
     required String label,
     required String value,
+    String? secondaryValue,
     required bool compactValue,
     required VoidCallback? onTap,
   }) {
@@ -2300,18 +2306,37 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                     ),
                   ],
                 ),
+                const Spacer(),
                 const SizedBox(height: 10),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: (compactValue
-                          ? theme.textTheme.titleMedium
-                          : theme.textTheme.headlineMedium)
-                      ?.copyWith(
-                    height: 1.0,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: (compactValue
+                              ? theme.textTheme.titleMedium
+                              : theme.textTheme.headlineMedium)
+                          ?.copyWith(
+                        height: 1.0,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (secondaryValue != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        secondaryValue,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.0,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
