@@ -1405,6 +1405,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                           final category = entry.key;
                           final sources = entry.value;
                           final isVisible = _isCategoryVisible(sources);
+                          final disabledColor =
+                              theme.colorScheme.onSurfaceVariant;
                           return Card(
                             margin: const EdgeInsets.only(bottom: 10),
                             child: Padding(
@@ -1438,74 +1440,97 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 2,
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Checkbox(
-                                            value: _visibleSourceIds.contains(
-                                              source.id,
-                                            ),
-                                            onChanged: (_) =>
-                                                _toggleSourceVisibility(
-                                                  source.id,
-                                                ),
-                                          ),
-                                          Container(
-                                            width: 10,
-                                            height: 10,
-                                            decoration: BoxDecoration(
-                                              color:
-                                                  sourceColors[source.id] ??
-                                                  theme.colorScheme.primary,
-                                              shape: BoxShape.circle,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Text(
-                                              source.displayName,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: theme.textTheme.bodyMedium,
-                                            ),
-                                          ),
-                                          if (source.importMode == 'link')
-                                            IconButton(
-                                              tooltip: 'Refresh calendar',
-                                              visualDensity:
-                                                  VisualDensity.compact,
-                                              onPressed: () => _refreshSource(
-                                                context,
-                                                source,
+                                      child: IgnorePointer(
+                                        ignoring: !isVisible,
+                                        child: Opacity(
+                                          opacity: isVisible ? 1 : 0.45,
+                                          child: Row(
+                                            children: [
+                                              Checkbox(
+                                                value: _visibleSourceIds
+                                                    .contains(source.id),
+                                                onChanged: isVisible
+                                                    ? (_) =>
+                                                          _toggleSourceVisibility(
+                                                            source.id,
+                                                          )
+                                                    : null,
                                               ),
-                                              icon: const Icon(
-                                                Icons.refresh_outlined,
-                                              ),
-                                            ),
-                                          PopupMenuButton<String>(
-                                            tooltip: 'Calendar actions',
-                                            onSelected: (action) =>
-                                                _handleSourceAction(
-                                                  context,
-                                                  source,
-                                                  action,
+                                              Container(
+                                                width: 10,
+                                                height: 10,
+                                                decoration: BoxDecoration(
+                                                  color: isVisible
+                                                      ? sourceColors[source
+                                                                .id] ??
+                                                            theme
+                                                                .colorScheme
+                                                                .primary
+                                                      : disabledColor,
+                                                  shape: BoxShape.circle,
                                                 ),
-                                            itemBuilder: (context) => [
-                                              const PopupMenuItem(
-                                                value: 'rename',
-                                                child: Text('Rename'),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Text(
+                                                  source.displayName,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: theme
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.copyWith(
+                                                        color: isVisible
+                                                            ? null
+                                                            : disabledColor,
+                                                      ),
+                                                ),
                                               ),
                                               if (source.importMode == 'link')
-                                                const PopupMenuItem(
-                                                  value: 'refresh',
-                                                  child: Text('Refresh'),
+                                                IconButton(
+                                                  tooltip: 'Refresh calendar',
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                  onPressed: isVisible
+                                                      ? () => _refreshSource(
+                                                          context,
+                                                          source,
+                                                        )
+                                                      : null,
+                                                  icon: const Icon(
+                                                    Icons.refresh_outlined,
+                                                  ),
                                                 ),
-                                              const PopupMenuItem(
-                                                value: 'delete',
-                                                child: Text('Delete'),
+                                              PopupMenuButton<String>(
+                                                tooltip: 'Calendar actions',
+                                                enabled: isVisible,
+                                                onSelected: (action) =>
+                                                    _handleSourceAction(
+                                                      context,
+                                                      source,
+                                                      action,
+                                                    ),
+                                                itemBuilder: (context) => [
+                                                  const PopupMenuItem(
+                                                    value: 'rename',
+                                                    child: Text('Rename'),
+                                                  ),
+                                                  if (source.importMode ==
+                                                      'link')
+                                                    const PopupMenuItem(
+                                                      value: 'refresh',
+                                                      child: Text('Refresh'),
+                                                    ),
+                                                  const PopupMenuItem(
+                                                    value: 'delete',
+                                                    child: Text('Delete'),
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),
-                                        ],
+                                        ),
                                       ),
                                     ),
                                   ),
