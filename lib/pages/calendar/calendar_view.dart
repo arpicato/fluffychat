@@ -14,6 +14,13 @@ import 'package:intl/intl.dart';
 
 import 'calendar.dart';
 
+const _defaultCalendarCategory = 'My Calendars';
+
+String _normalizeCalendarCategory(String? value) {
+  final trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? _defaultCalendarCategory : trimmed;
+}
+
 class _CalendarPageData {
   const _CalendarPageData({required this.sources, required this.events});
 
@@ -22,10 +29,7 @@ class _CalendarPageData {
 }
 
 class _CalendarSourceDraft {
-  const _CalendarSourceDraft({
-    required this.displayName,
-    this.category,
-  });
+  const _CalendarSourceDraft({required this.displayName, this.category});
 
   final String displayName;
   final String? category;
@@ -154,8 +158,7 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
   }
 
   String? get _normalizedCategory {
-    final trimmed = _categoryController.text.trim();
-    return trimmed.isEmpty ? null : trimmed;
+    return _normalizeCalendarCategory(_categoryController.text);
   }
 
   String get _primaryButtonLabel =>
@@ -252,7 +255,8 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _selectedFile?.name ?? 'No .ics file selected',
+                                    _selectedFile?.name ??
+                                        'No .ics file selected',
                                     style: theme.textTheme.titleMedium,
                                   ),
                                   const SizedBox(height: 4),
@@ -280,7 +284,9 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
                                     )
                                   : const Icon(Icons.attach_file_outlined),
                               label: Text(
-                                _selectedFile == null ? 'Choose file' : 'Replace',
+                                _selectedFile == null
+                                    ? 'Choose file'
+                                    : 'Replace',
                               ),
                             ),
                           ],
@@ -293,6 +299,7 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
                     categoryController: _categoryController,
                     nameController: _nameController,
                     existingCategories: widget.existingCategories,
+                    defaultCategory: _defaultCalendarCategory,
                     nameLabel: 'Calendar name',
                     nameHint: _mode == _CalendarImportMode.link
                         ? 'Imported calendar'
@@ -300,7 +307,7 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
                     autofocusName: _mode != _CalendarImportMode.link,
                     onSubmitted: _submit,
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 28),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: OutlinedButton.icon(
@@ -370,6 +377,7 @@ class _CalendarSourceDraftFields extends StatelessWidget {
     required this.categoryController,
     required this.nameController,
     required this.existingCategories,
+    required this.defaultCategory,
     required this.nameLabel,
     required this.nameHint,
     required this.onSubmitted,
@@ -379,6 +387,7 @@ class _CalendarSourceDraftFields extends StatelessWidget {
   final TextEditingController categoryController;
   final TextEditingController nameController;
   final List<String> existingCategories;
+  final String defaultCategory;
   final String nameLabel;
   final String nameHint;
   final VoidCallback onSubmitted;
@@ -386,7 +395,10 @@ class _CalendarSourceDraftFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final categories = existingCategories.toSet().toList()..sort();
+    final categories = {
+      defaultCategory,
+      ...existingCategories.map(_normalizeCalendarCategory),
+    }.toList()..sort();
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -398,7 +410,7 @@ class _CalendarSourceDraftFields extends StatelessWidget {
             enableSearch: true,
             requestFocusOnTap: true,
             label: const Text('Category'),
-            hintText: 'Work',
+            hintText: defaultCategory,
             dropdownMenuEntries: [
               for (final category in categories)
                 DropdownMenuEntry<String>(value: category, label: category),
@@ -753,7 +765,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final trimmedCategory = draft.category?.trim();
     if (trimmedName.isEmpty) return;
     if (trimmedName == source.displayName &&
-        trimmedCategory == source.category) {
+        _normalizeCalendarCategory(trimmedCategory) ==
+            _normalizeCalendarCategory(source.category)) {
       return;
     }
 
@@ -768,7 +781,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
         jwt: session.token,
         sourceId: source.id,
-        category: trimmedCategory?.isEmpty == true ? null : trimmedCategory,
+        category: _normalizeCalendarCategory(trimmedCategory),
         displayName: trimmedName,
       );
       if (!context.mounted) return;
@@ -853,7 +866,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     String title = 'Import calendar',
     String confirmLabel = 'Import',
   }) async {
-    final categoryController = TextEditingController(text: initialCategory ?? '');
+    final categoryController = TextEditingController(
+      text: _normalizeCalendarCategory(initialCategory),
+    );
     final nameController = TextEditingController(text: initialName);
     try {
       return await showDialog<_CalendarSourceDraft>(
@@ -866,6 +881,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
               categoryController: categoryController,
               nameController: nameController,
               existingCategories: existingCategories,
+              defaultCategory: _defaultCalendarCategory,
               nameLabel: 'Calendar name',
               nameHint: 'Imported calendar',
               autofocusName: true,
@@ -913,20 +929,15 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   List<String> _distinctCategories(List<MessieCalendarSource> sources) =>
       sources
           .map((source) => _normalizeOptionalText(source.category))
-          .whereType<String>()
           .toSet()
           .toList()
         ..sort();
 
-  String? _normalizeOptionalText(String? value) {
-    final trimmed = value?.trim() ?? '';
-    return trimmed.isEmpty ? null : trimmed;
-  }
+  String _normalizeOptionalText(String? value) =>
+      _normalizeCalendarCategory(value);
 
   String _sourceLabel(MessieCalendarSource source) =>
-      source.category == null || source.category!.trim().isEmpty
-          ? source.displayName
-          : '${source.category} / ${source.displayName}';
+      '${_normalizeCalendarCategory(source.category)} / ${source.displayName}';
 
   String _decodeICalText(String value) => value
       .replaceAll(r'\n', '\n')
@@ -965,9 +976,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       if (!context.mounted) return;
       MessieWorkspaceRefresh.instance.bump();
       _refreshPage();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Deleted ${_sourceLabel(source)}.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Deleted ${_sourceLabel(source)}.')),
+      );
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
@@ -1003,15 +1014,48 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     });
   }
 
-  void _showAllSources(List<MessieCalendarSource> sources) {
-    setState(() {
-      _visibleSourceIds = sources.map((source) => source.id).toSet();
-    });
+  Map<String, List<MessieCalendarSource>> _sourcesByCategory(
+    List<MessieCalendarSource> sources,
+  ) {
+    final grouped = <String, List<MessieCalendarSource>>{};
+    for (final source in sources) {
+      grouped
+          .putIfAbsent(
+            _normalizeCalendarCategory(source.category),
+            () => <MessieCalendarSource>[],
+          )
+          .add(source);
+    }
+    final sortedEntries = grouped.entries.toList()
+      ..sort((left, right) => left.key.compareTo(right.key));
+    return {
+      for (final entry in sortedEntries)
+        entry.key: entry.value
+          ..sort(
+            (left, right) => left.displayName.compareTo(right.displayName),
+          ),
+    };
   }
 
-  void _hideAllSources() {
+  bool _isCategoryVisible(List<MessieCalendarSource> sources) =>
+      sources.every((source) => _visibleSourceIds.contains(source.id));
+
+  bool _isCategoryPartiallyVisible(List<MessieCalendarSource> sources) =>
+      !_isCategoryVisible(sources) &&
+      sources.any((source) => _visibleSourceIds.contains(source.id));
+
+  void _toggleCategoryVisibility(
+    List<MessieCalendarSource> sources,
+    bool visible,
+  ) {
     setState(() {
-      _visibleSourceIds.clear();
+      for (final source in sources) {
+        if (visible) {
+          _visibleSourceIds.add(source.id);
+        } else {
+          _visibleSourceIds.remove(source.id);
+        }
+      }
     });
   }
 
@@ -1025,19 +1069,16 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     );
   }
 
-  List<MessieCalendarEvent> _visibleEvents(
-    List<MessieCalendarEvent> events,
-  ) => events
-      .where(
-        (event) => _visibleSourceIds.contains(event.sourceId),
-      )
-      .toList()
-    ..sort((left, right) {
-      if (left.allDay != right.allDay) {
-        return left.allDay ? -1 : 1;
-      }
-      return left.startsAt.compareTo(right.startsAt);
-    });
+  List<MessieCalendarEvent> _visibleEvents(List<MessieCalendarEvent> events) =>
+      events
+          .where((event) => _visibleSourceIds.contains(event.sourceId))
+          .toList()
+        ..sort((left, right) {
+          if (left.allDay != right.allDay) {
+            return left.allDay ? -1 : 1;
+          }
+          return left.startsAt.compareTo(right.startsAt);
+        });
 
   List<MessieCalendarEvent> _eventsForDay(
     Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
@@ -1076,7 +1117,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
 
   List<List<DateTime>> _monthWeeks(DateTime month) {
     final firstOfMonth = DateTime(month.year, month.month);
-    final start = firstOfMonth.subtract(Duration(days: firstOfMonth.weekday % 7));
+    final start = firstOfMonth.subtract(
+      Duration(days: firstOfMonth.weekday % 7),
+    );
     final lastOfMonth = DateTime(month.year, month.month + 1, 0);
     final trailingDays = 6 - (lastOfMonth.weekday % 7);
     final end = lastOfMonth.add(Duration(days: trailingDays));
@@ -1086,11 +1129,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       weeks.add(
         List<DateTime>.generate(
           7,
-          (index) => DateTime(
-            cursor.year,
-            cursor.month,
-            cursor.day + index,
-          ),
+          (index) => DateTime(cursor.year, cursor.month, cursor.day + index),
         ),
       );
       cursor = cursor.add(const Duration(days: 7));
@@ -1299,9 +1338,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                 width: 320,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surfaceContainerLowest,
-                  border: Border(
-                    right: BorderSide(color: theme.dividerColor),
-                  ),
+                  border: Border(right: BorderSide(color: theme.dividerColor)),
                 ),
                 child: ListView(
                   padding: const EdgeInsets.all(20),
@@ -1327,17 +1364,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         Text(
                           'Imported calendars',
                           style: theme.textTheme.titleMedium,
-                        ),
-                        TextButton(
-                          onPressed: data.sources.isEmpty
-                              ? null
-                              : () => _showAllSources(data.sources),
-                          child: const Text('Show all'),
-                        ),
-                        TextButton(
-                          onPressed:
-                              _visibleSourceIds.isEmpty ? null : _hideAllSources,
-                          child: const Text('Hide all'),
                         ),
                       ],
                     ),
@@ -1365,71 +1391,122 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                           ),
                         ),
                       ),
-                    ...data.sources.map(
-                      (source) => Card(
+                    ..._sourcesByCategory(data.sources).entries.map((entry) {
+                      final category = entry.key;
+                      final sources = entry.value;
+                      final isVisible = _isCategoryVisible(sources);
+                      final isPartiallyVisible = _isCategoryPartiallyVisible(
+                        sources,
+                      );
+                      return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 6,
                           ),
-                          child: Row(
+                          child: Column(
                             children: [
-                              Checkbox(
-                                value: _visibleSourceIds.contains(source.id),
-                                onChanged: (_) => _toggleSourceVisibility(source.id),
-                              ),
-                              Container(
-                                width: 10,
-                                height: 10,
-                                decoration: BoxDecoration(
-                                  color:
-                                      sourceColors[source.id] ??
-                                      theme.colorScheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  _sourceLabel(source),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.titleSmall,
-                                ),
-                              ),
-                              if (source.importMode == 'link')
-                                IconButton(
-                                  tooltip: 'Refresh calendar',
-                                  visualDensity: VisualDensity.compact,
-                                  onPressed: () => _refreshSource(context, source),
-                                  icon: const Icon(Icons.refresh_outlined),
-                                ),
-                              PopupMenuButton<String>(
-                                tooltip: 'Calendar actions',
-                                onSelected: (action) =>
-                                    _handleSourceAction(context, source, action),
-                                itemBuilder: (context) => [
-                                  const PopupMenuItem(
-                                    value: 'rename',
-                                    child: Text('Rename'),
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    tristate: true,
+                                    value: isVisible
+                                        ? true
+                                        : isPartiallyVisible
+                                        ? null
+                                        : false,
+                                    onChanged: (value) =>
+                                        _toggleCategoryVisibility(
+                                          sources,
+                                          value != false,
+                                        ),
                                   ),
-                                  if (source.importMode == 'link')
-                                    const PopupMenuItem(
-                                      value: 'refresh',
-                                      child: Text('Refresh'),
+                                  Expanded(
+                                    child: Text(
+                                      category,
+                                      style: theme.textTheme.titleSmall,
                                     ),
-                                  const PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text('Delete'),
                                   ),
                                 ],
+                              ),
+                              const Divider(height: 12),
+                              ...sources.map(
+                                (source) => Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 2,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Checkbox(
+                                        value: _visibleSourceIds.contains(
+                                          source.id,
+                                        ),
+                                        onChanged: (_) =>
+                                            _toggleSourceVisibility(source.id),
+                                      ),
+                                      Container(
+                                        width: 10,
+                                        height: 10,
+                                        decoration: BoxDecoration(
+                                          color:
+                                              sourceColors[source.id] ??
+                                              theme.colorScheme.primary,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          source.displayName,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.bodyMedium,
+                                        ),
+                                      ),
+                                      if (source.importMode == 'link')
+                                        IconButton(
+                                          tooltip: 'Refresh calendar',
+                                          visualDensity: VisualDensity.compact,
+                                          onPressed: () =>
+                                              _refreshSource(context, source),
+                                          icon: const Icon(
+                                            Icons.refresh_outlined,
+                                          ),
+                                        ),
+                                      PopupMenuButton<String>(
+                                        tooltip: 'Calendar actions',
+                                        onSelected: (action) =>
+                                            _handleSourceAction(
+                                              context,
+                                              source,
+                                              action,
+                                            ),
+                                        itemBuilder: (context) => [
+                                          const PopupMenuItem(
+                                            value: 'rename',
+                                            child: Text('Rename'),
+                                          ),
+                                          if (source.importMode == 'link')
+                                            const PopupMenuItem(
+                                              value: 'refresh',
+                                              child: Text('Refresh'),
+                                            ),
+                                          const PopupMenuItem(
+                                            value: 'delete',
+                                            child: Text('Delete'),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      ),
-                    ),
+                      );
+                    }),
                     const SizedBox(height: 20),
                     ValueListenableBuilder<DateTime>(
                       valueListenable: _selectedDayNotifier,
@@ -1530,7 +1607,10 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                     final isCurrentMonth = day.month == _visibleMonth.month;
                     final isSelected = _isSameDay(day, _selectedDay);
                     final isToday = _isSameDay(day, DateTime.now());
-                    final hasEvents = _eventsForDay(eventsByDay, day).isNotEmpty;
+                    final hasEvents = _eventsForDay(
+                      eventsByDay,
+                      day,
+                    ).isNotEmpty;
                     return Expanded(
                       child: Center(
                         child: InkWell(
@@ -1568,7 +1648,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                       width: 4,
                                       height: 4,
                                       decoration: BoxDecoration(
-                                        color: sourceColors.values.firstOrNull ??
+                                        color:
+                                            sourceColors.values.firstOrNull ??
                                             theme.colorScheme.primary,
                                         shape: BoxShape.circle,
                                       ),
@@ -1622,36 +1703,41 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ...dayEvents.take(3).map(
-              (event) => ListTile(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                leading: Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color:
-                        sourceColors[event.sourceId] ?? theme.colorScheme.primary,
-                    shape: BoxShape.circle,
+            ...dayEvents
+                .take(3)
+                .map(
+                  (event) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    leading: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color:
+                            sourceColors[event.sourceId] ??
+                            theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    title: Text(
+                      event.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      event.allDay
+                          ? 'All day'
+                          : _formatTime(context, event.startsAt),
+                    ),
+                    onTap: () => context.push(
+                      '/rooms/calendar/events/${event.id}',
+                      extra: <String, Object?>{
+                        'title': event.title,
+                        'sourceDisplayName': event.sourceDisplayName,
+                      },
+                    ),
                   ),
                 ),
-                title: Text(
-                  event.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: Text(
-                  event.allDay ? 'All day' : _formatTime(context, event.startsAt),
-                ),
-                onTap: () => context.push(
-                  '/rooms/calendar/events/${event.id}',
-                  extra: <String, Object?>{
-                    'title': event.title,
-                    'sourceDisplayName': event.sourceDisplayName,
-                  },
-                ),
-              ),
-            ),
             if (dayEvents.length > 3)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -1810,11 +1896,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
               ),
             ),
           ),
-          Divider(
-            height: 1,
-            thickness: 1,
-            color: theme.dividerColor,
-          ),
+          Divider(height: 1, thickness: 1, color: theme.dividerColor),
           Expanded(
             child: Stack(
               children: [
@@ -1869,7 +1951,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     Color color,
   ) {
     final showContinuationPrefix =
-        !_isSameDay(event.startsAt.toLocal(), day) && _eventSpansDay(event, day);
+        !_isSameDay(event.startsAt.toLocal(), day) &&
+        _eventSpansDay(event, day);
 
     return InkWell(
       borderRadius: BorderRadius.circular(8),
@@ -1959,19 +2042,13 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                   onSelected: (action) =>
                       _handleSourceAction(context, source, action),
                   itemBuilder: (context) => [
-                    const PopupMenuItem(
-                      value: 'rename',
-                      child: Text('Rename'),
-                    ),
+                    const PopupMenuItem(value: 'rename', child: Text('Rename')),
                     if (source.importMode == 'link')
                       const PopupMenuItem(
                         value: 'refresh',
                         child: Text('Refresh'),
                       ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Delete'),
-                    ),
+                    const PopupMenuItem(value: 'delete', child: Text('Delete')),
                   ],
                 ),
               ),
@@ -2026,7 +2103,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   trailing: Text(
-                    event.allDay ? 'All day' : _formatTime(context, event.startsAt),
+                    event.allDay
+                        ? 'All day'
+                        : _formatTime(context, event.startsAt),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
@@ -2066,9 +2145,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   }
 
   String _formatSourceSubtitle(MessieCalendarSource source) {
-    final parts = <String>[
-      source.importMode == 'link' ? 'linked' : 'uploaded',
-    ];
+    final parts = <String>[source.importMode == 'link' ? 'linked' : 'uploaded'];
 
     if (source.refreshState.isNotEmpty) {
       parts.add(source.refreshState);
@@ -2078,7 +2155,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     } else if (source.lastRefreshAttemptAt != null) {
       parts.add('checked ${_formatDateTime(source.lastRefreshAttemptAt!)}');
     }
-    if (source.lastRefreshError != null && source.lastRefreshError!.isNotEmpty) {
+    if (source.lastRefreshError != null &&
+        source.lastRefreshError!.isNotEmpty) {
       parts.add(source.lastRefreshError!);
     } else if (source.sourceUrl != null && source.sourceUrl!.isNotEmpty) {
       parts.add(_formatSourceUrl(source.sourceUrl!));
