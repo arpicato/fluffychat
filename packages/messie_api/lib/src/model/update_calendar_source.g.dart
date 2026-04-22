@@ -8,13 +8,16 @@ part of 'update_calendar_source.dart';
 
 class _$UpdateCalendarSource extends UpdateCalendarSource {
   @override
+  final String? category;
+  @override
   final String displayName;
 
   factory _$UpdateCalendarSource(
           [void Function(UpdateCalendarSourceBuilder)? updates]) =>
       (UpdateCalendarSourceBuilder()..update(updates))._build();
 
-  _$UpdateCalendarSource._({required this.displayName}) : super._();
+  _$UpdateCalendarSource._({this.category, required this.displayName})
+      : super._();
   @override
   UpdateCalendarSource rebuild(
           void Function(UpdateCalendarSourceBuilder) updates) =>
@@ -27,12 +30,15 @@ class _$UpdateCalendarSource extends UpdateCalendarSource {
   @override
   bool operator ==(Object other) {
     if (identical(other, this)) return true;
-    return other is UpdateCalendarSource && displayName == other.displayName;
+    return other is UpdateCalendarSource &&
+        category == other.category &&
+        displayName == other.displayName;
   }
 
   @override
   int get hashCode {
     var _$hash = 0;
+    _$hash = $jc(_$hash, category.hashCode);
     _$hash = $jc(_$hash, displayName.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -41,6 +47,7 @@ class _$UpdateCalendarSource extends UpdateCalendarSource {
   @override
   String toString() {
     return (newBuiltValueToStringHelper(r'UpdateCalendarSource')
+          ..add('category', category)
           ..add('displayName', displayName))
         .toString();
   }
@@ -49,6 +56,10 @@ class _$UpdateCalendarSource extends UpdateCalendarSource {
 class UpdateCalendarSourceBuilder
     implements Builder<UpdateCalendarSource, UpdateCalendarSourceBuilder> {
   _$UpdateCalendarSource? _$v;
+
+  String? _category;
+  String? get category => _$this._category;
+  set category(String? category) => _$this._category = category;
 
   String? _displayName;
   String? get displayName => _$this._displayName;
@@ -61,6 +72,7 @@ class UpdateCalendarSourceBuilder
   UpdateCalendarSourceBuilder get _$this {
     final $v = _$v;
     if ($v != null) {
+      _category = $v.category;
       _displayName = $v.displayName;
       _$v = null;
     }
@@ -83,6 +95,7 @@ class UpdateCalendarSourceBuilder
   _$UpdateCalendarSource _build() {
     final _$result = _$v ??
         _$UpdateCalendarSource._(
+          category: category,
           displayName: BuiltValueNullFieldError.checkNotNull(
               displayName, r'UpdateCalendarSource', 'displayName'),
         );

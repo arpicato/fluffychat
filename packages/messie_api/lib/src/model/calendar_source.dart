@@ -15,6 +15,7 @@ part 'calendar_source.g.dart';
 /// * [userId] 
 /// * [kind] 
 /// * [displayName] 
+/// * [category] 
 /// * [importMode] 
 /// * [sourceUrl] 
 /// * [refreshState] 
@@ -39,6 +40,9 @@ abstract class CalendarSource implements Built<CalendarSource, CalendarSourceBui
 
   @BuiltValueField(wireName: r'display_name')
   String get displayName;
+
+  @BuiltValueField(wireName: r'category')
+  String? get category;
 
   @BuiltValueField(wireName: r'import_mode')
   String get importMode;
@@ -116,6 +120,13 @@ class _$CalendarSourceSerializer implements PrimitiveSerializer<CalendarSource> 
       object.displayName,
       specifiedType: const FullType(String),
     );
+    if (object.category != null) {
+      yield r'category';
+      yield serializers.serialize(
+        object.category,
+        specifiedType: const FullType.nullable(String),
+      );
+    }
     yield r'import_mode';
     yield serializers.serialize(
       object.importMode,
@@ -240,6 +251,13 @@ class _$CalendarSourceSerializer implements PrimitiveSerializer<CalendarSource> 
           ) as String;
           result.displayName = valueDes;
           break;
+        case r'category':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType.nullable(String),
+          ) as String?;
+          result.category = valueDes;
+          break;
         case r'import_mode':
           final valueDes = serializers.deserialize(
             value,
@@ -348,4 +366,3 @@ class _$CalendarSourceSerializer implements PrimitiveSerializer<CalendarSource> 
     return result.build();
   }
 }
-

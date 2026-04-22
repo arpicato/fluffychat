@@ -9,12 +9,15 @@ import 'package:messie_api/messie_api.dart' as api;
 class RecordingMessieCalendarSdk implements MessieCalendarSdk {
   List<int>? importedBytes;
   String? importedFilename;
+  String? importedCategory;
   String? importedDisplayName;
   bool deletedSource = false;
   String? linkedUrl;
+  String? linkedCategory;
   String? linkedDisplayName;
   String? deletedSourceId;
   String? updatedSourceId;
+  String? updatedCategory;
   String? updatedDisplayName;
   String? refreshedSourceId;
   String? requestedEventId;
@@ -27,10 +30,12 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
   Future<api.CalendarImportResponse> importCalendarSource({
     required List<int> bytes,
     required String filename,
+    String? category,
     String? displayName,
   }) async {
     importedBytes = bytes;
     importedFilename = filename;
+    importedCategory = category;
     importedDisplayName = displayName;
     return api.CalendarImportResponse(
       (builder) => builder
@@ -38,6 +43,7 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
         ..source_.userId = 'user-1'
         ..source_.kind = 'ics_file'
         ..source_.displayName = displayName ?? 'Imported'
+        ..source_.category = category
         ..source_.importMode = 'upload'
         ..source_.refreshState = 'imported'
         ..importedEventCount = 2,
@@ -113,6 +119,7 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
         ..userId = 'user-1'
         ..kind = 'ics_link'
         ..displayName = 'Team Calendar'
+        ..category = 'Work'
         ..importMode = 'link'
         ..refreshState = 'synced',
     );
@@ -126,6 +133,7 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
         ..userId = 'user-1'
         ..kind = 'ics_link'
         ..displayName = 'Team Calendar'
+        ..category = 'Work'
         ..importMode = 'link'
         ..refreshState = 'synced',
     ),
@@ -135,6 +143,7 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
         ..userId = 'user-1'
         ..kind = 'ics_file'
         ..displayName = 'Imported Calendar'
+        ..category = 'Personal'
         ..importMode = 'upload'
         ..refreshState = 'imported',
     ),
@@ -143,9 +152,11 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
   @override
   Future<api.CalendarImportResponse> createLinkedCalendarSource({
     required String url,
+    String? category,
     String? displayName,
   }) async {
     linkedUrl = url;
+    linkedCategory = category;
     linkedDisplayName = displayName;
     return api.CalendarImportResponse(
       (builder) => builder
@@ -153,6 +164,7 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
         ..source_.userId = 'user-1'
         ..source_.kind = 'ics_link'
         ..source_.displayName = displayName ?? 'Linked'
+        ..source_.category = category
         ..source_.importMode = 'link'
         ..source_.refreshState = 'synced'
         ..importedEventCount = 3,
@@ -162,9 +174,11 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
   @override
   Future<api.CalendarSource> updateCalendarSource({
     required String sourceId,
+    String? category,
     required String displayName,
   }) async {
     updatedSourceId = sourceId;
+    updatedCategory = category;
     updatedDisplayName = displayName;
     return api.CalendarSource(
       (builder) => builder
@@ -172,6 +186,7 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
         ..userId = 'user-1'
         ..kind = 'ics_link'
         ..displayName = displayName
+        ..category = category
         ..importMode = 'link'
         ..refreshState = 'synced',
     );
@@ -188,6 +203,7 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
         ..source_.userId = 'user-1'
         ..source_.kind = 'ics_link'
         ..source_.displayName = 'Linked'
+        ..source_.category = 'Work'
         ..source_.importMode = 'link'
         ..source_.refreshState = 'synced'
         ..importedEventCount = 4,
@@ -206,6 +222,7 @@ class ThrowingMessieCalendarSdk implements MessieCalendarSdk {
   Future<api.CalendarImportResponse> importCalendarSource({
     required List<int> bytes,
     required String filename,
+    String? category,
     String? displayName,
   }) async {
     throw DioException(
@@ -249,12 +266,14 @@ class ThrowingMessieCalendarSdk implements MessieCalendarSdk {
   @override
   Future<api.CalendarImportResponse> createLinkedCalendarSource({
     required String url,
+    String? category,
     String? displayName,
   }) => throw UnimplementedError();
 
   @override
   Future<api.CalendarSource> updateCalendarSource({
     required String sourceId,
+    String? category,
     required String displayName,
   }) => throw UnimplementedError();
 
@@ -273,6 +292,7 @@ class ThrowingBytesMessieCalendarSdk implements MessieCalendarSdk {
   Future<api.CalendarImportResponse> importCalendarSource({
     required List<int> bytes,
     required String filename,
+    String? category,
     String? displayName,
   }) async {
     throw DioException(
@@ -316,12 +336,14 @@ class ThrowingBytesMessieCalendarSdk implements MessieCalendarSdk {
   @override
   Future<api.CalendarImportResponse> createLinkedCalendarSource({
     required String url,
+    String? category,
     String? displayName,
   }) => throw UnimplementedError();
 
   @override
   Future<api.CalendarSource> updateCalendarSource({
     required String sourceId,
+    String? category,
     required String displayName,
   }) => throw UnimplementedError();
 
@@ -351,12 +373,15 @@ void main() {
           name: 'calendar.ics',
           mimeType: 'text/calendar',
         ),
+        category: 'Work',
         displayName: 'Work',
       );
 
       expect(sdk.importedBytes, [1, 2, 3, 4]);
       expect(sdk.importedFilename, 'calendar.ics');
+      expect(sdk.importedCategory, 'Work');
       expect(sdk.importedDisplayName, 'Work');
+      expect(result.source.category, 'Work');
       expect(result.source.displayName, 'Work');
       expect(result.importedEventCount, 2);
     });
@@ -408,6 +433,7 @@ void main() {
 
       expect(sources, hasLength(2));
       expect(sources.first.displayName, 'Team Calendar');
+      expect(sources.first.category, 'Work');
       expect(sources.last.importMode, 'upload');
     });
 
@@ -421,11 +447,14 @@ void main() {
         apiBaseUrl: 'http://localhost:8080/api/v1',
         jwt: 'jwt',
         url: 'https://calendar.example.com/feed.ics',
+        category: 'Work',
         displayName: 'Team Calendar',
       );
 
       expect(sdk.linkedUrl, 'https://calendar.example.com/feed.ics');
+      expect(sdk.linkedCategory, 'Work');
       expect(sdk.linkedDisplayName, 'Team Calendar');
+      expect(result.source.category, 'Work');
       expect(result.source.importMode, 'link');
       expect(result.importedEventCount, 3);
     });
@@ -440,11 +469,14 @@ void main() {
         apiBaseUrl: 'http://localhost:8080/api/v1',
         jwt: 'jwt',
         sourceId: 'source-link-1',
+        category: 'Ops',
         displayName: 'Renamed',
       );
 
       expect(sdk.updatedSourceId, 'source-link-1');
+      expect(sdk.updatedCategory, 'Ops');
       expect(sdk.updatedDisplayName, 'Renamed');
+      expect(result.category, 'Ops');
       expect(result.displayName, 'Renamed');
     });
 
@@ -461,6 +493,7 @@ void main() {
       );
 
       expect(sdk.requestedSourceId, 'source-link-1');
+      expect(source.category, 'Work');
       expect(source.displayName, 'Team Calendar');
       expect(source.importMode, 'link');
     });

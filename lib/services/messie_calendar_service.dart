@@ -14,6 +14,7 @@ class MessieCalendarSource {
     required this.userId,
     required this.kind,
     required this.displayName,
+    this.category,
     required this.importMode,
     required this.refreshState,
     this.sourceUrl,
@@ -31,6 +32,7 @@ class MessieCalendarSource {
   final String userId;
   final String kind;
   final String displayName;
+  final String? category;
   final String importMode;
   final String refreshState;
   final String? sourceUrl;
@@ -49,6 +51,7 @@ class MessieCalendarSource {
         userId: source.userId,
         kind: source.kind,
         displayName: source.displayName,
+        category: source.category,
         importMode: source.importMode,
         refreshState: source.refreshState,
         sourceUrl: source.sourceUrl,
@@ -145,6 +148,7 @@ abstract class MessieCalendarSdk {
   Future<api.CalendarImportResponse> importCalendarSource({
     required List<int> bytes,
     required String filename,
+    String? category,
     String? displayName,
   });
 
@@ -152,6 +156,7 @@ abstract class MessieCalendarSdk {
 
   Future<api.CalendarImportResponse> createLinkedCalendarSource({
     required String url,
+    String? category,
     String? displayName,
   });
 
@@ -159,6 +164,7 @@ abstract class MessieCalendarSdk {
 
   Future<api.CalendarSource> updateCalendarSource({
     required String sourceId,
+    String? category,
     required String displayName,
   });
 
@@ -200,10 +206,12 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
   Future<api.CalendarImportResponse> importCalendarSource({
     required List<int> bytes,
     required String filename,
+    String? category,
     String? displayName,
   }) async {
     final response = await _api.importCalendarSource(
       file: MultipartFile.fromBytes(bytes, filename: filename),
+      category: category,
       displayName: displayName,
     );
     return response.data!;
@@ -218,12 +226,14 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
   @override
   Future<api.CalendarImportResponse> createLinkedCalendarSource({
     required String url,
+    String? category,
     String? displayName,
   }) async {
     final response = await _api.createLinkedCalendarSource(
       newCalendarLinkSource: api.NewCalendarLinkSource(
         (b) => b
           ..url = url
+          ..category = category
           ..displayName = displayName,
       ),
     );
@@ -241,12 +251,15 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
   @override
   Future<api.CalendarSource> updateCalendarSource({
     required String sourceId,
+    String? category,
     required String displayName,
   }) async {
     final response = await _api.updateCalendarSource(
       sourceId: sourceId,
       updateCalendarSource: api.UpdateCalendarSource(
-        (b) => b..displayName = displayName,
+        (b) => b
+          ..category = category
+          ..displayName = displayName,
       ),
     );
     return response.data!;
@@ -395,6 +408,7 @@ class MessieCalendarService {
     required String apiBaseUrl,
     required String jwt,
     required XFile file,
+    String? category,
     String? displayName,
   }) async => _wrapRequest(
     'Failed to import calendar source',
@@ -402,6 +416,7 @@ class MessieCalendarService {
       await sdk.importCalendarSource(
         bytes: await file.readAsBytes(),
         filename: file.name.isEmpty ? 'calendar.ics' : file.name,
+        category: category,
         displayName: displayName,
       ),
     ),
@@ -425,12 +440,14 @@ class MessieCalendarService {
     required String apiBaseUrl,
     required String jwt,
     required String url,
+    String? category,
     String? displayName,
   }) async => _wrapRequest(
     'Failed to add linked calendar source',
     (sdk) async => MessieCalendarImportResult.fromApi(
       await sdk.createLinkedCalendarSource(
         url: url,
+        category: category,
         displayName: displayName,
       ),
     ),
@@ -455,12 +472,14 @@ class MessieCalendarService {
     required String apiBaseUrl,
     required String jwt,
     required String sourceId,
+    String? category,
     required String displayName,
   }) async => _wrapRequest(
     'Failed to update calendar source',
     (sdk) async => MessieCalendarSource.fromApi(
       await sdk.updateCalendarSource(
         sourceId: sourceId,
+        category: category,
         displayName: displayName,
       ),
     ),

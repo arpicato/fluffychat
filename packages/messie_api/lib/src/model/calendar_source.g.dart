@@ -16,6 +16,8 @@ class _$CalendarSource extends CalendarSource {
   @override
   final String displayName;
   @override
+  final String? category;
+  @override
   final String importMode;
   @override
   final String? sourceUrl;
@@ -46,6 +48,7 @@ class _$CalendarSource extends CalendarSource {
       required this.userId,
       required this.kind,
       required this.displayName,
+      this.category,
       required this.importMode,
       this.sourceUrl,
       required this.refreshState,
@@ -73,6 +76,7 @@ class _$CalendarSource extends CalendarSource {
         userId == other.userId &&
         kind == other.kind &&
         displayName == other.displayName &&
+        category == other.category &&
         importMode == other.importMode &&
         sourceUrl == other.sourceUrl &&
         refreshState == other.refreshState &&
@@ -93,6 +97,7 @@ class _$CalendarSource extends CalendarSource {
     _$hash = $jc(_$hash, userId.hashCode);
     _$hash = $jc(_$hash, kind.hashCode);
     _$hash = $jc(_$hash, displayName.hashCode);
+    _$hash = $jc(_$hash, category.hashCode);
     _$hash = $jc(_$hash, importMode.hashCode);
     _$hash = $jc(_$hash, sourceUrl.hashCode);
     _$hash = $jc(_$hash, refreshState.hashCode);
@@ -115,6 +120,7 @@ class _$CalendarSource extends CalendarSource {
           ..add('userId', userId)
           ..add('kind', kind)
           ..add('displayName', displayName)
+          ..add('category', category)
           ..add('importMode', importMode)
           ..add('sourceUrl', sourceUrl)
           ..add('refreshState', refreshState)
@@ -149,6 +155,10 @@ class CalendarSourceBuilder
   String? _displayName;
   String? get displayName => _$this._displayName;
   set displayName(String? displayName) => _$this._displayName = displayName;
+
+  String? _category;
+  String? get category => _$this._category;
+  set category(String? category) => _$this._category = category;
 
   String? _importMode;
   String? get importMode => _$this._importMode;
@@ -210,6 +220,7 @@ class CalendarSourceBuilder
       _userId = $v.userId;
       _kind = $v.kind;
       _displayName = $v.displayName;
+      _category = $v.category;
       _importMode = $v.importMode;
       _sourceUrl = $v.sourceUrl;
       _refreshState = $v.refreshState;
@@ -250,6 +261,7 @@ class CalendarSourceBuilder
               kind, r'CalendarSource', 'kind'),
           displayName: BuiltValueNullFieldError.checkNotNull(
               displayName, r'CalendarSource', 'displayName'),
+          category: category,
           importMode: BuiltValueNullFieldError.checkNotNull(
               importMode, r'CalendarSource', 'importMode'),
           sourceUrl: sourceUrl,

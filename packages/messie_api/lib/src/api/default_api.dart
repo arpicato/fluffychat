@@ -2565,6 +2565,7 @@ class DefaultApi {
   ///
   /// Parameters:
   /// * [file] 
+  /// * [category] 
   /// * [displayName] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -2577,6 +2578,7 @@ class DefaultApi {
   /// Throws [DioException] if API call or serialization fails
   Future<Response<CalendarImportResponse>> importCalendarSource({ 
     required MultipartFile file,
+    String? category,
     String? displayName,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -2610,6 +2612,7 @@ class DefaultApi {
     try {
       _bodyData = FormData.fromMap(<String, dynamic>{
         r'file': file,
+        if (category != null) r'category': encodeFormParameter(_serializers, category, const FullType(String)),
         if (displayName != null) r'display_name': encodeFormParameter(_serializers, displayName, const FullType(String)),
       });
 

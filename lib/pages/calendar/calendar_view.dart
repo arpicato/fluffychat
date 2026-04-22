@@ -21,17 +21,29 @@ class _CalendarPageData {
   final List<MessieCalendarEvent> events;
 }
 
+class _CalendarSourceDraft {
+  const _CalendarSourceDraft({
+    required this.displayName,
+    this.category,
+  });
+
+  final String displayName;
+  final String? category;
+}
+
 enum _CalendarImportMode { link, file }
 
 class _CalendarImportRequest {
   const _CalendarImportRequest.link({
     required this.url,
+    this.category,
     required this.displayName,
   }) : mode = _CalendarImportMode.link,
        file = null;
 
   const _CalendarImportRequest.file({
     required this.file,
+    this.category,
     required this.displayName,
   }) : mode = _CalendarImportMode.file,
        url = null;
@@ -39,6 +51,7 @@ class _CalendarImportRequest {
   final _CalendarImportMode mode;
   final String? url;
   final XFile? file;
+  final String? category;
   final String displayName;
 }
 
@@ -48,10 +61,12 @@ class _CalendarImportSheet extends StatefulWidget {
   const _CalendarImportSheet({
     required this.suggestDisplayName,
     required this.fallbackDisplayName,
+    required this.existingCategories,
   });
 
   final Future<String> Function(XFile file) suggestDisplayName;
   final String Function(String filename) fallbackDisplayName;
+  final List<String> existingCategories;
 
   @override
   State<_CalendarImportSheet> createState() => _CalendarImportSheetState();
@@ -62,6 +77,7 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
   _CalendarInstructionPlatform _platform = _CalendarInstructionPlatform.google;
   bool _showInstructions = false;
   final TextEditingController _urlController = TextEditingController();
+  final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   XFile? _selectedFile;
   bool _selectingFile = false;
@@ -69,6 +85,7 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
   @override
   void dispose() {
     _urlController.dispose();
+    _categoryController.dispose();
     _nameController.dispose();
     super.dispose();
   }
@@ -113,6 +130,7 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
       Navigator.of(context).pop(
         _CalendarImportRequest.link(
           url: _urlController.text,
+          category: _normalizedCategory,
           displayName: _nameController.text,
         ),
       );
@@ -129,9 +147,15 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
     Navigator.of(context).pop(
       _CalendarImportRequest.file(
         file: file,
+        category: _normalizedCategory,
         displayName: _nameController.text,
       ),
     );
+  }
+
+  String? get _normalizedCategory {
+    final trimmed = _categoryController.text.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   String get _primaryButtonLabel =>
@@ -265,17 +289,16 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: 'Calendar name',
-                      hintText: _mode == _CalendarImportMode.link
-                          ? 'Imported calendar'
-                          : 'Name from the file',
-                      prefixIcon: const Icon(Icons.label_outline),
-                    ),
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _submit(),
+                  _CalendarSourceDraftFields(
+                    categoryController: _categoryController,
+                    nameController: _nameController,
+                    existingCategories: widget.existingCategories,
+                    nameLabel: 'Calendar name',
+                    nameHint: _mode == _CalendarImportMode.link
+                        ? 'Imported calendar'
+                        : 'Name from the file',
+                    autofocusName: _mode != _CalendarImportMode.link,
+                    onSubmitted: _submit,
                   ),
                   const SizedBox(height: 20),
                   Align(
@@ -338,6 +361,67 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CalendarSourceDraftFields extends StatelessWidget {
+  const _CalendarSourceDraftFields({
+    required this.categoryController,
+    required this.nameController,
+    required this.existingCategories,
+    required this.nameLabel,
+    required this.nameHint,
+    required this.onSubmitted,
+    this.autofocusName = false,
+  });
+
+  final TextEditingController categoryController;
+  final TextEditingController nameController;
+  final List<String> existingCategories;
+  final String nameLabel;
+  final String nameHint;
+  final VoidCallback onSubmitted;
+  final bool autofocusName;
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = existingCategories.toSet().toList()..sort();
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: DropdownMenu<String>(
+            controller: categoryController,
+            width: double.infinity,
+            enableFilter: true,
+            enableSearch: true,
+            requestFocusOnTap: true,
+            label: const Text('Category'),
+            hintText: 'Work',
+            dropdownMenuEntries: [
+              for (final category in categories)
+                DropdownMenuEntry<String>(value: category, label: category),
+            ],
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(12, 16, 12, 0),
+          child: Text('/'),
+        ),
+        Expanded(
+          child: TextField(
+            controller: nameController,
+            autofocus: autofocusName,
+            decoration: InputDecoration(
+              labelText: nameLabel,
+              hintText: nameHint,
+            ),
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => onSubmitted(),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -503,6 +587,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   Set<String> _visibleSourceIds = <String>{};
   Set<String> _knownSourceIds = <String>{};
   bool _hasInitializedSourceSelection = false;
+  _CalendarPageData? _latestPageData;
 
   CalendarPageController get controller => widget.controller;
 
@@ -569,7 +654,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     ]);
     final sources = results[0] as List<MessieCalendarSource>;
     final events = results[1] as List<MessieCalendarEvent>;
-    return _CalendarPageData(sources: sources, events: events);
+    final data = _CalendarPageData(sources: sources, events: events);
+    _latestPageData = data;
+    return data;
   }
 
   void _refreshPage() {
@@ -585,6 +672,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       builder: (context) => _CalendarImportSheet(
         suggestDisplayName: _suggestDisplayName,
         fallbackDisplayName: _fallbackDisplayName,
+        existingCategories: _distinctCategories(
+          _latestPageData?.sources ?? const [],
+        ),
       ),
     );
     if (!context.mounted || request == null) return;
@@ -602,6 +692,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
           apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
           jwt: session.token,
           url: request.url!.trim(),
+          category: request.category,
           displayName: request.displayName.trim().isEmpty
               ? null
               : request.displayName.trim(),
@@ -611,6 +702,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
           apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
           jwt: session.token,
           file: request.file!,
+          category: request.category,
           displayName: request.displayName.trim().isEmpty
               ? null
               : request.displayName.trim(),
@@ -623,8 +715,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         SnackBar(
           content: Text(
             request.mode == _CalendarImportMode.link
-                ? 'Added ${result.source.displayName} with ${result.importedEventCount} events.'
-                : 'Imported ${result.importedEventCount} events from ${result.source.displayName}.',
+                ? 'Added ${_sourceLabel(result.source)} with ${result.importedEventCount} events.'
+                : 'Imported ${result.importedEventCount} events from ${_sourceLabel(result.source)}.',
           ),
         ),
       );
@@ -645,16 +737,25 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     BuildContext context,
     MessieCalendarSource source,
   ) async {
-    final displayName = await _promptForDisplayName(
+    final draft = await _promptForSourceDraft(
       context,
-      initialValue: source.displayName,
+      initialName: source.displayName,
+      initialCategory: source.category,
+      existingCategories: _distinctCategories(
+        _latestPageData?.sources ?? const [],
+      ),
       title: 'Rename calendar',
       confirmLabel: 'Save',
     );
-    if (!context.mounted || displayName == null) return;
+    if (!context.mounted || draft == null) return;
 
-    final trimmed = displayName.trim();
-    if (trimmed.isEmpty || trimmed == source.displayName) return;
+    final trimmedName = draft.displayName.trim();
+    final trimmedCategory = draft.category?.trim();
+    if (trimmedName.isEmpty) return;
+    if (trimmedName == source.displayName &&
+        trimmedCategory == source.category) {
+      return;
+    }
 
     final matrix = Matrix.of(context);
     final session = await BackendSessionService().ensureSession(
@@ -667,7 +768,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
         jwt: session.token,
         sourceId: source.id,
-        displayName: trimmed,
+        category: trimmedCategory?.isEmpty == true ? null : trimmedCategory,
+        displayName: trimmedName,
       );
       if (!context.mounted) return;
       MessieWorkspaceRefresh.instance.bump();
@@ -705,7 +807,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Refreshed ${result.source.displayName}. ${result.importedEventCount} events imported.',
+            'Refreshed ${_sourceLabel(result.source)}. ${result.importedEventCount} events imported.',
           ),
         ),
       );
@@ -743,27 +845,37 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     return fallback;
   }
 
-  Future<String?> _promptForDisplayName(
+  Future<_CalendarSourceDraft?> _promptForSourceDraft(
     BuildContext context, {
-    required String initialValue,
+    required String initialName,
+    required String? initialCategory,
+    required List<String> existingCategories,
     String title = 'Import calendar',
     String confirmLabel = 'Import',
   }) async {
-    final controller = TextEditingController(text: initialValue);
+    final categoryController = TextEditingController(text: initialCategory ?? '');
+    final nameController = TextEditingController(text: initialName);
     try {
-      return await showDialog<String>(
+      return await showDialog<_CalendarSourceDraft>(
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: Text(title),
-          content: TextField(
-            controller: controller,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Calendar name',
-              hintText: 'Imported calendar',
+          content: SizedBox(
+            width: 560,
+            child: _CalendarSourceDraftFields(
+              categoryController: categoryController,
+              nameController: nameController,
+              existingCategories: existingCategories,
+              nameLabel: 'Calendar name',
+              nameHint: 'Imported calendar',
+              autofocusName: true,
+              onSubmitted: () => Navigator.of(dialogContext).pop(
+                _CalendarSourceDraft(
+                  category: _normalizeOptionalText(categoryController.text),
+                  displayName: nameController.text,
+                ),
+              ),
             ),
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => Navigator.of(dialogContext).pop(controller.text),
           ),
           actions: [
             TextButton(
@@ -771,14 +883,20 @@ class _CalendarPageViewState extends State<CalendarPageView> {
               child: const Text('Cancel'),
             ),
             FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+              onPressed: () => Navigator.of(dialogContext).pop(
+                _CalendarSourceDraft(
+                  category: _normalizeOptionalText(categoryController.text),
+                  displayName: nameController.text,
+                ),
+              ),
               child: Text(confirmLabel),
             ),
           ],
         ),
       );
     } finally {
-      controller.dispose();
+      categoryController.dispose();
+      nameController.dispose();
     }
   }
 
@@ -791,6 +909,24 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     }
     return trimmed;
   }
+
+  List<String> _distinctCategories(List<MessieCalendarSource> sources) =>
+      sources
+          .map((source) => _normalizeOptionalText(source.category))
+          .whereType<String>()
+          .toSet()
+          .toList()
+        ..sort();
+
+  String? _normalizeOptionalText(String? value) {
+    final trimmed = value?.trim() ?? '';
+    return trimmed.isEmpty ? null : trimmed;
+  }
+
+  String _sourceLabel(MessieCalendarSource source) =>
+      source.category == null || source.category!.trim().isEmpty
+          ? source.displayName
+          : '${source.category} / ${source.displayName}';
 
   String _decodeICalText(String value) => value
       .replaceAll(r'\n', '\n')
@@ -807,7 +943,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       context: context,
       title: 'Delete calendar source?',
       message:
-          'This removes ${source.displayName} and all imported events from FluffyChat.',
+          'This removes ${_sourceLabel(source)} and all imported events from FluffyChat.',
       okLabel: 'Delete',
       cancelLabel: 'Cancel',
       isDestructive: true,
@@ -831,7 +967,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       _refreshPage();
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Deleted ${source.displayName}.')));
+      ).showSnackBar(SnackBar(content: Text('Deleted ${_sourceLabel(source)}.')));
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(
@@ -1256,7 +1392,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  source.displayName,
+                                  _sourceLabel(source),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: theme.textTheme.titleSmall,
@@ -1813,7 +1949,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               child: ListTile(
                 leading: const Icon(Icons.calendar_today_outlined),
-                title: Text(source.displayName),
+                title: Text(_sourceLabel(source)),
                 subtitle: Text(
                   _formatSourceSubtitle(source),
                   maxLines: 1,

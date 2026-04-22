@@ -11,9 +11,13 @@ part 'update_calendar_source.g.dart';
 /// UpdateCalendarSource
 ///
 /// Properties:
+/// * [category] 
 /// * [displayName] 
 @BuiltValue()
 abstract class UpdateCalendarSource implements Built<UpdateCalendarSource, UpdateCalendarSourceBuilder> {
+  @BuiltValueField(wireName: r'category')
+  String? get category;
+
   @BuiltValueField(wireName: r'display_name')
   String get displayName;
 
@@ -40,6 +44,13 @@ class _$UpdateCalendarSourceSerializer implements PrimitiveSerializer<UpdateCale
     UpdateCalendarSource object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
+    if (object.category != null) {
+      yield r'category';
+      yield serializers.serialize(
+        object.category,
+        specifiedType: const FullType(String),
+      );
+    }
     yield r'display_name';
     yield serializers.serialize(
       object.displayName,
@@ -68,6 +79,13 @@ class _$UpdateCalendarSourceSerializer implements PrimitiveSerializer<UpdateCale
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
+        case r'category':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.category = valueDes;
+          break;
         case r'display_name':
           final valueDes = serializers.deserialize(
             value,
@@ -103,4 +121,3 @@ class _$UpdateCalendarSourceSerializer implements PrimitiveSerializer<UpdateCale
     return result.build();
   }
 }
-

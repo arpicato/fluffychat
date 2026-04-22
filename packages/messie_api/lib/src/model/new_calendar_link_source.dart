@@ -12,11 +12,15 @@ part 'new_calendar_link_source.g.dart';
 ///
 /// Properties:
 /// * [url] 
+/// * [category] 
 /// * [displayName] 
 @BuiltValue()
 abstract class NewCalendarLinkSource implements Built<NewCalendarLinkSource, NewCalendarLinkSourceBuilder> {
   @BuiltValueField(wireName: r'url')
   String get url;
+
+  @BuiltValueField(wireName: r'category')
+  String? get category;
 
   @BuiltValueField(wireName: r'display_name')
   String? get displayName;
@@ -49,6 +53,13 @@ class _$NewCalendarLinkSourceSerializer implements PrimitiveSerializer<NewCalend
       object.url,
       specifiedType: const FullType(String),
     );
+    if (object.category != null) {
+      yield r'category';
+      yield serializers.serialize(
+        object.category,
+        specifiedType: const FullType(String),
+      );
+    }
     if (object.displayName != null) {
       yield r'display_name';
       yield serializers.serialize(
@@ -86,6 +97,13 @@ class _$NewCalendarLinkSourceSerializer implements PrimitiveSerializer<NewCalend
           ) as String;
           result.url = valueDes;
           break;
+        case r'category':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.category = valueDes;
+          break;
         case r'display_name':
           final valueDes = serializers.deserialize(
             value,
@@ -121,4 +139,3 @@ class _$NewCalendarLinkSourceSerializer implements PrimitiveSerializer<NewCalend
     return result.build();
   }
 }
-

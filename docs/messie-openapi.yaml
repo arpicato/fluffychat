@@ -598,6 +598,9 @@ paths:
                 file:
                   type: string
                   format: binary
+                category:
+                  type: string
+                  nullable: true
                 display_name:
                   type: string
       responses:
@@ -1315,6 +1318,10 @@ components:
         display_name:
           type: string
           example: Work Calendar
+        category:
+          type: string
+          nullable: true
+          example: Work
         import_mode:
           type: string
           example: upload
@@ -1357,6 +1364,9 @@ components:
         url:
           type: string
           format: uri
+        category:
+          type: string
+          nullable: true
         display_name:
           type: string
     UpdateCalendarSource:
@@ -1364,6 +1374,9 @@ components:
       required:
         - display_name
       properties:
+        category:
+          type: string
+          nullable: true
         display_name:
           type: string
     CalendarEvent:
