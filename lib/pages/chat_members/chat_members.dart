@@ -38,7 +38,7 @@ class ChatMembersController extends State<ChatMembersPage> {
     if (filter.isEmpty) {
       setState(() {
         filteredMembers = members
-          ?..sort((b, a) => a.powerLevel.level.compareTo(b.powerLevel.level));
+          ?..sort((b, a) => a.powerLevel.compareTo(b.powerLevel));
       });
       return;
     }
@@ -51,7 +51,7 @@ class ChatMembersController extends State<ChatMembersPage> {
                     user.id.toLowerCase().contains(filter),
               )
               .toList()
-            ?..sort((b, a) => a.powerLevel.level.compareTo(b.powerLevel.level));
+            ?..sort((b, a) => a.powerLevel.compareTo(b.powerLevel));
     });
   }
 

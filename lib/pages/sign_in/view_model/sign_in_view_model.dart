@@ -28,6 +28,10 @@ class SignInViewModel extends ValueNotifier<SignInState> {
 
   void _filterHomeservers() {
     final filterText = filterTextController.text.trim().toLowerCase();
+    final parsedUri = Uri.tryParse(filterText);
+    final candidateHost = parsedUri?.host.isNotEmpty == true
+        ? parsedUri!.host.toLowerCase()
+        : filterText;
     final filteredPublicHomeservers =
         value.publicHomeservers.data
             ?.where(
@@ -37,8 +41,8 @@ class SignInViewModel extends ValueNotifier<SignInState> {
             .toList() ??
         [];
     if (filterText.length >= 3 &&
-        (filterText.contains('.') || filterText == 'localhost') &&
-        Uri.tryParse(filterText) != null &&
+        (candidateHost.contains('.') || candidateHost == 'localhost') &&
+        parsedUri != null &&
         !filteredPublicHomeservers.any(
           (homeserver) => homeserver.name == filterText,
         )) {

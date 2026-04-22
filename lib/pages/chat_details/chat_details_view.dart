@@ -44,7 +44,7 @@ class ChatDetailsView extends StatelessWidget {
       ),
       builder: (context, snapshot) {
         var members = room.getParticipants().toList()
-          ..sort((b, a) => a.powerLevel.level.compareTo(b.powerLevel.level));
+          ..sort((b, a) => a.powerLevel.compareTo(b.powerLevel));
         members = members.take(10).toList();
         final actualMembersCount =
             (room.summary.mInvitedMemberCount ?? 0) +

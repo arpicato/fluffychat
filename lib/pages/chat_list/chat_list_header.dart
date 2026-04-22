@@ -11,11 +11,13 @@ import '../../widgets/matrix.dart';
 class ChatListHeader extends StatelessWidget implements PreferredSizeWidget {
   final ChatListController controller;
   final bool globalSearch;
+  final VoidCallback? openDrawer;
 
   const ChatListHeader({
     super.key,
     required this.controller,
     this.globalSearch = true,
+    this.openDrawer,
   });
 
   @override
@@ -68,6 +70,15 @@ class ChatListHeader extends StatelessWidget implements PreferredSizeWidget {
                             icon: const Icon(Icons.close_outlined),
                             onPressed: controller.cancelSearch,
                             color: theme.colorScheme.onPrimaryContainer,
+                          )
+                        : openDrawer != null &&
+                              !FluffyThemes.isColumnMode(context)
+                        ? IconButton(
+                            onPressed: openDrawer,
+                            icon: Icon(
+                              Icons.menu_outlined,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
                           )
                         : IconButton(
                             onPressed: controller.startSearch,
