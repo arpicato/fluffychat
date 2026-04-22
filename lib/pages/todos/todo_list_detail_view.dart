@@ -429,7 +429,7 @@ class TodoListDetailPageView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => FutureBuilder<TodoListDetailData>(
-    future: controller.load(context),
+    future: controller.loadFuture,
     builder: (context, snapshot) {
       final theme = Theme.of(context);
 
@@ -817,6 +817,7 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
         return;
       }
 
+      if (!mounted) return;
       await widget.controller.addCollaborator(
         context,
         messieUser.id,

@@ -9,6 +9,9 @@ import 'package:messie_api/api.dart';
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **type** | **String** |  | 
+**processId** | **String** |  | [optional] 
+**loginId** | **String** |  | [optional] 
+**stepId** | **String** |  | [optional] 
 **displayAndWait** | [**LoginStepDisplayAndWaitDisplayAndWait**](LoginStepDisplayAndWaitDisplayAndWait.md) |  | 
 **userInput** | [**LoginStepUserInputUserInput**](LoginStepUserInputUserInput.md) |  | 
 **cookies** | [**LoginStepCookiesCookies**](LoginStepCookiesCookies.md) |  | 

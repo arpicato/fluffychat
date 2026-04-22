@@ -163,24 +163,10 @@ void main() {
       // TODO
     });
 
-    // Log in a user
-    //
-    //Future<AuthResponse> loginPost(LoginRequest loginRequest) async
-    test('test loginPost', () async {
-      // TODO
-    });
-
     // Authenticate using Matrix OpenID
     //
     //Future<MatrixAuthResponse> postMatrixAuth(MatrixOpenIDRequest matrixOpenIDRequest) async
     test('test postMatrixAuth', () async {
-      // TODO
-    });
-
-    // Register a new user
-    //
-    //Future<AuthResponse> registerPost(RegisterRequest registerRequest) async
-    test('test registerPost', () async {
       // TODO
     });
 
@@ -202,20 +188,6 @@ void main() {
     //
     //Future<TodoList> updateTodoList(String listId, UpdateTodoList updateTodoList) async
     test('test updateTodoList', () async {
-      // TODO
-    });
-
-    // Get user by ID
-    //
-    //Future<User> usersIdGet(String id) async
-    test('test usersIdGet', () async {
-      // TODO
-    });
-
-    // Get current user profile
-    //
-    //Future<User> usersMeGet() async
-    test('test usersMeGet', () async {
       // TODO
     });
 

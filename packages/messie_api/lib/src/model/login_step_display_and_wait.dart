@@ -14,12 +14,24 @@ part 'login_step_display_and_wait.g.dart';
 ///
 /// Properties:
 /// * [type] 
+/// * [processId] 
+/// * [loginId] 
+/// * [stepId] 
 /// * [displayAndWait] 
 @BuiltValue()
 abstract class LoginStepDisplayAndWait implements Built<LoginStepDisplayAndWait, LoginStepDisplayAndWaitBuilder> {
   @BuiltValueField(wireName: r'type')
   LoginStepDisplayAndWaitTypeEnum get type;
   // enum typeEnum {  display_and_wait,  };
+
+  @BuiltValueField(wireName: r'process_id')
+  String? get processId;
+
+  @BuiltValueField(wireName: r'login_id')
+  String? get loginId;
+
+  @BuiltValueField(wireName: r'step_id')
+  String? get stepId;
 
   @BuiltValueField(wireName: r'display_and_wait')
   LoginStepDisplayAndWaitDisplayAndWait get displayAndWait;
@@ -52,6 +64,27 @@ class _$LoginStepDisplayAndWaitSerializer implements PrimitiveSerializer<LoginSt
       object.type,
       specifiedType: const FullType(LoginStepDisplayAndWaitTypeEnum),
     );
+    if (object.processId != null) {
+      yield r'process_id';
+      yield serializers.serialize(
+        object.processId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.loginId != null) {
+      yield r'login_id';
+      yield serializers.serialize(
+        object.loginId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.stepId != null) {
+      yield r'step_id';
+      yield serializers.serialize(
+        object.stepId,
+        specifiedType: const FullType(String),
+      );
+    }
     yield r'display_and_wait';
     yield serializers.serialize(
       object.displayAndWait,
@@ -86,6 +119,27 @@ class _$LoginStepDisplayAndWaitSerializer implements PrimitiveSerializer<LoginSt
             specifiedType: const FullType(LoginStepDisplayAndWaitTypeEnum),
           ) as LoginStepDisplayAndWaitTypeEnum;
           result.type = valueDes;
+          break;
+        case r'process_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.processId = valueDes;
+          break;
+        case r'login_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.loginId = valueDes;
+          break;
+        case r'step_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.stepId = valueDes;
           break;
         case r'display_and_wait':
           final valueDes = serializers.deserialize(

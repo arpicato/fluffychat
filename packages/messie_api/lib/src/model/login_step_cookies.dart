@@ -14,12 +14,24 @@ part 'login_step_cookies.g.dart';
 ///
 /// Properties:
 /// * [type] 
+/// * [processId] 
+/// * [loginId] 
+/// * [stepId] 
 /// * [cookies] 
 @BuiltValue()
 abstract class LoginStepCookies implements Built<LoginStepCookies, LoginStepCookiesBuilder> {
   @BuiltValueField(wireName: r'type')
   LoginStepCookiesTypeEnum get type;
   // enum typeEnum {  cookies,  };
+
+  @BuiltValueField(wireName: r'process_id')
+  String? get processId;
+
+  @BuiltValueField(wireName: r'login_id')
+  String? get loginId;
+
+  @BuiltValueField(wireName: r'step_id')
+  String? get stepId;
 
   @BuiltValueField(wireName: r'cookies')
   LoginStepCookiesCookies get cookies;
@@ -52,6 +64,27 @@ class _$LoginStepCookiesSerializer implements PrimitiveSerializer<LoginStepCooki
       object.type,
       specifiedType: const FullType(LoginStepCookiesTypeEnum),
     );
+    if (object.processId != null) {
+      yield r'process_id';
+      yield serializers.serialize(
+        object.processId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.loginId != null) {
+      yield r'login_id';
+      yield serializers.serialize(
+        object.loginId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.stepId != null) {
+      yield r'step_id';
+      yield serializers.serialize(
+        object.stepId,
+        specifiedType: const FullType(String),
+      );
+    }
     yield r'cookies';
     yield serializers.serialize(
       object.cookies,
@@ -86,6 +119,27 @@ class _$LoginStepCookiesSerializer implements PrimitiveSerializer<LoginStepCooki
             specifiedType: const FullType(LoginStepCookiesTypeEnum),
           ) as LoginStepCookiesTypeEnum;
           result.type = valueDes;
+          break;
+        case r'process_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.processId = valueDes;
+          break;
+        case r'login_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.loginId = valueDes;
+          break;
+        case r'step_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.stepId = valueDes;
           break;
         case r'cookies':
           final valueDes = serializers.deserialize(

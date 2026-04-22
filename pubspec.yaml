@@ -14,6 +14,8 @@ dependencies:
   async: ^2.13.1
   badges: ^3.2.0
   blurhash_dart: ^1.2.1
+  built_collection: ^5.1.1
+  built_value: ^8.12.0
   chewie: ^1.13.1
   collection: ^1.18.0
   cross_file: ^0.3.5
@@ -82,6 +84,7 @@ dependencies:
   video_player: ^2.11.1
   wakelock_plus: ^1.5.2
   webrtc_interface: ^1.5.1
+  one_of: ^1.5.0
 
 dev_dependencies:
   dart_code_linter: ^4.0.2

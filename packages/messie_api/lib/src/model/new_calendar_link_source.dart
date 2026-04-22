@@ -3,65 +3,65 @@
 //
 
 // ignore_for_file: unused_element
-import 'package:messie_api/src/model/user.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
-part 'auth_response.g.dart';
+part 'new_calendar_link_source.g.dart';
 
-/// AuthResponse
+/// NewCalendarLinkSource
 ///
 /// Properties:
-/// * [user] 
-/// * [token] - JWT token
+/// * [url] 
+/// * [displayName] 
 @BuiltValue()
-abstract class AuthResponse implements Built<AuthResponse, AuthResponseBuilder> {
-  @BuiltValueField(wireName: r'user')
-  User get user;
+abstract class NewCalendarLinkSource implements Built<NewCalendarLinkSource, NewCalendarLinkSourceBuilder> {
+  @BuiltValueField(wireName: r'url')
+  String get url;
 
-  /// JWT token
-  @BuiltValueField(wireName: r'token')
-  String get token;
+  @BuiltValueField(wireName: r'display_name')
+  String? get displayName;
 
-  AuthResponse._();
+  NewCalendarLinkSource._();
 
-  factory AuthResponse([void updates(AuthResponseBuilder b)]) = _$AuthResponse;
+  factory NewCalendarLinkSource([void updates(NewCalendarLinkSourceBuilder b)]) = _$NewCalendarLinkSource;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(AuthResponseBuilder b) => b;
+  static void _defaults(NewCalendarLinkSourceBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<AuthResponse> get serializer => _$AuthResponseSerializer();
+  static Serializer<NewCalendarLinkSource> get serializer => _$NewCalendarLinkSourceSerializer();
 }
 
-class _$AuthResponseSerializer implements PrimitiveSerializer<AuthResponse> {
+class _$NewCalendarLinkSourceSerializer implements PrimitiveSerializer<NewCalendarLinkSource> {
   @override
-  final Iterable<Type> types = const [AuthResponse, _$AuthResponse];
+  final Iterable<Type> types = const [NewCalendarLinkSource, _$NewCalendarLinkSource];
 
   @override
-  final String wireName = r'AuthResponse';
+  final String wireName = r'NewCalendarLinkSource';
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    AuthResponse object, {
+    NewCalendarLinkSource object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'user';
+    yield r'url';
     yield serializers.serialize(
-      object.user,
-      specifiedType: const FullType(User),
-    );
-    yield r'token';
-    yield serializers.serialize(
-      object.token,
+      object.url,
       specifiedType: const FullType(String),
     );
+    if (object.displayName != null) {
+      yield r'display_name';
+      yield serializers.serialize(
+        object.displayName,
+        specifiedType: const FullType(String),
+      );
+    }
   }
 
   @override
   Object serialize(
     Serializers serializers,
-    AuthResponse object, {
+    NewCalendarLinkSource object, {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
@@ -72,26 +72,26 @@ class _$AuthResponseSerializer implements PrimitiveSerializer<AuthResponse> {
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
     required List<Object?> serializedList,
-    required AuthResponseBuilder result,
+    required NewCalendarLinkSourceBuilder result,
     required List<Object?> unhandled,
   }) {
     for (var i = 0; i < serializedList.length; i += 2) {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'user':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(User),
-          ) as User;
-          result.user.replace(valueDes);
-          break;
-        case r'token':
+        case r'url':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(String),
           ) as String;
-          result.token = valueDes;
+          result.url = valueDes;
+          break;
+        case r'display_name':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.displayName = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -102,12 +102,12 @@ class _$AuthResponseSerializer implements PrimitiveSerializer<AuthResponse> {
   }
 
   @override
-  AuthResponse deserialize(
+  NewCalendarLinkSource deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = AuthResponseBuilder();
+    final result = NewCalendarLinkSourceBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(

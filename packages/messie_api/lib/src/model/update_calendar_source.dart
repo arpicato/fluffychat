@@ -6,52 +6,43 @@
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
-part 'register_request.g.dart';
+part 'update_calendar_source.g.dart';
 
-/// RegisterRequest
+/// UpdateCalendarSource
 ///
 /// Properties:
-/// * [email] 
-/// * [password] 
+/// * [displayName] 
 @BuiltValue()
-abstract class RegisterRequest implements Built<RegisterRequest, RegisterRequestBuilder> {
-  @BuiltValueField(wireName: r'email')
-  String get email;
+abstract class UpdateCalendarSource implements Built<UpdateCalendarSource, UpdateCalendarSourceBuilder> {
+  @BuiltValueField(wireName: r'display_name')
+  String get displayName;
 
-  @BuiltValueField(wireName: r'password')
-  String get password;
+  UpdateCalendarSource._();
 
-  RegisterRequest._();
-
-  factory RegisterRequest([void updates(RegisterRequestBuilder b)]) = _$RegisterRequest;
+  factory UpdateCalendarSource([void updates(UpdateCalendarSourceBuilder b)]) = _$UpdateCalendarSource;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(RegisterRequestBuilder b) => b;
+  static void _defaults(UpdateCalendarSourceBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<RegisterRequest> get serializer => _$RegisterRequestSerializer();
+  static Serializer<UpdateCalendarSource> get serializer => _$UpdateCalendarSourceSerializer();
 }
 
-class _$RegisterRequestSerializer implements PrimitiveSerializer<RegisterRequest> {
+class _$UpdateCalendarSourceSerializer implements PrimitiveSerializer<UpdateCalendarSource> {
   @override
-  final Iterable<Type> types = const [RegisterRequest, _$RegisterRequest];
+  final Iterable<Type> types = const [UpdateCalendarSource, _$UpdateCalendarSource];
 
   @override
-  final String wireName = r'RegisterRequest';
+  final String wireName = r'UpdateCalendarSource';
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    RegisterRequest object, {
+    UpdateCalendarSource object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'email';
+    yield r'display_name';
     yield serializers.serialize(
-      object.email,
-      specifiedType: const FullType(String),
-    );
-    yield r'password';
-    yield serializers.serialize(
-      object.password,
+      object.displayName,
       specifiedType: const FullType(String),
     );
   }
@@ -59,7 +50,7 @@ class _$RegisterRequestSerializer implements PrimitiveSerializer<RegisterRequest
   @override
   Object serialize(
     Serializers serializers,
-    RegisterRequest object, {
+    UpdateCalendarSource object, {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
@@ -70,26 +61,19 @@ class _$RegisterRequestSerializer implements PrimitiveSerializer<RegisterRequest
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
     required List<Object?> serializedList,
-    required RegisterRequestBuilder result,
+    required UpdateCalendarSourceBuilder result,
     required List<Object?> unhandled,
   }) {
     for (var i = 0; i < serializedList.length; i += 2) {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'email':
+        case r'display_name':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType(String),
           ) as String;
-          result.email = valueDes;
-          break;
-        case r'password':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.password = valueDes;
+          result.displayName = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -100,12 +84,12 @@ class _$RegisterRequestSerializer implements PrimitiveSerializer<RegisterRequest
   }
 
   @override
-  RegisterRequest deserialize(
+  UpdateCalendarSource deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = RegisterRequestBuilder();
+    final result = UpdateCalendarSourceBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(

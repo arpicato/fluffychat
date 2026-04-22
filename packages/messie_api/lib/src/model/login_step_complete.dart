@@ -14,12 +14,24 @@ part 'login_step_complete.g.dart';
 ///
 /// Properties:
 /// * [type] 
+/// * [processId] 
+/// * [loginId] 
+/// * [stepId] 
 /// * [complete] 
 @BuiltValue()
 abstract class LoginStepComplete implements Built<LoginStepComplete, LoginStepCompleteBuilder> {
   @BuiltValueField(wireName: r'type')
   LoginStepCompleteTypeEnum get type;
   // enum typeEnum {  complete,  };
+
+  @BuiltValueField(wireName: r'process_id')
+  String? get processId;
+
+  @BuiltValueField(wireName: r'login_id')
+  String? get loginId;
+
+  @BuiltValueField(wireName: r'step_id')
+  String? get stepId;
 
   @BuiltValueField(wireName: r'complete')
   LoginStepCompleteComplete get complete;
@@ -52,6 +64,27 @@ class _$LoginStepCompleteSerializer implements PrimitiveSerializer<LoginStepComp
       object.type,
       specifiedType: const FullType(LoginStepCompleteTypeEnum),
     );
+    if (object.processId != null) {
+      yield r'process_id';
+      yield serializers.serialize(
+        object.processId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.loginId != null) {
+      yield r'login_id';
+      yield serializers.serialize(
+        object.loginId,
+        specifiedType: const FullType(String),
+      );
+    }
+    if (object.stepId != null) {
+      yield r'step_id';
+      yield serializers.serialize(
+        object.stepId,
+        specifiedType: const FullType(String),
+      );
+    }
     yield r'complete';
     yield serializers.serialize(
       object.complete,
@@ -86,6 +119,27 @@ class _$LoginStepCompleteSerializer implements PrimitiveSerializer<LoginStepComp
             specifiedType: const FullType(LoginStepCompleteTypeEnum),
           ) as LoginStepCompleteTypeEnum;
           result.type = valueDes;
+          break;
+        case r'process_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.processId = valueDes;
+          break;
+        case r'login_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.loginId = valueDes;
+          break;
+        case r'step_id':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.stepId = valueDes;
           break;
         case r'complete':
           final valueDes = serializers.deserialize(

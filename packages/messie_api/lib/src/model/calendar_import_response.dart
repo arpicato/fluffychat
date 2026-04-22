@@ -3,63 +3,64 @@
 //
 
 // ignore_for_file: unused_element
+import 'package:messie_api/src/model/calendar_source.dart';
 import 'package:built_value/built_value.dart';
 import 'package:built_value/serializer.dart';
 
-part 'login_request.g.dart';
+part 'calendar_import_response.g.dart';
 
-/// LoginRequest
+/// CalendarImportResponse
 ///
 /// Properties:
-/// * [email] 
-/// * [password] 
+/// * [source_] 
+/// * [importedEventCount] 
 @BuiltValue()
-abstract class LoginRequest implements Built<LoginRequest, LoginRequestBuilder> {
-  @BuiltValueField(wireName: r'email')
-  String get email;
+abstract class CalendarImportResponse implements Built<CalendarImportResponse, CalendarImportResponseBuilder> {
+  @BuiltValueField(wireName: r'source')
+  CalendarSource get source_;
 
-  @BuiltValueField(wireName: r'password')
-  String get password;
+  @BuiltValueField(wireName: r'imported_event_count')
+  int get importedEventCount;
 
-  LoginRequest._();
+  CalendarImportResponse._();
 
-  factory LoginRequest([void updates(LoginRequestBuilder b)]) = _$LoginRequest;
+  factory CalendarImportResponse([void updates(CalendarImportResponseBuilder b)]) = _$CalendarImportResponse;
 
   @BuiltValueHook(initializeBuilder: true)
-  static void _defaults(LoginRequestBuilder b) => b;
+  static void _defaults(CalendarImportResponseBuilder b) => b;
 
   @BuiltValueSerializer(custom: true)
-  static Serializer<LoginRequest> get serializer => _$LoginRequestSerializer();
+  static Serializer<CalendarImportResponse> get serializer => _$CalendarImportResponseSerializer();
 }
 
-class _$LoginRequestSerializer implements PrimitiveSerializer<LoginRequest> {
+class _$CalendarImportResponseSerializer implements PrimitiveSerializer<CalendarImportResponse> {
   @override
-  final Iterable<Type> types = const [LoginRequest, _$LoginRequest];
+  final Iterable<Type> types = const [CalendarImportResponse, _$CalendarImportResponse];
 
   @override
-  final String wireName = r'LoginRequest';
+  final String wireName = r'CalendarImportResponse';
 
   Iterable<Object?> _serializeProperties(
     Serializers serializers,
-    LoginRequest object, {
+    CalendarImportResponse object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    yield r'email';
+    yield r'source';
     yield serializers.serialize(
-      object.email,
-      specifiedType: const FullType(String),
+      object.source_,
+      specifiedType: const FullType(CalendarSource),
     );
-    yield r'password';
+    yield r'imported_event_count';
     yield serializers.serialize(
-      object.password,
-      specifiedType: const FullType(String),
+      object.importedEventCount,
+      specifiedType: const FullType(int),
     );
   }
 
   @override
   Object serialize(
     Serializers serializers,
-    LoginRequest object, {
+    CalendarImportResponse object, {
     FullType specifiedType = FullType.unspecified,
   }) {
     return _serializeProperties(serializers, object, specifiedType: specifiedType).toList();
@@ -70,26 +71,26 @@ class _$LoginRequestSerializer implements PrimitiveSerializer<LoginRequest> {
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
     required List<Object?> serializedList,
-    required LoginRequestBuilder result,
+    required CalendarImportResponseBuilder result,
     required List<Object?> unhandled,
   }) {
     for (var i = 0; i < serializedList.length; i += 2) {
       final key = serializedList[i] as String;
       final value = serializedList[i + 1];
       switch (key) {
-        case r'email':
+        case r'source':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.email = valueDes;
+            specifiedType: const FullType(CalendarSource),
+          ) as CalendarSource;
+          result.source_.replace(valueDes);
           break;
-        case r'password':
+        case r'imported_event_count':
           final valueDes = serializers.deserialize(
             value,
-            specifiedType: const FullType(String),
-          ) as String;
-          result.password = valueDes;
+            specifiedType: const FullType(int),
+          ) as int;
+          result.importedEventCount = valueDes;
           break;
         default:
           unhandled.add(key);
@@ -100,12 +101,12 @@ class _$LoginRequestSerializer implements PrimitiveSerializer<LoginRequest> {
   }
 
   @override
-  LoginRequest deserialize(
+  CalendarImportResponse deserialize(
     Serializers serializers,
     Object serialized, {
     FullType specifiedType = FullType.unspecified,
   }) {
-    final result = LoginRequestBuilder();
+    final result = CalendarImportResponseBuilder();
     final serializedList = (serialized as Iterable<Object?>).toList();
     final unhandled = <Object?>[];
     _deserializeProperties(

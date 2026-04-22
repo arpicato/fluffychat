@@ -1,12 +1,14 @@
 import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
+import 'package:fluffychat/pages/chat_list/chat_list_calendar_item.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_item.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_todo_item.dart';
 import 'package:fluffychat/pages/chat_list/dummy_chat_list_item.dart';
 import 'package:fluffychat/pages/chat_list/search_title.dart';
 import 'package:fluffychat/pages/chat_list/space_view.dart';
 import 'package:fluffychat/pages/chat_list/status_msg_list.dart';
+import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/utils/stream_extension.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/public_room_dialog.dart';
@@ -23,8 +25,9 @@ import 'chat_list_header.dart';
 
 class ChatListViewBody extends StatelessWidget {
   final ChatListController controller;
+  final VoidCallback? openDrawer;
 
-  const ChatListViewBody(this.controller, {super.key});
+  const ChatListViewBody(this.controller, {this.openDrawer, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -79,16 +82,47 @@ class ChatListViewBody extends StatelessWidget {
                 return title.contains(filter) || description.contains(filter);
               }).toList()
             : const <MessieTodoList>[];
-        final entries = <_ChatListEntry>[
+        final visibleCalendarEvents = includeTodoLists
+            ? controller.upcomingCalendarEvents
+                  .where((event) {
+                    final now = DateTime.now().toUtc();
+                    final end = now.add(const Duration(days: 7));
+                    if (event.startsAt.isAfter(end) ||
+                        event.endsAt.isBefore(now)) {
+                      return false;
+                    }
+                    if (filter.isEmpty) return true;
+                    final title = event.title.toLowerCase();
+                    final description = event.description.toLowerCase();
+                    final location = event.location.toLowerCase();
+                    final source = event.sourceDisplayName.toLowerCase();
+                    return title.contains(filter) ||
+                        description.contains(filter) ||
+                        location.contains(filter) ||
+                        source.contains(filter);
+                  })
+                  .take(2)
+                  .toList()
+            : const <MessieCalendarEvent>[];
+        final timelineEntries = <_ChatListEntry>[
           ...rooms.map(_ChatListEntry.room),
           ...visibleTodoLists.map(_ChatListEntry.todo),
         ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
+        final calendarEntries = <_ChatListEntry>[
+          ...visibleCalendarEvents.map(_ChatListEntry.calendar),
+        ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
+        final entries = <_ChatListEntry>[
+          ...calendarEntries,
+          if (calendarEntries.isNotEmpty && timelineEntries.isNotEmpty)
+            const _DividerChatListEntry(),
+          ...timelineEntries,
+        ];
 
         return SafeArea(
           child: CustomScrollView(
             controller: controller.scrollController,
             slivers: [
-              ChatListHeader(controller: controller),
+              ChatListHeader(controller: controller, openDrawer: openDrawer),
               SliverList(
                 delegate: SliverChildListDelegate([
                   if (controller.isSearchMode) ...[
@@ -281,6 +315,31 @@ class ChatListViewBody extends StatelessWidget {
                           },
                         ),
                       ),
+                      _CalendarChatListEntry(:final event) =>
+                        ChatListCalendarItem(
+                          key: Key('chat_list_calendar_${event.id}'),
+                          event: event,
+                          active:
+                              activeRoute ==
+                                  '/rooms/calendar/events/${event.id}' ||
+                              activeRoute.startsWith(
+                                '/rooms/calendar/events/${event.id}/',
+                              ),
+                          onTap: () => context.push(
+                            '/rooms/calendar/events/${event.id}',
+                            extra: <String, Object?>{
+                              'title': event.title,
+                              'sourceDisplayName': event.sourceDisplayName,
+                            },
+                          ),
+                        ),
+                      _DividerChatListEntry() => Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Divider(
+                          color: theme.colorScheme.outlineVariant,
+                          height: 1,
+                        ),
+                      ),
                     };
                   },
                 ),
@@ -297,6 +356,8 @@ sealed class _ChatListEntry {
 
   factory _ChatListEntry.room(Room room) = _RoomChatListEntry;
   factory _ChatListEntry.todo(MessieTodoList todoList) = _TodoChatListEntry;
+  factory _ChatListEntry.calendar(MessieCalendarEvent event) =
+      _CalendarChatListEntry;
 
   DateTime get sortTime;
 }
@@ -320,6 +381,22 @@ class _TodoChatListEntry extends _ChatListEntry {
       todoList.updatedAt ??
       todoList.createdAt ??
       DateTime.fromMillisecondsSinceEpoch(0);
+}
+
+class _CalendarChatListEntry extends _ChatListEntry {
+  const _CalendarChatListEntry(this.event);
+
+  final MessieCalendarEvent event;
+
+  @override
+  DateTime get sortTime => event.startsAt;
+}
+
+class _DividerChatListEntry extends _ChatListEntry {
+  const _DividerChatListEntry();
+
+  @override
+  DateTime get sortTime => DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 class PublicRoomsHorizontalList extends StatelessWidget {

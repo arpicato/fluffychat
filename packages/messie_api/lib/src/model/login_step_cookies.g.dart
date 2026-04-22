@@ -57,13 +57,25 @@ class _$LoginStepCookies extends LoginStepCookies {
   @override
   final LoginStepCookiesTypeEnum type;
   @override
+  final String? processId;
+  @override
+  final String? loginId;
+  @override
+  final String? stepId;
+  @override
   final LoginStepCookiesCookies cookies;
 
   factory _$LoginStepCookies(
           [void Function(LoginStepCookiesBuilder)? updates]) =>
       (LoginStepCookiesBuilder()..update(updates))._build();
 
-  _$LoginStepCookies._({required this.type, required this.cookies}) : super._();
+  _$LoginStepCookies._(
+      {required this.type,
+      this.processId,
+      this.loginId,
+      this.stepId,
+      required this.cookies})
+      : super._();
   @override
   LoginStepCookies rebuild(void Function(LoginStepCookiesBuilder) updates) =>
       (toBuilder()..update(updates)).build();
@@ -77,6 +89,9 @@ class _$LoginStepCookies extends LoginStepCookies {
     if (identical(other, this)) return true;
     return other is LoginStepCookies &&
         type == other.type &&
+        processId == other.processId &&
+        loginId == other.loginId &&
+        stepId == other.stepId &&
         cookies == other.cookies;
   }
 
@@ -84,6 +99,9 @@ class _$LoginStepCookies extends LoginStepCookies {
   int get hashCode {
     var _$hash = 0;
     _$hash = $jc(_$hash, type.hashCode);
+    _$hash = $jc(_$hash, processId.hashCode);
+    _$hash = $jc(_$hash, loginId.hashCode);
+    _$hash = $jc(_$hash, stepId.hashCode);
     _$hash = $jc(_$hash, cookies.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -93,6 +111,9 @@ class _$LoginStepCookies extends LoginStepCookies {
   String toString() {
     return (newBuiltValueToStringHelper(r'LoginStepCookies')
           ..add('type', type)
+          ..add('processId', processId)
+          ..add('loginId', loginId)
+          ..add('stepId', stepId)
           ..add('cookies', cookies))
         .toString();
   }
@@ -105,6 +126,18 @@ class LoginStepCookiesBuilder
   LoginStepCookiesTypeEnum? _type;
   LoginStepCookiesTypeEnum? get type => _$this._type;
   set type(LoginStepCookiesTypeEnum? type) => _$this._type = type;
+
+  String? _processId;
+  String? get processId => _$this._processId;
+  set processId(String? processId) => _$this._processId = processId;
+
+  String? _loginId;
+  String? get loginId => _$this._loginId;
+  set loginId(String? loginId) => _$this._loginId = loginId;
+
+  String? _stepId;
+  String? get stepId => _$this._stepId;
+  set stepId(String? stepId) => _$this._stepId = stepId;
 
   LoginStepCookiesCookiesBuilder? _cookies;
   LoginStepCookiesCookiesBuilder get cookies =>
@@ -120,6 +153,9 @@ class LoginStepCookiesBuilder
     final $v = _$v;
     if ($v != null) {
       _type = $v.type;
+      _processId = $v.processId;
+      _loginId = $v.loginId;
+      _stepId = $v.stepId;
       _cookies = $v.cookies.toBuilder();
       _$v = null;
     }
@@ -146,6 +182,9 @@ class LoginStepCookiesBuilder
           _$LoginStepCookies._(
             type: BuiltValueNullFieldError.checkNotNull(
                 type, r'LoginStepCookies', 'type'),
+            processId: processId,
+            loginId: loginId,
+            stepId: stepId,
             cookies: cookies.build(),
           );
     } catch (_) {

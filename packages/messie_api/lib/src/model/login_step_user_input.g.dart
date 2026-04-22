@@ -57,13 +57,24 @@ class _$LoginStepUserInput extends LoginStepUserInput {
   @override
   final LoginStepUserInputTypeEnum type;
   @override
+  final String? processId;
+  @override
+  final String? loginId;
+  @override
+  final String? stepId;
+  @override
   final LoginStepUserInputUserInput userInput;
 
   factory _$LoginStepUserInput(
           [void Function(LoginStepUserInputBuilder)? updates]) =>
       (LoginStepUserInputBuilder()..update(updates))._build();
 
-  _$LoginStepUserInput._({required this.type, required this.userInput})
+  _$LoginStepUserInput._(
+      {required this.type,
+      this.processId,
+      this.loginId,
+      this.stepId,
+      required this.userInput})
       : super._();
   @override
   LoginStepUserInput rebuild(
@@ -79,6 +90,9 @@ class _$LoginStepUserInput extends LoginStepUserInput {
     if (identical(other, this)) return true;
     return other is LoginStepUserInput &&
         type == other.type &&
+        processId == other.processId &&
+        loginId == other.loginId &&
+        stepId == other.stepId &&
         userInput == other.userInput;
   }
 
@@ -86,6 +100,9 @@ class _$LoginStepUserInput extends LoginStepUserInput {
   int get hashCode {
     var _$hash = 0;
     _$hash = $jc(_$hash, type.hashCode);
+    _$hash = $jc(_$hash, processId.hashCode);
+    _$hash = $jc(_$hash, loginId.hashCode);
+    _$hash = $jc(_$hash, stepId.hashCode);
     _$hash = $jc(_$hash, userInput.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -95,6 +112,9 @@ class _$LoginStepUserInput extends LoginStepUserInput {
   String toString() {
     return (newBuiltValueToStringHelper(r'LoginStepUserInput')
           ..add('type', type)
+          ..add('processId', processId)
+          ..add('loginId', loginId)
+          ..add('stepId', stepId)
           ..add('userInput', userInput))
         .toString();
   }
@@ -107,6 +127,18 @@ class LoginStepUserInputBuilder
   LoginStepUserInputTypeEnum? _type;
   LoginStepUserInputTypeEnum? get type => _$this._type;
   set type(LoginStepUserInputTypeEnum? type) => _$this._type = type;
+
+  String? _processId;
+  String? get processId => _$this._processId;
+  set processId(String? processId) => _$this._processId = processId;
+
+  String? _loginId;
+  String? get loginId => _$this._loginId;
+  set loginId(String? loginId) => _$this._loginId = loginId;
+
+  String? _stepId;
+  String? get stepId => _$this._stepId;
+  set stepId(String? stepId) => _$this._stepId = stepId;
 
   LoginStepUserInputUserInputBuilder? _userInput;
   LoginStepUserInputUserInputBuilder get userInput =>
@@ -122,6 +154,9 @@ class LoginStepUserInputBuilder
     final $v = _$v;
     if ($v != null) {
       _type = $v.type;
+      _processId = $v.processId;
+      _loginId = $v.loginId;
+      _stepId = $v.stepId;
       _userInput = $v.userInput.toBuilder();
       _$v = null;
     }
@@ -148,6 +183,9 @@ class LoginStepUserInputBuilder
           _$LoginStepUserInput._(
             type: BuiltValueNullFieldError.checkNotNull(
                 type, r'LoginStepUserInput', 'type'),
+            processId: processId,
+            loginId: loginId,
+            stepId: stepId,
             userInput: userInput.build(),
           );
     } catch (_) {

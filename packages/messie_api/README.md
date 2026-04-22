@@ -71,8 +71,10 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**bridgeStartLogin**](doc/DefaultApi.md#bridgestartlogin) | **POST** /bridge/provision/v3/login/start/{flow} | Start a login process for a provider
 [*DefaultApi*](doc/DefaultApi.md) | [**bridgeSubmitLoginStep**](doc/DefaultApi.md#bridgesubmitloginstep) | **POST** /bridge/provision/v3/login/step/{process_id}/{step_id}/{action} | Submit a login step
 [*DefaultApi*](doc/DefaultApi.md) | [**bridgeWhoami**](doc/DefaultApi.md#bridgewhoami) | **GET** /bridge/provision/v3/whoami | Get provider-specific whoami with logins
+[*DefaultApi*](doc/DefaultApi.md) | [**createLinkedCalendarSource**](doc/DefaultApi.md#createlinkedcalendarsource) | **POST** /calendar/sources/link | Add a linked ICS calendar source
 [*DefaultApi*](doc/DefaultApi.md) | [**createTodoItem**](doc/DefaultApi.md#createtodoitem) | **POST** /todolists/{listId}/items | Create a new todo item in a list
 [*DefaultApi*](doc/DefaultApi.md) | [**createTodoList**](doc/DefaultApi.md#createtodolist) | **POST** /todolists | Create a new todo list
+[*DefaultApi*](doc/DefaultApi.md) | [**deleteCalendarSource**](doc/DefaultApi.md#deletecalendarsource) | **DELETE** /calendar/sources/{sourceId} | Delete a calendar source and its imported events
 [*DefaultApi*](doc/DefaultApi.md) | [**deleteTodoItem**](doc/DefaultApi.md#deletetodoitem) | **DELETE** /todolists/{listId}/items/{itemId} | Delete a todo item
 [*DefaultApi*](doc/DefaultApi.md) | [**deleteTodoList**](doc/DefaultApi.md#deletetodolist) | **DELETE** /todolists/{listId} | Delete a todo list
 [*DefaultApi*](doc/DefaultApi.md) | [**emailHeaders**](doc/DefaultApi.md#emailheaders) | **POST** /email/headers | List recent email headers with threading metadata
@@ -81,26 +83,29 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**emailList**](doc/DefaultApi.md#emaillist) | **POST** /email/list | List recent message headers for a mailbox or flag query
 [*DefaultApi*](doc/DefaultApi.md) | [**emailLoginTest**](doc/DefaultApi.md#emaillogintest) | **POST** /email/login-test | Test email login and fetch recent message headers
 [*DefaultApi*](doc/DefaultApi.md) | [**emailThreads**](doc/DefaultApi.md#emailthreads) | **POST** /email/threads | List recent email threads
+[*DefaultApi*](doc/DefaultApi.md) | [**getCalendarEventById**](doc/DefaultApi.md#getcalendareventbyid) | **GET** /calendar/events/{eventId} | Get a calendar event by ID
+[*DefaultApi*](doc/DefaultApi.md) | [**getCalendarEvents**](doc/DefaultApi.md#getcalendarevents) | **GET** /calendar/events | Get imported calendar events for the current user
+[*DefaultApi*](doc/DefaultApi.md) | [**getCalendarSourceById**](doc/DefaultApi.md#getcalendarsourcebyid) | **GET** /calendar/sources/{sourceId} | Get a calendar source by ID
+[*DefaultApi*](doc/DefaultApi.md) | [**getCalendarSources**](doc/DefaultApi.md#getcalendarsources) | **GET** /calendar/sources | Get calendar sources for the current user
 [*DefaultApi*](doc/DefaultApi.md) | [**getCollaborators**](doc/DefaultApi.md#getcollaborators) | **GET** /todolists/{listId}/collaborators | Get collaborators for a todo list
 [*DefaultApi*](doc/DefaultApi.md) | [**getConnections**](doc/DefaultApi.md#getconnections) | **GET** /connections | List bridge connections for current user
 [*DefaultApi*](doc/DefaultApi.md) | [**getTodoItemById**](doc/DefaultApi.md#gettodoitembyid) | **GET** /todolists/{listId}/items/{itemId} | Get a todo item by ID
 [*DefaultApi*](doc/DefaultApi.md) | [**getTodoItemsByListId**](doc/DefaultApi.md#gettodoitemsbylistid) | **GET** /todolists/{listId}/items | Get todo items by list ID
 [*DefaultApi*](doc/DefaultApi.md) | [**getTodoListById**](doc/DefaultApi.md#gettodolistbyid) | **GET** /todolists/{listId} | Get a todo list by ID
 [*DefaultApi*](doc/DefaultApi.md) | [**getTodoListsByUserId**](doc/DefaultApi.md#gettodolistsbyuserid) | **GET** /todolists | Get todo lists by owner ID
+[*DefaultApi*](doc/DefaultApi.md) | [**getUpcomingCalendarEvents**](doc/DefaultApi.md#getupcomingcalendarevents) | **GET** /calendar/upcoming | Get upcoming imported calendar events for the current user
 [*DefaultApi*](doc/DefaultApi.md) | [**getUserByMatrixId**](doc/DefaultApi.md#getuserbymatrixid) | **GET** /users/by-matrix-id | Get user by Matrix ID
-[*DefaultApi*](doc/DefaultApi.md) | [**loginPost**](doc/DefaultApi.md#loginpost) | **POST** /login | Log in a user
+[*DefaultApi*](doc/DefaultApi.md) | [**importCalendarSource**](doc/DefaultApi.md#importcalendarsource) | **POST** /calendar/sources/import | Import a calendar source from an uploaded ICS file
 [*DefaultApi*](doc/DefaultApi.md) | [**postMatrixAuth**](doc/DefaultApi.md#postmatrixauth) | **POST** /auth/matrix/openid | Authenticate using Matrix OpenID
-[*DefaultApi*](doc/DefaultApi.md) | [**registerPost**](doc/DefaultApi.md#registerpost) | **POST** /register | Register a new user
+[*DefaultApi*](doc/DefaultApi.md) | [**refreshCalendarSource**](doc/DefaultApi.md#refreshcalendarsource) | **POST** /calendar/sources/{sourceId}/refresh | Refresh a linked calendar source
 [*DefaultApi*](doc/DefaultApi.md) | [**removeCollaborator**](doc/DefaultApi.md#removecollaborator) | **DELETE** /todolists/{listId}/collaborators/{userId} | Remove a collaborator from a todo list
+[*DefaultApi*](doc/DefaultApi.md) | [**updateCalendarSource**](doc/DefaultApi.md#updatecalendarsource) | **PATCH** /calendar/sources/{sourceId} | Rename a calendar source
 [*DefaultApi*](doc/DefaultApi.md) | [**updateTodoItem**](doc/DefaultApi.md#updatetodoitem) | **PUT** /todolists/{listId}/items/{itemId} | Update a todo item
 [*DefaultApi*](doc/DefaultApi.md) | [**updateTodoList**](doc/DefaultApi.md#updatetodolist) | **PUT** /todolists/{listId} | Update a todo list
-[*DefaultApi*](doc/DefaultApi.md) | [**usersIdGet**](doc/DefaultApi.md#usersidget) | **GET** /users/{id} | Get user by ID
-[*DefaultApi*](doc/DefaultApi.md) | [**usersMeGet**](doc/DefaultApi.md#usersmeget) | **GET** /users/me | Get current user profile
 
 
 ## Documentation For Models
 
- - [AuthResponse](doc/AuthResponse.md)
  - [BridgeAccount](doc/BridgeAccount.md)
  - [BridgeConnection](doc/BridgeConnection.md)
  - [BridgeLoginFlow](doc/BridgeLoginFlow.md)
@@ -111,6 +116,9 @@ Class | Method | HTTP request | Description
  - [BridgeWhoamiLogin](doc/BridgeWhoamiLogin.md)
  - [BridgeWhoamiLoginProfile](doc/BridgeWhoamiLoginProfile.md)
  - [BridgeWhoamiResponse](doc/BridgeWhoamiResponse.md)
+ - [CalendarEvent](doc/CalendarEvent.md)
+ - [CalendarImportResponse](doc/CalendarImportResponse.md)
+ - [CalendarSource](doc/CalendarSource.md)
  - [CollaboratorDetail](doc/CollaboratorDetail.md)
  - [EmailListRequest](doc/EmailListRequest.md)
  - [EmailLoginRequest](doc/EmailLoginRequest.md)
@@ -119,7 +127,6 @@ Class | Method | HTTP request | Description
  - [EmailRichHeader](doc/EmailRichHeader.md)
  - [EmailRichHeadersResponse](doc/EmailRichHeadersResponse.md)
  - [Error](doc/Error.md)
- - [LoginRequest](doc/LoginRequest.md)
  - [LoginStepComplete](doc/LoginStepComplete.md)
  - [LoginStepCompleteComplete](doc/LoginStepCompleteComplete.md)
  - [LoginStepCookies](doc/LoginStepCookies.md)
@@ -131,13 +138,14 @@ Class | Method | HTTP request | Description
  - [LoginStepUserInputUserInputFieldsInner](doc/LoginStepUserInputUserInputFieldsInner.md)
  - [MatrixAuthResponse](doc/MatrixAuthResponse.md)
  - [MatrixOpenIDRequest](doc/MatrixOpenIDRequest.md)
+ - [NewCalendarLinkSource](doc/NewCalendarLinkSource.md)
  - [NewCollaborator](doc/NewCollaborator.md)
  - [NewTodoItem](doc/NewTodoItem.md)
  - [NewTodoList](doc/NewTodoList.md)
- - [RegisterRequest](doc/RegisterRequest.md)
  - [RemoteProfile](doc/RemoteProfile.md)
  - [TodoItem](doc/TodoItem.md)
  - [TodoList](doc/TodoList.md)
+ - [UpdateCalendarSource](doc/UpdateCalendarSource.md)
  - [UpdateTodoItem](doc/UpdateTodoItem.md)
  - [UpdateTodoList](doc/UpdateTodoList.md)
  - [User](doc/User.md)

@@ -25,8 +25,29 @@ class TodoListDetailPage extends StatefulWidget {
 class TodoListDetailPageController extends State<TodoListDetailPage> {
   final BackendSessionService _sessionService = BackendSessionService();
   final MessieTodoService _todoService = MessieTodoService();
+  Future<TodoListDetailData>? _loadFuture;
 
-  void refresh() => setState(() {});
+  Future<TodoListDetailData> get loadFuture => _loadFuture!;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadFuture ??= load(context);
+  }
+
+  @override
+  void didUpdateWidget(covariant TodoListDetailPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.listId != widget.listId) {
+      _loadFuture = load(context);
+    }
+  }
+
+  void refresh() {
+    setState(() {
+      _loadFuture = load(context);
+    });
+  }
 
   Future<_TodoListSession> _session(BuildContext context) async {
     final matrix = Matrix.of(context);
@@ -39,28 +60,32 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
 
   Future<TodoListDetailData> load(BuildContext context) async {
     final session = await _session(context);
-    final list = await _todoService.getTodoListById(
+    final listFuture = _todoService.getTodoListById(
       apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
       jwt: session.jwt,
       listId: widget.listId,
     );
-    final items = await _todoService.getTodoItems(
+    final itemsFuture = _todoService.getTodoItems(
       apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
       jwt: session.jwt,
       listId: widget.listId,
     );
+    final collaboratorsFuture = _todoService
+        .getCollaborators(
+          apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+          jwt: session.jwt,
+          listId: widget.listId,
+        )
+        .then<(List<MessieTodoCollaborator>, Object?)>(
+          (collaborators) => (collaborators, null),
+        )
+        .catchError(
+          (error) => (const <MessieTodoCollaborator>[], error as Object),
+        );
 
-    var collaborators = const <MessieTodoCollaborator>[];
-    Object? collaboratorsError;
-    try {
-      collaborators = await _todoService.getCollaborators(
-        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
-        jwt: session.jwt,
-        listId: widget.listId,
-      );
-    } catch (error) {
-      collaboratorsError = error;
-    }
+    final list = await listFuture;
+    final items = await itemsFuture;
+    final (collaborators, collaboratorsError) = await collaboratorsFuture;
 
     final sortedItems = items..sort((a, b) => a.position.compareTo(b.position));
 

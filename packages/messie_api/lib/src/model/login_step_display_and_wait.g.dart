@@ -62,6 +62,12 @@ class _$LoginStepDisplayAndWait extends LoginStepDisplayAndWait {
   @override
   final LoginStepDisplayAndWaitTypeEnum type;
   @override
+  final String? processId;
+  @override
+  final String? loginId;
+  @override
+  final String? stepId;
+  @override
   final LoginStepDisplayAndWaitDisplayAndWait displayAndWait;
 
   factory _$LoginStepDisplayAndWait(
@@ -69,7 +75,11 @@ class _$LoginStepDisplayAndWait extends LoginStepDisplayAndWait {
       (LoginStepDisplayAndWaitBuilder()..update(updates))._build();
 
   _$LoginStepDisplayAndWait._(
-      {required this.type, required this.displayAndWait})
+      {required this.type,
+      this.processId,
+      this.loginId,
+      this.stepId,
+      required this.displayAndWait})
       : super._();
   @override
   LoginStepDisplayAndWait rebuild(
@@ -85,6 +95,9 @@ class _$LoginStepDisplayAndWait extends LoginStepDisplayAndWait {
     if (identical(other, this)) return true;
     return other is LoginStepDisplayAndWait &&
         type == other.type &&
+        processId == other.processId &&
+        loginId == other.loginId &&
+        stepId == other.stepId &&
         displayAndWait == other.displayAndWait;
   }
 
@@ -92,6 +105,9 @@ class _$LoginStepDisplayAndWait extends LoginStepDisplayAndWait {
   int get hashCode {
     var _$hash = 0;
     _$hash = $jc(_$hash, type.hashCode);
+    _$hash = $jc(_$hash, processId.hashCode);
+    _$hash = $jc(_$hash, loginId.hashCode);
+    _$hash = $jc(_$hash, stepId.hashCode);
     _$hash = $jc(_$hash, displayAndWait.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -101,6 +117,9 @@ class _$LoginStepDisplayAndWait extends LoginStepDisplayAndWait {
   String toString() {
     return (newBuiltValueToStringHelper(r'LoginStepDisplayAndWait')
           ..add('type', type)
+          ..add('processId', processId)
+          ..add('loginId', loginId)
+          ..add('stepId', stepId)
           ..add('displayAndWait', displayAndWait))
         .toString();
   }
@@ -114,6 +133,18 @@ class LoginStepDisplayAndWaitBuilder
   LoginStepDisplayAndWaitTypeEnum? _type;
   LoginStepDisplayAndWaitTypeEnum? get type => _$this._type;
   set type(LoginStepDisplayAndWaitTypeEnum? type) => _$this._type = type;
+
+  String? _processId;
+  String? get processId => _$this._processId;
+  set processId(String? processId) => _$this._processId = processId;
+
+  String? _loginId;
+  String? get loginId => _$this._loginId;
+  set loginId(String? loginId) => _$this._loginId = loginId;
+
+  String? _stepId;
+  String? get stepId => _$this._stepId;
+  set stepId(String? stepId) => _$this._stepId = stepId;
 
   LoginStepDisplayAndWaitDisplayAndWaitBuilder? _displayAndWait;
   LoginStepDisplayAndWaitDisplayAndWaitBuilder get displayAndWait =>
@@ -130,6 +161,9 @@ class LoginStepDisplayAndWaitBuilder
     final $v = _$v;
     if ($v != null) {
       _type = $v.type;
+      _processId = $v.processId;
+      _loginId = $v.loginId;
+      _stepId = $v.stepId;
       _displayAndWait = $v.displayAndWait.toBuilder();
       _$v = null;
     }
@@ -156,6 +190,9 @@ class LoginStepDisplayAndWaitBuilder
           _$LoginStepDisplayAndWait._(
             type: BuiltValueNullFieldError.checkNotNull(
                 type, r'LoginStepDisplayAndWait', 'type'),
+            processId: processId,
+            loginId: loginId,
+            stepId: stepId,
             displayAndWait: displayAndWait.build(),
           );
     } catch (_) {

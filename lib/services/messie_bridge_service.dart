@@ -1,6 +1,5 @@
-import 'dart:convert';
-
-import 'package:dio/dio.dart';
+import 'package:built_collection/built_collection.dart';
+import 'package:built_value/json_object.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:messie_api/messie_api.dart' as api;
@@ -86,38 +85,62 @@ class MessieBridgeProvisioningStep {
   bool get isCookies => type == 'cookies';
   bool get isComplete => type == 'complete';
 
-  factory MessieBridgeProvisioningStep.fromJson(Map<String, Object?> json) {
-    final type = json['type'] as String? ?? 'display_and_wait';
-    final displayAndWait =
-        json['display_and_wait'] as Map<Object?, Object?>? ?? const {};
-    final userInput = json['user_input'] as Map<Object?, Object?>? ?? const {};
-    final complete = json['complete'] as Map<Object?, Object?>? ?? const {};
-    final rawFields = userInput['fields'] as List<Object?>? ?? const [];
+  factory MessieBridgeProvisioningStep.fromApi(api.BridgeLoginStep step) {
+    final value = step.oneOf.value;
 
-    return MessieBridgeProvisioningStep(
-      type: type,
-      processId: json['process_id'] as String?,
-      stepId: json['step_id'] as String?,
-      loginId: json['login_id'] as String?,
-      message: displayAndWait['message'] as String?,
-      instructions: json['instructions'] as String?,
-      data: displayAndWait['data'] as String?,
-      dataType: displayAndWait['type'] as String?,
-      imageUrl: displayAndWait['image_url'] as String?,
-      fields: rawFields
-          .whereType<Map<Object?, Object?>>()
-          .map(
-            (field) => MessieBridgeInputField(
-              id: field['id'] as String? ?? '',
-              label: field['label'] as String?,
-              kind: field['kind'] as String?,
-              secret: field['secret'] as bool? ?? false,
-            ),
-          )
-          .where((field) => field.id.isNotEmpty)
-          .toList(),
-      userLoginId: complete['user_login_id'] as String?,
-    );
+    if (value is api.LoginStepDisplayAndWait) {
+      return MessieBridgeProvisioningStep(
+        type: 'display_and_wait',
+        processId: value.processId,
+        stepId: value.stepId,
+        loginId: value.loginId,
+        message: value.displayAndWait.message,
+        data: value.displayAndWait.data,
+        imageUrl: value.displayAndWait.imageUrl,
+      );
+    }
+
+    if (value is api.LoginStepUserInput) {
+      return MessieBridgeProvisioningStep(
+        type: 'user_input',
+        processId: value.processId,
+        stepId: value.stepId,
+        loginId: value.loginId,
+        fields: value.userInput.fields
+                ?.map(
+                  (field) => MessieBridgeInputField(
+                    id: field.id ?? '',
+                    label: field.label,
+                    kind: field.kind,
+                    secret: field.secret ?? false,
+                  ),
+                )
+                .where((field) => field.id.isNotEmpty)
+                .toList() ??
+            const [],
+      );
+    }
+
+    if (value is api.LoginStepCookies) {
+      return MessieBridgeProvisioningStep(
+        type: 'cookies',
+        processId: value.processId,
+        stepId: value.stepId,
+        loginId: value.loginId,
+      );
+    }
+
+    if (value is api.LoginStepComplete) {
+      return MessieBridgeProvisioningStep(
+        type: 'complete',
+        processId: value.processId,
+        stepId: value.stepId,
+        loginId: value.loginId,
+        userLoginId: value.complete.userLoginId,
+      );
+    }
+
+    throw StateError('Unsupported bridge login step variant: ${value.runtimeType}');
   }
 }
 
@@ -164,13 +187,15 @@ class MessieBridgeService {
   }) async {
     final apiClient = await _createApiClient(client);
     try {
-      final response = await apiClient.dio.post<Map<String, dynamic>>(
-        'bridge/provision/v3/login/start/$flow',
-        queryParameters: {'provider': provider},
+      final response = await apiClient.defaultApi.bridgeStartLogin(
+        flow: flow,
+        provider: provider,
       );
-      return MessieBridgeProvisioningStep.fromJson(
-        _normalizeJsonMap(response.data),
-      );
+      final step = response.data;
+      if (step == null) {
+        throw StateError('Bridge start login returned no step.');
+      }
+      return MessieBridgeProvisioningStep.fromApi(step);
     } finally {
       apiClient.dispose();
     }
@@ -186,14 +211,21 @@ class MessieBridgeService {
   }) async {
     final apiClient = await _createApiClient(client);
     try {
-      final response = await apiClient.dio.post<Map<String, dynamic>>(
-        'bridge/provision/v3/login/step/$processId/$stepId/$action',
-        queryParameters: {'provider': provider},
-        data: body,
+      final requestBody = BuiltMap<String, JsonObject>(
+        body.map((key, value) => MapEntry(key, JsonObject(value))),
       );
-      return MessieBridgeProvisioningStep.fromJson(
-        _normalizeJsonMap(response.data),
+      final response = await apiClient.defaultApi.bridgeSubmitLoginStep(
+        processId: processId,
+        stepId: stepId,
+        action: action,
+        provider: provider,
+        requestBody: requestBody,
       );
+      final step = response.data;
+      if (step == null) {
+        throw StateError('Bridge submit step returned no step.');
+      }
+      return MessieBridgeProvisioningStep.fromApi(step);
     } finally {
       apiClient.dispose();
     }
@@ -225,53 +257,18 @@ class MessieBridgeService {
     final normalizedBaseUrl = _normalizeMessieBridgeApiBaseUrl(apiBaseUrl);
     final sdk = api.MessieApi(basePathOverride: normalizedBaseUrl);
     sdk.setBearerAuth('bearerAuth', session.token);
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: normalizedBaseUrl,
-        headers: {
-          'Authorization': 'Bearer ${session.token}',
-          'Content-Type': 'application/json',
-        },
-      ),
-    );
     return _MessieBridgeApiClient(
-      dio: dio,
+      sdk: sdk,
       defaultApi: sdk.getDefaultApi(),
     );
   }
 }
 
-Map<String, Object?> _normalizeJsonMap(Object? json) {
-  if (json is Map<String, dynamic>) {
-    return json.map((key, value) => MapEntry(key, _normalizeJsonValue(value)));
-  }
-  if (json is Map<Object?, Object?>) {
-    return json.map(
-      (key, value) => MapEntry(key.toString(), _normalizeJsonValue(value)),
-    );
-  }
-  if (json is String && json.isNotEmpty) {
-    final decoded = jsonDecode(json);
-    return _normalizeJsonMap(decoded);
-  }
-  return const {};
-}
-
-Object? _normalizeJsonValue(Object? value) {
-  if (value is Map<Object?, Object?> || value is Map<String, dynamic>) {
-    return _normalizeJsonMap(value);
-  }
-  if (value is List) {
-    return value.map(_normalizeJsonValue).toList();
-  }
-  return value;
-}
-
 class _MessieBridgeApiClient {
-  _MessieBridgeApiClient({required this.dio, required this.defaultApi});
+  _MessieBridgeApiClient({required this.sdk, required this.defaultApi});
 
-  final Dio dio;
+  final api.MessieApi sdk;
   final api.DefaultApi defaultApi;
 
-  void dispose() => dio.close(force: true);
+  void dispose() => sdk.dio.close(force: true);
 }

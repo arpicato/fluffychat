@@ -57,13 +57,24 @@ class _$LoginStepComplete extends LoginStepComplete {
   @override
   final LoginStepCompleteTypeEnum type;
   @override
+  final String? processId;
+  @override
+  final String? loginId;
+  @override
+  final String? stepId;
+  @override
   final LoginStepCompleteComplete complete;
 
   factory _$LoginStepComplete(
           [void Function(LoginStepCompleteBuilder)? updates]) =>
       (LoginStepCompleteBuilder()..update(updates))._build();
 
-  _$LoginStepComplete._({required this.type, required this.complete})
+  _$LoginStepComplete._(
+      {required this.type,
+      this.processId,
+      this.loginId,
+      this.stepId,
+      required this.complete})
       : super._();
   @override
   LoginStepComplete rebuild(void Function(LoginStepCompleteBuilder) updates) =>
@@ -78,6 +89,9 @@ class _$LoginStepComplete extends LoginStepComplete {
     if (identical(other, this)) return true;
     return other is LoginStepComplete &&
         type == other.type &&
+        processId == other.processId &&
+        loginId == other.loginId &&
+        stepId == other.stepId &&
         complete == other.complete;
   }
 
@@ -85,6 +99,9 @@ class _$LoginStepComplete extends LoginStepComplete {
   int get hashCode {
     var _$hash = 0;
     _$hash = $jc(_$hash, type.hashCode);
+    _$hash = $jc(_$hash, processId.hashCode);
+    _$hash = $jc(_$hash, loginId.hashCode);
+    _$hash = $jc(_$hash, stepId.hashCode);
     _$hash = $jc(_$hash, complete.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
@@ -94,6 +111,9 @@ class _$LoginStepComplete extends LoginStepComplete {
   String toString() {
     return (newBuiltValueToStringHelper(r'LoginStepComplete')
           ..add('type', type)
+          ..add('processId', processId)
+          ..add('loginId', loginId)
+          ..add('stepId', stepId)
           ..add('complete', complete))
         .toString();
   }
@@ -106,6 +126,18 @@ class LoginStepCompleteBuilder
   LoginStepCompleteTypeEnum? _type;
   LoginStepCompleteTypeEnum? get type => _$this._type;
   set type(LoginStepCompleteTypeEnum? type) => _$this._type = type;
+
+  String? _processId;
+  String? get processId => _$this._processId;
+  set processId(String? processId) => _$this._processId = processId;
+
+  String? _loginId;
+  String? get loginId => _$this._loginId;
+  set loginId(String? loginId) => _$this._loginId = loginId;
+
+  String? _stepId;
+  String? get stepId => _$this._stepId;
+  set stepId(String? stepId) => _$this._stepId = stepId;
 
   LoginStepCompleteCompleteBuilder? _complete;
   LoginStepCompleteCompleteBuilder get complete =>
@@ -121,6 +153,9 @@ class LoginStepCompleteBuilder
     final $v = _$v;
     if ($v != null) {
       _type = $v.type;
+      _processId = $v.processId;
+      _loginId = $v.loginId;
+      _stepId = $v.stepId;
       _complete = $v.complete.toBuilder();
       _$v = null;
     }
@@ -147,6 +182,9 @@ class LoginStepCompleteBuilder
           _$LoginStepComplete._(
             type: BuiltValueNullFieldError.checkNotNull(
                 type, r'LoginStepComplete', 'type'),
+            processId: processId,
+            loginId: loginId,
+            stepId: stepId,
             complete: complete.build(),
           );
     } catch (_) {

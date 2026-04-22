@@ -15,8 +15,10 @@ Method | HTTP request | Description
 [**bridgeStartLogin**](DefaultApi.md#bridgestartlogin) | **POST** /bridge/provision/v3/login/start/{flow} | Start a login process for a provider
 [**bridgeSubmitLoginStep**](DefaultApi.md#bridgesubmitloginstep) | **POST** /bridge/provision/v3/login/step/{process_id}/{step_id}/{action} | Submit a login step
 [**bridgeWhoami**](DefaultApi.md#bridgewhoami) | **GET** /bridge/provision/v3/whoami | Get provider-specific whoami with logins
+[**createLinkedCalendarSource**](DefaultApi.md#createlinkedcalendarsource) | **POST** /calendar/sources/link | Add a linked ICS calendar source
 [**createTodoItem**](DefaultApi.md#createtodoitem) | **POST** /todolists/{listId}/items | Create a new todo item in a list
 [**createTodoList**](DefaultApi.md#createtodolist) | **POST** /todolists | Create a new todo list
+[**deleteCalendarSource**](DefaultApi.md#deletecalendarsource) | **DELETE** /calendar/sources/{sourceId} | Delete a calendar source and its imported events
 [**deleteTodoItem**](DefaultApi.md#deletetodoitem) | **DELETE** /todolists/{listId}/items/{itemId} | Delete a todo item
 [**deleteTodoList**](DefaultApi.md#deletetodolist) | **DELETE** /todolists/{listId} | Delete a todo list
 [**emailHeaders**](DefaultApi.md#emailheaders) | **POST** /email/headers | List recent email headers with threading metadata
@@ -25,21 +27,25 @@ Method | HTTP request | Description
 [**emailList**](DefaultApi.md#emaillist) | **POST** /email/list | List recent message headers for a mailbox or flag query
 [**emailLoginTest**](DefaultApi.md#emaillogintest) | **POST** /email/login-test | Test email login and fetch recent message headers
 [**emailThreads**](DefaultApi.md#emailthreads) | **POST** /email/threads | List recent email threads
+[**getCalendarEventById**](DefaultApi.md#getcalendareventbyid) | **GET** /calendar/events/{eventId} | Get a calendar event by ID
+[**getCalendarEvents**](DefaultApi.md#getcalendarevents) | **GET** /calendar/events | Get imported calendar events for the current user
+[**getCalendarSourceById**](DefaultApi.md#getcalendarsourcebyid) | **GET** /calendar/sources/{sourceId} | Get a calendar source by ID
+[**getCalendarSources**](DefaultApi.md#getcalendarsources) | **GET** /calendar/sources | Get calendar sources for the current user
 [**getCollaborators**](DefaultApi.md#getcollaborators) | **GET** /todolists/{listId}/collaborators | Get collaborators for a todo list
 [**getConnections**](DefaultApi.md#getconnections) | **GET** /connections | List bridge connections for current user
 [**getTodoItemById**](DefaultApi.md#gettodoitembyid) | **GET** /todolists/{listId}/items/{itemId} | Get a todo item by ID
 [**getTodoItemsByListId**](DefaultApi.md#gettodoitemsbylistid) | **GET** /todolists/{listId}/items | Get todo items by list ID
 [**getTodoListById**](DefaultApi.md#gettodolistbyid) | **GET** /todolists/{listId} | Get a todo list by ID
 [**getTodoListsByUserId**](DefaultApi.md#gettodolistsbyuserid) | **GET** /todolists | Get todo lists by owner ID
+[**getUpcomingCalendarEvents**](DefaultApi.md#getupcomingcalendarevents) | **GET** /calendar/upcoming | Get upcoming imported calendar events for the current user
 [**getUserByMatrixId**](DefaultApi.md#getuserbymatrixid) | **GET** /users/by-matrix-id | Get user by Matrix ID
-[**loginPost**](DefaultApi.md#loginpost) | **POST** /login | Log in a user
+[**importCalendarSource**](DefaultApi.md#importcalendarsource) | **POST** /calendar/sources/import | Import a calendar source from an uploaded ICS file
 [**postMatrixAuth**](DefaultApi.md#postmatrixauth) | **POST** /auth/matrix/openid | Authenticate using Matrix OpenID
-[**registerPost**](DefaultApi.md#registerpost) | **POST** /register | Register a new user
+[**refreshCalendarSource**](DefaultApi.md#refreshcalendarsource) | **POST** /calendar/sources/{sourceId}/refresh | Refresh a linked calendar source
 [**removeCollaborator**](DefaultApi.md#removecollaborator) | **DELETE** /todolists/{listId}/collaborators/{userId} | Remove a collaborator from a todo list
+[**updateCalendarSource**](DefaultApi.md#updatecalendarsource) | **PATCH** /calendar/sources/{sourceId} | Rename a calendar source
 [**updateTodoItem**](DefaultApi.md#updatetodoitem) | **PUT** /todolists/{listId}/items/{itemId} | Update a todo item
 [**updateTodoList**](DefaultApi.md#updatetodolist) | **PUT** /todolists/{listId} | Update a todo list
-[**usersIdGet**](DefaultApi.md#usersidget) | **GET** /users/{id} | Get user by ID
-[**usersMeGet**](DefaultApi.md#usersmeget) | **GET** /users/me | Get current user profile
 
 
 # **addCollaborator**
@@ -300,6 +306,47 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **createLinkedCalendarSource**
+> CalendarImportResponse createLinkedCalendarSource(newCalendarLinkSource)
+
+Add a linked ICS calendar source
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final NewCalendarLinkSource newCalendarLinkSource = ; // NewCalendarLinkSource | 
+
+try {
+    final response = api.createLinkedCalendarSource(newCalendarLinkSource);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->createLinkedCalendarSource: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **newCalendarLinkSource** | [**NewCalendarLinkSource**](NewCalendarLinkSource.md)|  | 
+
+### Return type
+
+[**CalendarImportResponse**](CalendarImportResponse.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **createTodoItem**
 > TodoItem createTodoItem(listId, newTodoItem)
 
@@ -380,6 +427,46 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **deleteCalendarSource**
+> deleteCalendarSource(sourceId)
+
+Delete a calendar source and its imported events
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String sourceId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+
+try {
+    api.deleteCalendarSource(sourceId);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->deleteCalendarSource: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **sourceId** | **String**|  | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -711,6 +798,170 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **getCalendarEventById**
+> CalendarEvent getCalendarEventById(eventId)
+
+Get a calendar event by ID
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String eventId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+
+try {
+    final response = api.getCalendarEventById(eventId);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->getCalendarEventById: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **eventId** | **String**|  | 
+
+### Return type
+
+[**CalendarEvent**](CalendarEvent.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getCalendarEvents**
+> BuiltList<CalendarEvent> getCalendarEvents(from, to, sourceId)
+
+Get imported calendar events for the current user
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final DateTime from = 2013-10-20T19:20:30+01:00; // DateTime | 
+final DateTime to = 2013-10-20T19:20:30+01:00; // DateTime | 
+final String sourceId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+
+try {
+    final response = api.getCalendarEvents(from, to, sourceId);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->getCalendarEvents: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **from** | **DateTime**|  | [optional] 
+ **to** | **DateTime**|  | [optional] 
+ **sourceId** | **String**|  | [optional] 
+
+### Return type
+
+[**BuiltList&lt;CalendarEvent&gt;**](CalendarEvent.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getCalendarSourceById**
+> CalendarSource getCalendarSourceById(sourceId)
+
+Get a calendar source by ID
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String sourceId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+
+try {
+    final response = api.getCalendarSourceById(sourceId);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->getCalendarSourceById: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **sourceId** | **String**|  | 
+
+### Return type
+
+[**CalendarSource**](CalendarSource.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **getCalendarSources**
+> BuiltList<CalendarSource> getCalendarSources()
+
+Get calendar sources for the current user
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+
+try {
+    final response = api.getCalendarSources();
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->getCalendarSources: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**BuiltList&lt;CalendarSource&gt;**](CalendarSource.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **getCollaborators**
 > BuiltList<CollaboratorDetail> getCollaborators(listId)
 
@@ -957,6 +1208,47 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **getUpcomingCalendarEvents**
+> BuiltList<CalendarEvent> getUpcomingCalendarEvents(limit)
+
+Get upcoming imported calendar events for the current user
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final int limit = 56; // int | 
+
+try {
+    final response = api.getUpcomingCalendarEvents(limit);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->getUpcomingCalendarEvents: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **limit** | **int**|  | [optional] 
+
+### Return type
+
+[**BuiltList&lt;CalendarEvent&gt;**](CalendarEvent.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **getUserByMatrixId**
 > User getUserByMatrixId(matrixId)
 
@@ -998,23 +1290,24 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **loginPost**
-> AuthResponse loginPost(loginRequest)
+# **importCalendarSource**
+> CalendarImportResponse importCalendarSource(file, displayName)
 
-Log in a user
+Import a calendar source from an uploaded ICS file
 
 ### Example
 ```dart
 import 'package:messie_api/api.dart';
 
 final api = MessieApi().getDefaultApi();
-final LoginRequest loginRequest = ; // LoginRequest | 
+final MultipartFile file = BINARY_DATA_HERE; // MultipartFile | 
+final String displayName = displayName_example; // String | 
 
 try {
-    final response = api.loginPost(loginRequest);
+    final response = api.importCalendarSource(file, displayName);
     print(response);
 } catch on DioException (e) {
-    print('Exception when calling DefaultApi->loginPost: $e\n');
+    print('Exception when calling DefaultApi->importCalendarSource: $e\n');
 }
 ```
 
@@ -1022,19 +1315,20 @@ try {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **loginRequest** | [**LoginRequest**](LoginRequest.md)|  | 
+ **file** | **MultipartFile**|  | 
+ **displayName** | **String**|  | [optional] 
 
 ### Return type
 
-[**AuthResponse**](AuthResponse.md)
+[**CalendarImportResponse**](CalendarImportResponse.md)
 
 ### Authorization
 
-No authorization required
+[bearerAuth](../README.md#bearerAuth)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: multipart/form-data
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1080,23 +1374,23 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **registerPost**
-> AuthResponse registerPost(registerRequest)
+# **refreshCalendarSource**
+> CalendarImportResponse refreshCalendarSource(sourceId)
 
-Register a new user
+Refresh a linked calendar source
 
 ### Example
 ```dart
 import 'package:messie_api/api.dart';
 
 final api = MessieApi().getDefaultApi();
-final RegisterRequest registerRequest = ; // RegisterRequest | 
+final String sourceId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
 
 try {
-    final response = api.registerPost(registerRequest);
+    final response = api.refreshCalendarSource(sourceId);
     print(response);
 } catch on DioException (e) {
-    print('Exception when calling DefaultApi->registerPost: $e\n');
+    print('Exception when calling DefaultApi->refreshCalendarSource: $e\n');
 }
 ```
 
@@ -1104,19 +1398,19 @@ try {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **registerRequest** | [**RegisterRequest**](RegisterRequest.md)|  | 
+ **sourceId** | **String**|  | 
 
 ### Return type
 
-[**AuthResponse**](AuthResponse.md)
+[**CalendarImportResponse**](CalendarImportResponse.md)
 
 ### Authorization
 
-No authorization required
+[bearerAuth](../README.md#bearerAuth)
 
 ### HTTP request headers
 
- - **Content-Type**: application/json
+ - **Content-Type**: Not defined
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -1160,6 +1454,49 @@ void (empty response body)
 
  - **Content-Type**: Not defined
  - **Accept**: Not defined
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **updateCalendarSource**
+> CalendarSource updateCalendarSource(sourceId, updateCalendarSource)
+
+Rename a calendar source
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String sourceId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+final UpdateCalendarSource updateCalendarSource = ; // UpdateCalendarSource | 
+
+try {
+    final response = api.updateCalendarSource(sourceId, updateCalendarSource);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->updateCalendarSource: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **sourceId** | **String**|  | 
+ **updateCalendarSource** | [**UpdateCalendarSource**](UpdateCalendarSource.md)|  | 
+
+### Return type
+
+[**CalendarSource**](CalendarSource.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
@@ -1247,84 +1584,6 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: application/json
- - **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **usersIdGet**
-> User usersIdGet(id)
-
-Get user by ID
-
-### Example
-```dart
-import 'package:messie_api/api.dart';
-
-final api = MessieApi().getDefaultApi();
-final String id = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | User ID
-
-try {
-    final response = api.usersIdGet(id);
-    print(response);
-} catch on DioException (e) {
-    print('Exception when calling DefaultApi->usersIdGet: $e\n');
-}
-```
-
-### Parameters
-
-Name | Type | Description  | Notes
-------------- | ------------- | ------------- | -------------
- **id** | **String**| User ID | 
-
-### Return type
-
-[**User**](User.md)
-
-### Authorization
-
-[bearerAuth](../README.md#bearerAuth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **usersMeGet**
-> User usersMeGet()
-
-Get current user profile
-
-### Example
-```dart
-import 'package:messie_api/api.dart';
-
-final api = MessieApi().getDefaultApi();
-
-try {
-    final response = api.usersMeGet();
-    print(response);
-} catch on DioException (e) {
-    print('Exception when calling DefaultApi->usersMeGet: $e\n');
-}
-```
-
-### Parameters
-This endpoint does not need any parameter.
-
-### Return type
-
-[**User**](User.md)
-
-### Authorization
-
-[bearerAuth](../README.md#bearerAuth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

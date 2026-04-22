@@ -22,6 +22,9 @@ part 'bridge_login_step.g.dart';
 ///
 /// Properties:
 /// * [type] 
+/// * [processId] 
+/// * [loginId] 
+/// * [stepId] 
 /// * [displayAndWait] 
 /// * [userInput] 
 /// * [cookies] 

@@ -1,7 +1,6 @@
 .gitignore
 README.md
 analysis_options.yaml
-doc/AuthResponse.md
 doc/BridgeAccount.md
 doc/BridgeConnection.md
 doc/BridgeLoginFlow.md
@@ -12,6 +11,9 @@ doc/BridgeState.md
 doc/BridgeWhoamiLogin.md
 doc/BridgeWhoamiLoginProfile.md
 doc/BridgeWhoamiResponse.md
+doc/CalendarEvent.md
+doc/CalendarImportResponse.md
+doc/CalendarSource.md
 doc/CollaboratorDetail.md
 doc/DefaultApi.md
 doc/EmailListRequest.md
@@ -21,7 +23,6 @@ doc/EmailMessagesResponse.md
 doc/EmailRichHeader.md
 doc/EmailRichHeadersResponse.md
 doc/Error.md
-doc/LoginRequest.md
 doc/LoginStepComplete.md
 doc/LoginStepCompleteComplete.md
 doc/LoginStepCookies.md
@@ -33,13 +34,14 @@ doc/LoginStepUserInputUserInput.md
 doc/LoginStepUserInputUserInputFieldsInner.md
 doc/MatrixAuthResponse.md
 doc/MatrixOpenIDRequest.md
+doc/NewCalendarLinkSource.md
 doc/NewCollaborator.md
 doc/NewTodoItem.md
 doc/NewTodoList.md
-doc/RegisterRequest.md
 doc/RemoteProfile.md
 doc/TodoItem.md
 doc/TodoList.md
+doc/UpdateCalendarSource.md
 doc/UpdateTodoItem.md
 doc/UpdateTodoList.md
 doc/User.md
@@ -56,7 +58,6 @@ lib/src/auth/basic_auth.dart
 lib/src/auth/bearer_auth.dart
 lib/src/auth/oauth.dart
 lib/src/date_serializer.dart
-lib/src/model/auth_response.dart
 lib/src/model/bridge_account.dart
 lib/src/model/bridge_connection.dart
 lib/src/model/bridge_login_flow.dart
@@ -67,6 +68,9 @@ lib/src/model/bridge_state.dart
 lib/src/model/bridge_whoami_login.dart
 lib/src/model/bridge_whoami_login_profile.dart
 lib/src/model/bridge_whoami_response.dart
+lib/src/model/calendar_event.dart
+lib/src/model/calendar_import_response.dart
+lib/src/model/calendar_source.dart
 lib/src/model/collaborator_detail.dart
 lib/src/model/date.dart
 lib/src/model/email_list_request.dart
@@ -76,7 +80,6 @@ lib/src/model/email_messages_response.dart
 lib/src/model/email_rich_header.dart
 lib/src/model/email_rich_headers_response.dart
 lib/src/model/error.dart
-lib/src/model/login_request.dart
 lib/src/model/login_step_complete.dart
 lib/src/model/login_step_complete_complete.dart
 lib/src/model/login_step_cookies.dart
@@ -88,13 +91,14 @@ lib/src/model/login_step_user_input_user_input.dart
 lib/src/model/login_step_user_input_user_input_fields_inner.dart
 lib/src/model/matrix_auth_response.dart
 lib/src/model/matrix_open_id_request.dart
+lib/src/model/new_calendar_link_source.dart
 lib/src/model/new_collaborator.dart
 lib/src/model/new_todo_item.dart
 lib/src/model/new_todo_list.dart
-lib/src/model/register_request.dart
 lib/src/model/remote_profile.dart
 lib/src/model/todo_item.dart
 lib/src/model/todo_list.dart
+lib/src/model/update_calendar_source.dart
 lib/src/model/update_todo_item.dart
 lib/src/model/update_todo_list.dart
 lib/src/model/user.dart
@@ -103,3 +107,5 @@ lib/src/model/wa_status_response.dart
 lib/src/model/wa_status_response_account.dart
 lib/src/serializers.dart
 pubspec.yaml
+test/new_calendar_link_source_test.dart
+test/update_calendar_source_test.dart
