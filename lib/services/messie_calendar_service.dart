@@ -8,13 +8,15 @@ import 'package:messie_api/messie_api.dart' as api;
 String _normalizeMessieCalendarApiBaseUrl(String value) =>
     value.endsWith('/') ? value : '$value/';
 
+const defaultMessieCalendarCategory = 'My Calendars';
+
 class MessieCalendarSource {
   MessieCalendarSource({
     required this.id,
     required this.userId,
     required this.kind,
     required this.displayName,
-    this.category,
+    required this.category,
     required this.importMode,
     required this.refreshState,
     this.sourceUrl,
@@ -32,7 +34,7 @@ class MessieCalendarSource {
   final String userId;
   final String kind;
   final String displayName;
-  final String? category;
+  final String category;
   final String importMode;
   final String refreshState;
   final String? sourceUrl;
@@ -51,7 +53,7 @@ class MessieCalendarSource {
         userId: source.userId,
         kind: source.kind,
         displayName: source.displayName,
-        category: source.category,
+        category: source.category ?? defaultMessieCalendarCategory,
         importMode: source.importMode,
         refreshState: source.refreshState,
         sourceUrl: source.sourceUrl,

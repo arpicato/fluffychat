@@ -1040,10 +1040,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   bool _isCategoryVisible(List<MessieCalendarSource> sources) =>
       sources.every((source) => _visibleSourceIds.contains(source.id));
 
-  bool _isCategoryPartiallyVisible(List<MessieCalendarSource> sources) =>
-      !_isCategoryVisible(sources) &&
-      sources.any((source) => _visibleSourceIds.contains(source.id));
-
   void _toggleCategoryVisibility(
     List<MessieCalendarSource> sources,
     bool visible,
@@ -1395,9 +1391,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                       final category = entry.key;
                       final sources = entry.value;
                       final isVisible = _isCategoryVisible(sources);
-                      final isPartiallyVisible = _isCategoryPartiallyVisible(
-                        sources,
-                      );
                       return Card(
                         margin: const EdgeInsets.only(bottom: 10),
                         child: Padding(
@@ -1410,16 +1403,11 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                               Row(
                                 children: [
                                   Checkbox(
-                                    tristate: true,
-                                    value: isVisible
-                                        ? true
-                                        : isPartiallyVisible
-                                        ? null
-                                        : false,
+                                    value: isVisible,
                                     onChanged: (value) =>
                                         _toggleCategoryVisibility(
                                           sources,
-                                          value != false,
+                                          value ?? false,
                                         ),
                                   ),
                                   Expanded(

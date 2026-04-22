@@ -594,13 +594,13 @@ paths:
               type: object
               required:
                 - file
+                - category
               properties:
                 file:
                   type: string
                   format: binary
                 category:
                   type: string
-                  nullable: true
                 display_name:
                   type: string
       responses:
@@ -1303,6 +1303,7 @@ components:
         - user_id
         - kind
         - display_name
+        - category
         - import_mode
         - refresh_state
       properties:
@@ -1320,7 +1321,6 @@ components:
           example: Work Calendar
         category:
           type: string
-          nullable: true
           example: Work
         import_mode:
           type: string
@@ -1360,23 +1360,23 @@ components:
       type: object
       required:
         - url
+        - category
       properties:
         url:
           type: string
           format: uri
         category:
           type: string
-          nullable: true
         display_name:
           type: string
     UpdateCalendarSource:
       type: object
       required:
         - display_name
+        - category
       properties:
         category:
           type: string
-          nullable: true
         display_name:
           type: string
     CalendarEvent:
