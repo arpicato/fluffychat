@@ -1,5 +1,4 @@
 import 'package:cross_file/cross_file.dart';
-import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:fluffychat/services/messie_workspace_refresh.dart';
@@ -602,6 +601,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   Set<String> _visibleCategoryNames = <String>{};
   Set<String> _knownSourceIds = <String>{};
   Set<String> _knownCategoryNames = <String>{};
+  final Map<String, GlobalKey> _mobileDaySectionKeys = <String, GlobalKey>{};
   bool _hasInitializedSourceSelection = false;
   _CalendarPageData? _latestPageData;
 
@@ -633,6 +633,12 @@ class _CalendarPageViewState extends State<CalendarPageView> {
 
   DateTime get _selectedDay => _selectedDayNotifier.value;
 
+  GlobalKey _mobileDaySectionKey(DateTime day) {
+    final normalized = DateTime(day.year, day.month, day.day);
+    final key = normalized.toIso8601String();
+    return _mobileDaySectionKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
   void _setVisibleMonth(DateTime month) {
     final normalized = DateTime(month.year, month.month);
     if (_isSameMonth(_visibleMonth, normalized)) return;
@@ -649,6 +655,26 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final normalizedDay = DateTime(day.year, day.month, day.day);
     _setSelectedDay(normalizedDay);
     _setVisibleMonth(normalizedDay);
+  }
+
+  void _scrollMobileScheduleToDay(DateTime day) {
+    final targetKey = _mobileDaySectionKey(day);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final targetContext = targetKey.currentContext;
+      if (targetContext == null) return;
+      Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+        alignment: 0.08,
+      );
+    });
+  }
+
+  void _jumpMobileScheduleToToday() {
+    final today = DateTime.now();
+    _selectDay(today);
+    _scrollMobileScheduleToDay(today);
   }
 
   Future<_CalendarPageData> _load() async {
@@ -1203,18 +1229,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     return Scaffold(
       appBar: isDesktopLayout
           ? null
-          : AppBar(
-              title: const Text('Calendar'),
-              automaticallyImplyLeading: !FluffyThemes.isColumnMode(context),
-              centerTitle: FluffyThemes.isColumnMode(context),
-              actions: [
-                IconButton(
-                  tooltip: 'Import calendar',
-                  onPressed: () => _openImportCalendarFlow(context),
-                  icon: const Icon(Icons.add),
-                ),
-              ],
-            ),
+          : null,
       body: FutureBuilder<_CalendarPageData>(
         future: _loadFuture,
         builder: (context, snapshot) {
@@ -1258,7 +1273,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
             return _buildDesktopCalendar(context, theme, data, sourceColors);
           }
 
-          return _buildMobileCalendar(context, theme, data);
+          return _buildMobileCalendar(context, theme, data, sourceColors);
         },
       ),
     );
@@ -2015,65 +2030,438 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     BuildContext context,
     ThemeData theme,
     _CalendarPageData data,
+    Map<String, Color> sourceColors,
   ) {
     return AnimatedBuilder(
-      animation: _visibilityVersionNotifier,
+      animation: Listenable.merge([
+        _visibilityVersionNotifier,
+        _visibleMonthNotifier,
+        _selectedDayNotifier,
+      ]),
       builder: (context, _) {
-        final visibleEvents = _visibleEvents(data.events);
+        final visibleEvents = _visibleEvents(data.events)
+          ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
         final eventsByDay = _buildEventsByDay(visibleEvents);
-        final groupedEvents = <DateTime, List<MessieCalendarEvent>>{};
-        groupedEvents.addAll(eventsByDay);
-        final groupedEntries = groupedEvents.entries.toList()
+        final groupedEntries = eventsByDay.entries.toList()
           ..sort((left, right) => left.key.compareTo(right.key));
+        MessieCalendarEvent? nextUpcomingEvent;
+        for (final event in visibleEvents) {
+          if (!calendarEventDisplayRange(event).end.isAfter(DateTime.now())) {
+            continue;
+          }
+          nextUpcomingEvent = event;
+          break;
+        }
+        final nextEvent = nextUpcomingEvent;
 
         return MaxWidthBody(
           withScrolling: false,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Imported calendars',
-                  style: theme.textTheme.titleMedium,
+              Material(
+                color: theme.colorScheme.surface,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            InkWell(
+                              borderRadius: BorderRadius.circular(18),
+                              onTap: () {},
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 6,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_month_outlined,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    ValueListenableBuilder<DateTime>(
+                                      valueListenable: _visibleMonthNotifier,
+                                      builder: (context, visibleMonth, _) => Text(
+                                        DateFormat.yMMMM().format(visibleMonth),
+                                        style: theme.textTheme.headlineSmall,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.expand_more),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            PopupMenuButton<String>(
+                              tooltip: 'Calendar view',
+                              onSelected: (_) {},
+                              itemBuilder: (context) => const [
+                                PopupMenuItem<String>(
+                                  value: 'schedule',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.check, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Schedule'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerHigh,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.view_agenda_outlined, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Schedule',
+                                      style: theme.textTheme.labelLarge,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.expand_more, size: 18),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 108,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildMobileQuickActionCard(
+                                  context,
+                                  theme,
+                                  width:
+                                      MediaQuery.sizeOf(context).width * 0.42,
+                                  icon: Icons.calendar_view_day_outlined,
+                                  label: 'Calendars',
+                                  value:
+                                      '${_visibleSourceIds.length}/${data.sources.length}',
+                                  detail: data.sources.isEmpty
+                                      ? 'Import and manage'
+                                      : 'Visible sources',
+                                  onTap: () => _showMobileCalendarsSheet(
+                                    context,
+                                    theme,
+                                    data,
+                                    sourceColors,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                _buildMobileQuickActionCard(
+                                  context,
+                                  theme,
+                                  width:
+                                      MediaQuery.sizeOf(context).width * 0.42,
+                                  icon: Icons.today_outlined,
+                                  label: 'Today',
+                                  value:
+                                      '${DateTime.now().day}',
+                                  detail: DateFormat.MMMEd().format(
+                                    DateTime.now(),
+                                  ),
+                                  onTap: _jumpMobileScheduleToToday,
+                                ),
+                                const SizedBox(width: 12),
+                                _buildMobileQuickActionCard(
+                                  context,
+                                  theme,
+                                  width:
+                                      MediaQuery.sizeOf(context).width * 0.42,
+                                  icon: Icons.upcoming_outlined,
+                                  label: 'Next up',
+                                  value: nextEvent == null
+                                      ? 'None'
+                                      : _formatEventRangeLabel(
+                                          context,
+                                          nextEvent,
+                                        ),
+                                  detail: nextEvent == null
+                                      ? 'No upcoming events'
+                                      : nextEvent.title,
+                                  onTap: nextEvent == null
+                                      ? null
+                                      : () => context.push(
+                                          '/rooms/calendar/events/${nextEvent.id}',
+                                          extra: <String, Object?>{
+                                            'title': nextEvent.title,
+                                            'sourceDisplayName':
+                                                nextEvent.sourceDisplayName,
+                                          },
+                                        ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              if (data.sources.isEmpty)
-                Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: ListTile(
-                    leading: const Icon(Icons.calendar_month_outlined),
-                    title: const Text('No calendars imported yet'),
-                    subtitle: const Text(
-                      'Import an .ics file to bring your existing calendar events into FluffyChat.',
-                    ),
-                    trailing: FilledButton.tonal(
-                      onPressed: () => _openImportCalendarFlow(context),
-                      child: const Text('Import'),
-                    ),
+              const Divider(height: 1),
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                  children: [
+                    if (groupedEntries.isEmpty)
+                      const Card(
+                        child: ListTile(
+                          leading: Icon(Icons.event_note_outlined),
+                          title: Text('No upcoming imported events'),
+                          subtitle: Text(
+                            'Imported events will appear here once calendars are visible.',
+                          ),
+                        ),
+                      ),
+                    for (final entry in groupedEntries)
+                      Padding(
+                        key: _mobileDaySectionKey(entry.key),
+                        padding: const EdgeInsets.only(bottom: 18),
+                        child: _buildMobileScheduleDaySection(
+                          context,
+                          theme,
+                          day: entry.key,
+                          events: entry.value,
+                          sourceColors: sourceColors,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileQuickActionCard(
+    BuildContext context,
+    ThemeData theme, {
+    required double width,
+    required IconData icon,
+    required String label,
+    required String value,
+    required String detail,
+    required VoidCallback? onTap,
+  }) {
+    return SizedBox(
+      width: width.clamp(156, 220),
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.hardEdge,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(icon, color: theme.colorScheme.primary),
+                const Spacer(),
+                Text(value, style: theme.textTheme.headlineSmall),
+                const SizedBox(height: 4),
+                Text(label, style: theme.textTheme.titleSmall),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-              ...data.sources.map(
-                (source) => Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: ListTile(
-                    leading: const Icon(Icons.calendar_today_outlined),
-                    title: Text(_sourceLabel(source)),
-                    subtitle: Text(
-                      _formatSourceSubtitle(source),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMobileCalendarsSheet(
+    BuildContext context,
+    ThemeData theme,
+    _CalendarPageData data,
+    Map<String, Color> sourceColors,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      builder: (sheetContext) {
+        return FractionallySizedBox(
+          heightFactor: 0.96,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+                child: Row(
+                  children: [
+                    Text(
+                      'Calendars',
+                      style: theme.textTheme.headlineSmall,
                     ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (action) =>
-                          _handleSourceAction(context, source, action),
+                    const Spacer(),
+                    FilledButton.tonalIcon(
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        _openImportCalendarFlow(context);
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Import'),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: AnimatedBuilder(
+                  animation: _visibilityVersionNotifier,
+                  builder: (context, _) {
+                    final categories = _sourcesByCategory(data.sources);
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      children: [
+                        Text(
+                          'Choose which imported calendars appear in the schedule.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (data.sources.isEmpty)
+                          Card(
+                            child: ListTile(
+                              leading: const Icon(
+                                Icons.calendar_month_outlined,
+                              ),
+                              title: const Text('No calendars imported yet'),
+                              subtitle: const Text(
+                                'Import an .ics file or calendar link to populate this schedule.',
+                              ),
+                              trailing: FilledButton.tonal(
+                                onPressed: () {
+                                  Navigator.of(sheetContext).pop();
+                                  _openImportCalendarFlow(context);
+                                },
+                                child: const Text('Import'),
+                              ),
+                            ),
+                          ),
+                        for (final entry in categories.entries) ...[
+                          _buildMobileCalendarCategoryCard(
+                            context,
+                            theme,
+                            category: entry.key,
+                            sources: entry.value,
+                            sourceColors: sourceColors,
+                            onAction: (source, action) async {
+                              Navigator.of(sheetContext).pop();
+                              await _handleSourceAction(
+                                context,
+                                source,
+                                action,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileCalendarCategoryCard(
+    BuildContext context,
+    ThemeData theme, {
+    required String category,
+    required List<MessieCalendarSource> sources,
+    required Map<String, Color> sourceColors,
+    required Future<void> Function(
+      MessieCalendarSource source,
+      String action,
+    )
+    onAction,
+  }) {
+    final isVisible = _isCategoryVisible(sources);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+        child: Column(
+          children: [
+            SwitchListTile(
+              value: isVisible,
+              title: Text(category, style: theme.textTheme.titleMedium),
+              subtitle: Text(
+                '${sources.length} calendar${sources.length == 1 ? '' : 's'}',
+              ),
+              onChanged: (value) => _toggleCategoryVisibility(sources, value),
+            ),
+            const Divider(height: 1),
+            ...sources.map(
+              (source) => ListTile(
+                enabled: isVisible,
+                leading: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: isVisible
+                        ? sourceColors[source.id] ?? theme.colorScheme.primary
+                        : theme.colorScheme.outlineVariant,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                title: Text(source.displayName),
+                subtitle: Text(
+                  _formatSourceSubtitle(source),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Switch(
+                      value: _visibleSourceIds.contains(source.id),
+                      onChanged: isVisible
+                          ? (_) => _toggleSourceVisibility(source.id)
+                          : null,
+                    ),
+                    PopupMenuButton<String>(
+                      enabled: isVisible,
+                      onSelected: (action) => onAction(source, action),
                       itemBuilder: (context) => [
                         const PopupMenuItem(
                           value: 'rename',
@@ -2090,75 +2478,165 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileScheduleDaySection(
+    BuildContext context,
+    ThemeData theme, {
+    required DateTime day,
+    required List<MessieCalendarEvent> events,
+    required Map<String, Color> sourceColors,
+  }) {
+    final isToday = _isSameDay(day, DateTime.now());
+    final isSelected = _isSameDay(day, _selectedDay);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 56,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                DateFormat.E().format(day),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: isToday || isSelected
+                      ? theme.colorScheme.primaryContainer
+                      : theme.colorScheme.surfaceContainerHigh,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${day.day}',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: isToday || isSelected
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurface,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text('Events', style: theme.textTheme.titleMedium),
-              ),
-              const SizedBox(height: 8),
-              if (groupedEntries.isEmpty)
-                const Card(
-                  margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: ListTile(
-                    leading: Icon(Icons.event_note_outlined),
-                    title: Text('No upcoming imported events'),
-                    subtitle: Text(
-                      'Imported events will appear here and in the main workspace list.',
-                    ),
-                  ),
-                ),
-              for (final entry in groupedEntries) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text(
-                    _formatShortDate(entry.key),
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ),
-                ...entry.value.map(
-                  (event) => Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    child: ListTile(
-                      onTap: () => context.push(
-                        '/rooms/calendar/events/${event.id}',
-                        extra: <String, Object?>{
-                          'title': event.title,
-                          'sourceDisplayName': event.sourceDisplayName,
-                        },
-                      ),
-                      leading: const Icon(Icons.event_outlined),
-                      title: Text(event.title),
-                      subtitle: Text(
-                        [
-                          if (event.sourceDisplayName.isNotEmpty)
-                            event.sourceDisplayName,
-                          if (event.location.isNotEmpty) event.location,
-                          if (event.description.isNotEmpty) event.description,
-                        ].join(' · '),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: Text(
-                        event.allDay
-                            ? 'All day'
-                            : _formatTime(context, event.startsAt),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
             ],
           ),
-        );
-      },
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            children: events
+                .map(
+                  (event) => Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _buildMobileScheduleEventCard(
+                      context,
+                      theme,
+                      day: day,
+                      event: event,
+                      color:
+                          sourceColors[event.sourceId] ??
+                          theme.colorScheme.primary,
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+      ],
     );
+  }
+
+  Widget _buildMobileScheduleEventCard(
+    BuildContext context,
+    ThemeData theme, {
+    required DateTime day,
+    required MessieCalendarEvent event,
+    required Color color,
+  }) {
+    final isContinuation =
+        !_isSameDay(event.startsAt.toLocal(), day) && _eventSpansDay(event, day);
+    return Material(
+      color: color.withValues(alpha: 0.26),
+      borderRadius: BorderRadius.circular(22),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(22),
+        onTap: () => context.push(
+          '/rooms/calendar/events/${event.id}',
+          extra: <String, Object?>{
+            'title': event.title,
+            'sourceDisplayName': event.sourceDisplayName,
+          },
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                event.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _formatMobileScheduleSubtitle(context, event, isContinuation),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.78),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _formatMobileScheduleSubtitle(
+    BuildContext context,
+    MessieCalendarEvent event,
+    bool isContinuation,
+  ) {
+    final parts = <String>[
+      if (event.allDay)
+        'All day'
+      else if (isContinuation)
+        'Continues'
+      else
+        _formatTime(context, event.startsAt),
+      if (!event.allDay && !isContinuation) _formatTime(context, event.endsAt),
+      if (event.sourceDisplayName.isNotEmpty) event.sourceDisplayName,
+    ];
+    return parts.join(' · ');
+  }
+
+  String _formatEventRangeLabel(
+    BuildContext context,
+    MessieCalendarEvent event,
+  ) {
+    if (event.allDay) {
+      return 'All day';
+    }
+    return _formatTime(context, event.startsAt);
   }
 
   bool _isSameDay(DateTime left, DateTime right) =>
