@@ -1363,6 +1363,13 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                           sourceColors,
                         ),
                         const SizedBox(height: 20),
+                        _buildSelectedDayCard(
+                          context,
+                          theme,
+                          eventsByDay,
+                          sourceColors,
+                        ),
+                        const SizedBox(height: 20),
                         Wrap(
                           crossAxisAlignment: WrapCrossAlignment.center,
                           spacing: 6,
@@ -1538,13 +1545,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                             ),
                           );
                         }),
-                        const SizedBox(height: 20),
-                        _buildSelectedDayCard(
-                          context,
-                          theme,
-                          eventsByDay,
-                          sourceColors,
-                        ),
                       ],
                     ),
                   ),
