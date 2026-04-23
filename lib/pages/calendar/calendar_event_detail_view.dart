@@ -200,7 +200,7 @@ class _CalendarEventDetailPageViewState
                     context: context,
                     icon: Icons.repeat_outlined,
                     label: 'Recurrence',
-                    value: event.recurrenceRaw!,
+                    value: event.recurrenceSummary!,
                   ),
                 if (event.description.isNotEmpty)
                   Padding(

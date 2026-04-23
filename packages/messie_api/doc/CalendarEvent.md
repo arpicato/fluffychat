@@ -19,8 +19,7 @@ Name | Type | Description | Notes
 **allDay** | **bool** |  | 
 **status** | **String** |  | 
 **timezone** | **String** |  | 
-**recurrenceRaw** | **String** |  | [optional] 
-**rawIcsBlob** | **String** |  | [optional] 
+**recurrenceSummary** | **String** |  | [optional] 
 **sourceDisplayName** | **String** |  | 
 **createdAt** | [**DateTime**](DateTime.md) |  | [optional] 
 **updatedAt** | [**DateTime**](DateTime.md) |  | [optional] 

@@ -22,8 +22,7 @@ part 'calendar_event.g.dart';
 /// * [allDay] 
 /// * [status] 
 /// * [timezone] 
-/// * [recurrenceRaw] 
-/// * [rawIcsBlob] 
+/// * [recurrenceSummary] 
 /// * [sourceDisplayName] 
 /// * [createdAt] 
 /// * [updatedAt] 
@@ -62,11 +61,8 @@ abstract class CalendarEvent implements Built<CalendarEvent, CalendarEventBuilde
   @BuiltValueField(wireName: r'timezone')
   String get timezone;
 
-  @BuiltValueField(wireName: r'recurrence_raw')
-  String? get recurrenceRaw;
-
-  @BuiltValueField(wireName: r'raw_ics_blob')
-  String? get rawIcsBlob;
+  @BuiltValueField(wireName: r'recurrence_summary')
+  String? get recurrenceSummary;
 
   @BuiltValueField(wireName: r'source_display_name')
   String get sourceDisplayName;
@@ -155,17 +151,10 @@ class _$CalendarEventSerializer implements PrimitiveSerializer<CalendarEvent> {
       object.timezone,
       specifiedType: const FullType(String),
     );
-    if (object.recurrenceRaw != null) {
-      yield r'recurrence_raw';
+    if (object.recurrenceSummary != null) {
+      yield r'recurrence_summary';
       yield serializers.serialize(
-        object.recurrenceRaw,
-        specifiedType: const FullType.nullable(String),
-      );
-    }
-    if (object.rawIcsBlob != null) {
-      yield r'raw_ics_blob';
-      yield serializers.serialize(
-        object.rawIcsBlob,
+        object.recurrenceSummary,
         specifiedType: const FullType.nullable(String),
       );
     }
@@ -288,21 +277,13 @@ class _$CalendarEventSerializer implements PrimitiveSerializer<CalendarEvent> {
           ) as String;
           result.timezone = valueDes;
           break;
-        case r'recurrence_raw':
+        case r'recurrence_summary':
           final valueDes = serializers.deserialize(
             value,
             specifiedType: const FullType.nullable(String),
           ) as String?;
           if (valueDes == null) continue;
-          result.recurrenceRaw = valueDes;
-          break;
-        case r'raw_ics_blob':
-          final valueDes = serializers.deserialize(
-            value,
-            specifiedType: const FullType.nullable(String),
-          ) as String?;
-          if (valueDes == null) continue;
-          result.rawIcsBlob = valueDes;
+          result.recurrenceSummary = valueDes;
           break;
         case r'source_display_name':
           final valueDes = serializers.deserialize(

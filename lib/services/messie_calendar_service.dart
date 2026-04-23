@@ -82,8 +82,7 @@ class MessieCalendarEvent {
     required this.status,
     required this.timezone,
     required this.sourceDisplayName,
-    this.recurrenceRaw,
-    this.rawIcsBlob,
+    this.recurrenceSummary,
     this.createdAt,
     this.updatedAt,
   });
@@ -100,13 +99,13 @@ class MessieCalendarEvent {
   final String status;
   final String timezone;
   final String sourceDisplayName;
-  final String? recurrenceRaw;
-  final String? rawIcsBlob;
+  final String? recurrenceSummary;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   bool get isUpcoming => endsAt.isAfter(DateTime.now().toUtc());
-  bool get isRecurring => recurrenceRaw != null && recurrenceRaw!.isNotEmpty;
+  bool get isRecurring =>
+      recurrenceSummary != null && recurrenceSummary!.isNotEmpty;
 
   factory MessieCalendarEvent.fromApi(api.CalendarEvent event) =>
       MessieCalendarEvent(
@@ -122,8 +121,7 @@ class MessieCalendarEvent {
         status: event.status,
         timezone: event.timezone,
         sourceDisplayName: event.sourceDisplayName,
-        recurrenceRaw: event.recurrenceRaw,
-        rawIcsBlob: event.rawIcsBlob,
+        recurrenceSummary: event.recurrenceSummary,
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
       );

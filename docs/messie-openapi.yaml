@@ -1443,10 +1443,7 @@ components:
           type: string
         timezone:
           type: string
-        recurrence_raw:
-          type: string
-          nullable: true
-        raw_ics_blob:
+        recurrence_summary:
           type: string
           nullable: true
         source_display_name:
