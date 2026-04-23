@@ -64,6 +64,26 @@ class _CalendarImportRequest {
   final String displayName;
 }
 
+sealed class _MobileScheduleItem {
+  const _MobileScheduleItem({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  bool contains(DateTime day) =>
+      !day.isBefore(start) && !day.isAfter(end);
+}
+
+class _MobileScheduleDayItem extends _MobileScheduleItem {
+  _MobileScheduleDayItem({required DateTime day}) : super(start: day, end: day);
+
+  DateTime get day => start;
+}
+
+class _MobileScheduleGapItem extends _MobileScheduleItem {
+  const _MobileScheduleGapItem({required super.start, required super.end});
+}
+
 enum _CalendarInstructionPlatform { google, outlook, apple }
 
 class _CalendarImportSheet extends StatefulWidget {
@@ -610,6 +630,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   Set<String> _knownSourceIds = <String>{};
   Set<String> _knownCategoryNames = <String>{};
   final Map<String, GlobalKey> _mobileDaySectionKeys = <String, GlobalKey>{};
+  final GlobalKey _mobileScheduleViewportKey = GlobalKey();
   bool _hasInitializedSourceSelection = false;
   bool _hasAutoScrolledMobileSchedule = false;
   bool _hasUserScrolledMobileSchedule = false;
@@ -662,6 +683,20 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     return _mobileDaySectionKeys.putIfAbsent(key, GlobalKey.new);
   }
 
+  GlobalKey _mobileGapSectionKey(DateTime start, DateTime end) {
+    final normalizedStart = DateTime(start.year, start.month, start.day);
+    final normalizedEnd = DateTime(end.year, end.month, end.day);
+    final key =
+        'gap:${normalizedStart.toIso8601String()}:${normalizedEnd.toIso8601String()}';
+    return _mobileDaySectionKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
+  GlobalKey _mobileScheduleItemKey(_MobileScheduleItem item) => switch (item) {
+    _MobileScheduleDayItem(:final day) => _mobileDaySectionKey(day),
+    _MobileScheduleGapItem(:final start, :final end) =>
+      _mobileGapSectionKey(start, end),
+  };
+
   void _setVisibleMonth(DateTime month) {
     final normalized = DateTime(month.year, month.month);
     if (_isSameMonth(_visibleMonth, normalized)) return;
@@ -682,19 +717,40 @@ class _CalendarPageViewState extends State<CalendarPageView> {
 
   void _scrollMobileScheduleToTarget(GlobalKey targetKey) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_mobileScheduleScrollController.hasClients) return;
       final targetContext = targetKey.currentContext;
-      if (targetContext == null) return;
-      Scrollable.ensureVisible(
-        targetContext,
+      final viewportContext = _mobileScheduleViewportKey.currentContext;
+      if (targetContext == null || viewportContext == null) return;
+
+      final targetBox = targetContext.findRenderObject() as RenderBox?;
+      final viewportBox = viewportContext.findRenderObject() as RenderBox?;
+      if (targetBox == null || viewportBox == null) return;
+
+      final targetOffsetInViewport =
+          targetBox.localToGlobal(Offset.zero, ancestor: viewportBox).dy;
+      final desiredOffset =
+          _mobileScheduleScrollController.offset +
+          targetOffsetInViewport -
+          (viewportBox.size.height * 0.08);
+      final clampedOffset = desiredOffset.clamp(
+        0.0,
+        _mobileScheduleScrollController.position.maxScrollExtent,
+      );
+
+      _mobileScheduleScrollController.animateTo(
+        clampedOffset,
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
-        alignment: 0.08,
       );
     });
   }
 
   void _scrollMobileScheduleToDay(DateTime day) {
-    final targetKey = _mobileDaySectionKey(day);
+    final targetKey = _mobileScheduleTargetKeyForDay(
+      day,
+      _mobileVisibleItems(_latestPageData),
+    );
+    if (targetKey == null) return;
     _scrollMobileScheduleToTarget(targetKey);
   }
 
@@ -747,9 +803,28 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final visibleEvents = _visibleEvents(data.mobileScheduleEvents)
       ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
     final eventsByDay = _buildEventsByDay(visibleEvents);
-    final visibleDays = eventsByDay.keys.toList()
-      ..sort((left, right) => left.compareTo(right));
-    return visibleDays;
+    return eventsByDay.keys.toList()..sort((left, right) => left.compareTo(right));
+  }
+
+  List<_MobileScheduleItem> _mobileVisibleItems(_CalendarPageData? data) {
+    if (data == null) return const [];
+    final visibleEvents = _visibleEvents(data.mobileScheduleEvents)
+      ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
+    final eventsByDay = _buildEventsByDay(visibleEvents);
+    return _buildMobileScheduleItems(eventsByDay);
+  }
+
+  GlobalKey? _mobileScheduleTargetKeyForDay(
+    DateTime day,
+    List<_MobileScheduleItem> items,
+  ) {
+    if (items.isEmpty) return null;
+    final target = DateTime(day.year, day.month, day.day);
+    for (final item in items) {
+      if (item.contains(target)) return _mobileScheduleItemKey(item);
+      if (!item.start.isBefore(target)) return _mobileScheduleItemKey(item);
+    }
+    return _mobileScheduleItemKey(items.last);
   }
 
   Future<_CalendarPageData> _load() async {
@@ -1276,6 +1351,28 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       });
     }
     return grouped;
+  }
+
+  List<_MobileScheduleItem> _buildMobileScheduleItems(
+    Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
+  ) {
+    if (eventsByDay.isEmpty) return const [];
+    final sortedDays = eventsByDay.keys.toList()
+      ..sort((left, right) => left.compareTo(right));
+    final items = <_MobileScheduleItem>[];
+    DateTime? previousDay;
+    for (final day in sortedDays) {
+      if (previousDay != null) {
+        final gapStart = previousDay.add(const Duration(days: 1));
+        final gapEnd = day.subtract(const Duration(days: 1));
+        if (!gapStart.isAfter(gapEnd)) {
+          items.add(_MobileScheduleGapItem(start: gapStart, end: gapEnd));
+        }
+      }
+      items.add(_MobileScheduleDayItem(day: day));
+      previousDay = day;
+    }
+    return items;
   }
 
   List<List<DateTime>> _monthWeeks(DateTime month) {
@@ -2160,9 +2257,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         final visibleEvents = _visibleEvents(data.mobileScheduleEvents)
           ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
         final eventsByDay = _buildEventsByDay(visibleEvents);
-        final groupedEntries = eventsByDay.entries.toList()
-          ..sort((left, right) => left.key.compareTo(right.key));
-        final visibleDays = groupedEntries.map((entry) => entry.key).toList();
+        final visibleDays = eventsByDay.keys.toList()
+          ..sort((left, right) => left.compareTo(right));
+        final scheduleItems = _buildMobileScheduleItems(eventsByDay);
         _autoScrollMobileScheduleToToday(visibleDays);
         MessieCalendarEvent? nextUpcomingEvent;
         for (final event in visibleEvents) {
@@ -2338,46 +2435,50 @@ class _CalendarPageViewState extends State<CalendarPageView> {
               ),
               const Divider(height: 1),
               Expanded(
-                child: ListView(
-                  controller: _mobileScheduleScrollController,
-                  padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
-                  children: [
-                    if (groupedEntries.isEmpty)
-                      const Card(
-                        child: ListTile(
-                          leading: Icon(Icons.event_note_outlined),
-                          title: Text('No upcoming imported events'),
-                          subtitle: Text(
-                            'Imported events will appear here once calendars are visible.',
-                          ),
-                        ),
-                      ),
-                    for (var index = 0; index < groupedEntries.length; index++) ...[
-                      if (index > 0 &&
-                          groupedEntries[index].key.weekday == DateTime.monday)
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(52, 4, 8, 12),
-                          child: Text(
-                            _formatMobileWeekRange(groupedEntries[index].key),
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w600,
+                child: Container(
+                  key: _mobileScheduleViewportKey,
+                  child: SingleChildScrollView(
+                    controller: _mobileScheduleScrollController,
+                    padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
+                    child: Column(
+                      children: [
+                        if (visibleDays.isEmpty)
+                          const Card(
+                            child: ListTile(
+                              leading: Icon(Icons.event_note_outlined),
+                              title: Text('No upcoming imported events'),
+                              subtitle: Text(
+                                'Imported events will appear here once calendars are visible.',
+                              ),
                             ),
                           ),
-                        ),
-                      Padding(
-                        key: _mobileDaySectionKey(groupedEntries[index].key),
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _buildMobileScheduleDaySection(
-                          context,
-                          theme,
-                          day: groupedEntries[index].key,
-                          events: groupedEntries[index].value,
-                          sourceColors: sourceColors,
-                        ),
-                        ),
-                    ],
-                  ],
+                        for (final item in scheduleItems)
+                          Padding(
+                            key: _mobileScheduleItemKey(item),
+                            padding: EdgeInsets.only(
+                              bottom: item is _MobileScheduleDayItem ? 12 : 18,
+                            ),
+                            child: switch (item) {
+                              _MobileScheduleDayItem(:final day) =>
+                                _buildMobileScheduleDaySection(
+                                  context,
+                                  theme,
+                                  day: day,
+                                  events: _eventsForDay(eventsByDay, day),
+                                  sourceColors: sourceColors,
+                                ),
+                              _MobileScheduleGapItem(:final start, :final end) =>
+                                _buildMobileScheduleGapLabel(
+                                  context,
+                                  theme,
+                                  start: start,
+                                  end: end,
+                                ),
+                            },
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -2963,6 +3064,24 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     );
   }
 
+  Widget _buildMobileScheduleGapLabel(
+    BuildContext context,
+    ThemeData theme, {
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(52, 6, 8, 2),
+      child: Text(
+        _formatMobileGapRange(start, end),
+        style: theme.textTheme.labelLarge?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   Widget _buildMobileScheduleEventCard(
     BuildContext context,
     ThemeData theme, {
@@ -3039,10 +3158,15 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     return parts.join(' · ');
   }
 
-  String _formatMobileWeekRange(DateTime day) {
-    final weekStart = day.subtract(Duration(days: day.weekday - DateTime.monday));
-    final weekEnd = weekStart.add(const Duration(days: 6));
-    return '${DateFormat('d MMM').format(weekStart)} – ${DateFormat('d MMM').format(weekEnd)}';
+  String _formatMobileGapRange(DateTime start, DateTime end) {
+    if (_isSameDay(start, end)) {
+      return DateFormat('d MMM').format(start);
+    }
+    final sameMonth = start.year == end.year && start.month == end.month;
+    if (sameMonth) {
+      return '${DateFormat('d').format(start)}–${DateFormat('d MMM').format(end)}';
+    }
+    return '${DateFormat('d MMM').format(start)} – ${DateFormat('d MMM').format(end)}';
   }
 
   String _formatMobileHeaderMonth(DateTime month) {
