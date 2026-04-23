@@ -604,6 +604,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   late final ValueNotifier<DateTime> _visibleMonthNotifier;
   late final ValueNotifier<DateTime> _selectedDayNotifier;
   late final ValueNotifier<int> _visibilityVersionNotifier;
+  late final ScrollController _mobileScheduleScrollController;
   Set<String> _visibleSourceIds = <String>{};
   Set<String> _visibleCategoryNames = <String>{};
   Set<String> _knownSourceIds = <String>{};
@@ -611,6 +612,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   final Map<String, GlobalKey> _mobileDaySectionKeys = <String, GlobalKey>{};
   bool _hasInitializedSourceSelection = false;
   bool _hasAutoScrolledMobileSchedule = false;
+  bool _hasUserScrolledMobileSchedule = false;
   _CalendarPageData? _latestPageData;
 
   CalendarPageController get controller => widget.controller;
@@ -626,15 +628,28 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       DateTime(now.year, now.month, now.day),
     );
     _visibilityVersionNotifier = ValueNotifier<int>(0);
+    _mobileScheduleScrollController = ScrollController()
+      ..addListener(_handleMobileScheduleScroll);
     _loadFuture = _load();
   }
 
   @override
   void dispose() {
+    _mobileScheduleScrollController
+      ..removeListener(_handleMobileScheduleScroll)
+      ..dispose();
     _visibleMonthNotifier.dispose();
     _selectedDayNotifier.dispose();
     _visibilityVersionNotifier.dispose();
     super.dispose();
+  }
+
+  void _handleMobileScheduleScroll() {
+    if (!_mobileScheduleScrollController.hasClients) return;
+    if (_mobileScheduleScrollController.position.isScrollingNotifier.value ||
+        _mobileScheduleScrollController.offset > 0) {
+      _hasUserScrolledMobileSchedule = true;
+    }
   }
 
   DateTime get _visibleMonth => _visibleMonthNotifier.value;
@@ -689,15 +704,30 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final visibleDays = _mobileVisibleDays(_latestPageData);
     final targetDay = _closestVisibleDayOnOrAfterToday(visibleDays);
     if (targetDay == null) return;
+    _hasUserScrolledMobileSchedule = false;
     _scrollMobileScheduleToDay(targetDay);
   }
 
   void _autoScrollMobileScheduleToToday(List<DateTime> visibleDays) {
-    if (_hasAutoScrolledMobileSchedule) return;
+    if (_hasAutoScrolledMobileSchedule || _hasUserScrolledMobileSchedule) return;
     _hasAutoScrolledMobileSchedule = true;
     final targetDay = _closestVisibleDayOnOrAfterToday(visibleDays);
     if (targetDay == null) return;
     _scrollMobileScheduleToDay(targetDay);
+  }
+
+  DateTime? _closestVisibleDayOnOrAfter(
+    List<DateTime> visibleDays,
+    DateTime target,
+  ) {
+    if (visibleDays.isEmpty) return null;
+    final normalizedTarget = DateTime(target.year, target.month, target.day);
+    for (final day in visibleDays) {
+      if (!day.isBefore(normalizedTarget)) {
+        return day;
+      }
+    }
+    return visibleDays.last;
   }
 
   DateTime? _closestVisibleDayOnOrAfterToday(List<DateTime> visibleDays) {
@@ -792,6 +822,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   void _refreshPage() {
     setState(() {
       _hasAutoScrolledMobileSchedule = false;
+      _hasUserScrolledMobileSchedule = false;
       _loadFuture = _load();
     });
     controller.refresh();
@@ -2308,6 +2339,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
               const Divider(height: 1),
               Expanded(
                 child: ListView(
+                  controller: _mobileScheduleScrollController,
                   padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
                   children: [
                     if (groupedEntries.isEmpty)
@@ -2640,7 +2672,22 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                             onSelected: () {
                                               _selectDay(day);
                                               Navigator.of(dialogContext).pop();
-                                              _scrollMobileScheduleToDay(day);
+                                              final visibleDays =
+                                                  _mobileVisibleDays(
+                                                    _latestPageData,
+                                                  );
+                                              final targetDay =
+                                                  _closestVisibleDayOnOrAfter(
+                                                    visibleDays,
+                                                    day,
+                                                  );
+                                              if (targetDay != null) {
+                                                _hasUserScrolledMobileSchedule =
+                                                    false;
+                                                _scrollMobileScheduleToDay(
+                                                  targetDay,
+                                                );
+                                              }
                                             },
                                           ),
                                         ),
