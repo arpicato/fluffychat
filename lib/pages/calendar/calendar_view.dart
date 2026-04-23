@@ -3071,12 +3071,15 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     required DateTime end,
   }) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(52, 6, 8, 2),
-      child: Text(
-        _formatMobileGapRange(start, end),
-        style: theme.textTheme.labelLarge?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
-          fontWeight: FontWeight.w600,
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
+      child: Center(
+        child: Text(
+          _formatMobileGapRange(start, end),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
