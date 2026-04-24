@@ -1,26 +1,31 @@
-enum MatrixPowerLevelRole {
-  user,
-  moderator,
-  admin,
-  owner,
-}
+enum MatrixPowerLevelRole { user, moderator, admin, owner }
 
 const int kMatrixModeratorPowerLevel = 50;
 const int kMatrixAdminPowerLevel = 100;
 const int kMatrixOwnerPowerLevel = 9007199254740991;
 
-MatrixPowerLevelRole matrixPowerLevelRoleFor(int powerLevel) {
-  if (powerLevel >= kMatrixOwnerPowerLevel) {
+MatrixPowerLevelRole matrixPowerLevelRoleFor(dynamic powerLevel) {
+  final int level;
+  if (powerLevel is int) {
+    level = powerLevel;
+  } else {
+    level = (powerLevel as dynamic).level as int;
+  }
+  if (level >= kMatrixOwnerPowerLevel) {
     return MatrixPowerLevelRole.owner;
   }
-  if (powerLevel >= kMatrixAdminPowerLevel) {
+  if (level >= kMatrixAdminPowerLevel) {
     return MatrixPowerLevelRole.admin;
   }
-  if (powerLevel >= kMatrixModeratorPowerLevel) {
+  if (level >= kMatrixModeratorPowerLevel) {
     return MatrixPowerLevelRole.moderator;
   }
   return MatrixPowerLevelRole.user;
 }
 
-bool isAdminLikePowerLevel(int powerLevel) =>
-    powerLevel >= kMatrixAdminPowerLevel;
+bool isAdminLikePowerLevel(dynamic powerLevel) {
+  if (powerLevel is int) {
+    return powerLevel >= kMatrixAdminPowerLevel;
+  }
+  return ((powerLevel as dynamic).level as int) >= kMatrixAdminPowerLevel;
+}

@@ -10,14 +10,13 @@ class _$UpdateCalendarSource extends UpdateCalendarSource {
   @override
   final String? category;
   @override
-  final String displayName;
+  final String? displayName;
 
   factory _$UpdateCalendarSource(
           [void Function(UpdateCalendarSourceBuilder)? updates]) =>
       (UpdateCalendarSourceBuilder()..update(updates))._build();
 
-  _$UpdateCalendarSource._({this.category, required this.displayName})
-      : super._();
+  _$UpdateCalendarSource._({this.category, this.displayName}) : super._();
   @override
   UpdateCalendarSource rebuild(
           void Function(UpdateCalendarSourceBuilder) updates) =>
@@ -96,8 +95,7 @@ class UpdateCalendarSourceBuilder
     final _$result = _$v ??
         _$UpdateCalendarSource._(
           category: category,
-          displayName: BuiltValueNullFieldError.checkNotNull(
-              displayName, r'UpdateCalendarSource', 'displayName'),
+          displayName: displayName,
         );
     replace(_$result);
     return _$result;

@@ -1,5 +1,6 @@
 import 'package:built_collection/built_collection.dart';
 import 'package:built_value/json_object.dart';
+import 'package:dio/dio.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:messie_api/messie_api.dart' as api;
@@ -29,6 +30,34 @@ class MessieBridgeState {
   }
 
   List<api.BridgeWhoamiLogin> get logins => whoami?.logins?.toList() ?? const [];
+}
+
+class MessieBridgeRoomMapping {
+  const MessieBridgeRoomMapping({
+    required this.provider,
+    required this.roomId,
+    required this.loginId,
+    this.loginName,
+    this.spaceRoom,
+    this.preferred = false,
+  });
+
+  final String provider;
+  final String roomId;
+  final String loginId;
+  final String? loginName;
+  final String? spaceRoom;
+  final bool preferred;
+
+  factory MessieBridgeRoomMapping.fromApi(api.BridgeRoomMapping mapping) =>
+      MessieBridgeRoomMapping(
+        provider: mapping.provider,
+        roomId: mapping.roomId,
+        loginId: mapping.loginId,
+        loginName: mapping.loginName,
+        spaceRoom: mapping.spaceRoom,
+        preferred: mapping.preferred ?? false,
+      );
 }
 
 class MessieBridgeInputField {
@@ -145,6 +174,9 @@ class MessieBridgeProvisioningStep {
 }
 
 class MessieBridgeService {
+  static const _bridgeConnectTimeout = Duration(seconds: 5);
+  static const _bridgeReceiveTimeout = Duration(seconds: 30);
+
   MessieBridgeService({
     BackendSessionService? sessionService,
     this.apiBaseUrl = BackendSessionService.defaultApiBaseUrl,
@@ -247,6 +279,24 @@ class MessieBridgeService {
     }
   }
 
+  Future<List<MessieBridgeRoomMapping>> getBridgeRoomMappings(
+    Client client, {
+    String provider = 'whatsapp',
+  }) async {
+    final apiClient = await _createApiClient(client);
+    try {
+      final response = await apiClient.defaultApi.getBridgeRoomMappings(
+        provider: provider,
+      );
+      return response.data
+              ?.map(MessieBridgeRoomMapping.fromApi)
+              .toList(growable: false) ??
+          const [];
+    } finally {
+      apiClient.dispose();
+    }
+  }
+
   Future<_MessieBridgeApiClient> _createApiClient(Client client) async {
     final store = await SharedPreferences.getInstance();
     final session = await _sessionService.ensureSession(
@@ -255,7 +305,16 @@ class MessieBridgeService {
       apiBaseUrl: apiBaseUrl,
     );
     final normalizedBaseUrl = _normalizeMessieBridgeApiBaseUrl(apiBaseUrl);
-    final sdk = api.MessieApi(basePathOverride: normalizedBaseUrl);
+    final sdk = api.MessieApi(
+      basePathOverride: normalizedBaseUrl,
+      dio: Dio(
+        BaseOptions(
+          baseUrl: normalizedBaseUrl,
+          connectTimeout: _bridgeConnectTimeout,
+          receiveTimeout: _bridgeReceiveTimeout,
+        ),
+      ),
+    );
     sdk.setBearerAuth('bearerAuth', session.token);
     return _MessieBridgeApiClient(
       sdk: sdk,

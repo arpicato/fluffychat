@@ -176,6 +176,8 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
   final onRoomKeyRequestSub = <String, StreamSubscription>{};
   final onKeyVerificationRequestSub = <String, StreamSubscription>{};
   final onNotification = <String, StreamSubscription>{};
+  final onTimelineDebug = <String, StreamSubscription>{};
+  final onHistoryDebug = <String, StreamSubscription>{};
   final onLogoutSub = <String, StreamSubscription<LoginState>>{};
   final onUiaRequest = <String, StreamSubscription<UiaRequest>>{};
 
@@ -198,6 +200,28 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     final route = FluffyChatApp.router.routeInformationProvider.value.uri.path;
     if (!route.startsWith('/rooms/')) return null;
     return route.split('/')[2];
+  }
+
+  bool get _debugNotificationFlow => kDebugMode && PlatformInfos.isWeb;
+
+  bool _shouldLogNotificationEvent(Event event) =>
+      event.type == EventTypes.Message || event.type == EventTypes.Encrypted;
+
+  void _logNotificationEvent(String streamName, String clientName, Event event) {
+    if (!_debugNotificationFlow || !_shouldLogNotificationEvent(event)) return;
+    final visibilityState = html.document.visibilityState;
+    final ts = event.originServerTs.toIso8601String();
+    Logs().i(
+      '[notif-debug][$clientName][$streamName] '
+      'room=${event.room.id} '
+      'event=${event.eventId} '
+      'type=${event.type} '
+      'sender=${event.senderId} '
+      'ts=$ts '
+      'unread=${event.room.notificationCount} '
+      'activeRoom=$activeRoomId '
+      'visibility=$visibilityState',
+    );
   }
 
   final linuxNotifications = PlatformInfos.isLinux
@@ -286,9 +310,18 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     if (PlatformInfos.isWeb || PlatformInfos.isLinux) {
       c.onSync.stream.first.then((s) {
         html.Notification.requestPermission();
-        onNotification[name] ??= c.onNotification.stream.listen(
-          showLocalNotification,
-        );
+        if (_debugNotificationFlow) {
+          onTimelineDebug[name] ??= c.onTimelineEvent.stream.listen(
+            (event) => _logNotificationEvent('timeline', name, event),
+          );
+          onHistoryDebug[name] ??= c.onHistoryEvent.stream.listen(
+            (event) => _logNotificationEvent('history', name, event),
+          );
+        }
+        onNotification[name] ??= c.onNotification.stream.listen((event) {
+          _logNotificationEvent('notification', name, event);
+          showLocalNotification(event);
+        });
       });
     }
   }
@@ -302,6 +335,10 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     onLogoutSub.remove(name);
     onNotification[name]?.cancel();
     onNotification.remove(name);
+    onTimelineDebug[name]?.cancel();
+    onTimelineDebug.remove(name);
+    onHistoryDebug[name]?.cancel();
+    onHistoryDebug.remove(name);
   }
 
   void initMatrix() {

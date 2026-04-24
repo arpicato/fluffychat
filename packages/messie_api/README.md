@@ -83,6 +83,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**emailList**](doc/DefaultApi.md#emaillist) | **POST** /email/list | List recent message headers for a mailbox or flag query
 [*DefaultApi*](doc/DefaultApi.md) | [**emailLoginTest**](doc/DefaultApi.md#emaillogintest) | **POST** /email/login-test | Test email login and fetch recent message headers
 [*DefaultApi*](doc/DefaultApi.md) | [**emailThreads**](doc/DefaultApi.md#emailthreads) | **POST** /email/threads | List recent email threads
+[*DefaultApi*](doc/DefaultApi.md) | [**getBridgeRoomMappings**](doc/DefaultApi.md#getbridgeroommappings) | **GET** /bridge/room-mappings | List bridge room to login mappings for current user
 [*DefaultApi*](doc/DefaultApi.md) | [**getCalendarEventById**](doc/DefaultApi.md#getcalendareventbyid) | **GET** /calendar/events/{eventId} | Get a calendar event by ID
 [*DefaultApi*](doc/DefaultApi.md) | [**getCalendarEvents**](doc/DefaultApi.md#getcalendarevents) | **GET** /calendar/events | Get imported calendar events for the current user
 [*DefaultApi*](doc/DefaultApi.md) | [**getCalendarSourceById**](doc/DefaultApi.md#getcalendarsourcebyid) | **GET** /calendar/sources/{sourceId} | Get a calendar source by ID
@@ -112,6 +113,7 @@ Class | Method | HTTP request | Description
  - [BridgeLoginFlowsResponse](doc/BridgeLoginFlowsResponse.md)
  - [BridgeLoginStep](doc/BridgeLoginStep.md)
  - [BridgeName](doc/BridgeName.md)
+ - [BridgeRoomMapping](doc/BridgeRoomMapping.md)
  - [BridgeState](doc/BridgeState.md)
  - [BridgeWhoamiLogin](doc/BridgeWhoamiLogin.md)
  - [BridgeWhoamiLoginProfile](doc/BridgeWhoamiLoginProfile.md)

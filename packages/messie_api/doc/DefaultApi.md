@@ -27,6 +27,7 @@ Method | HTTP request | Description
 [**emailList**](DefaultApi.md#emaillist) | **POST** /email/list | List recent message headers for a mailbox or flag query
 [**emailLoginTest**](DefaultApi.md#emaillogintest) | **POST** /email/login-test | Test email login and fetch recent message headers
 [**emailThreads**](DefaultApi.md#emailthreads) | **POST** /email/threads | List recent email threads
+[**getBridgeRoomMappings**](DefaultApi.md#getbridgeroommappings) | **GET** /bridge/room-mappings | List bridge room to login mappings for current user
 [**getCalendarEventById**](DefaultApi.md#getcalendareventbyid) | **GET** /calendar/events/{eventId} | Get a calendar event by ID
 [**getCalendarEvents**](DefaultApi.md#getcalendarevents) | **GET** /calendar/events | Get imported calendar events for the current user
 [**getCalendarSourceById**](DefaultApi.md#getcalendarsourcebyid) | **GET** /calendar/sources/{sourceId} | Get a calendar source by ID
@@ -798,6 +799,47 @@ No authorization required
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **getBridgeRoomMappings**
+> BuiltList<BridgeRoomMapping> getBridgeRoomMappings(provider)
+
+List bridge room to login mappings for current user
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String provider = whatsapp; // String | 
+
+try {
+    final response = api.getBridgeRoomMappings(provider);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->getBridgeRoomMappings: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **provider** | **String**|  | 
+
+### Return type
+
+[**BuiltList&lt;BridgeRoomMapping&gt;**](BridgeRoomMapping.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **getCalendarEventById**
 > CalendarEvent getCalendarEventById(eventId)
 
@@ -1291,7 +1333,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **importCalendarSource**
-> CalendarImportResponse importCalendarSource(file, displayName)
+> CalendarImportResponse importCalendarSource(file, category, displayName)
 
 Import a calendar source from an uploaded ICS file
 
@@ -1301,10 +1343,11 @@ import 'package:messie_api/api.dart';
 
 final api = MessieApi().getDefaultApi();
 final MultipartFile file = BINARY_DATA_HERE; // MultipartFile | 
+final String category = category_example; // String | 
 final String displayName = displayName_example; // String | 
 
 try {
-    final response = api.importCalendarSource(file, displayName);
+    final response = api.importCalendarSource(file, category, displayName);
     print(response);
 } catch on DioException (e) {
     print('Exception when calling DefaultApi->importCalendarSource: $e\n');
@@ -1316,6 +1359,7 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **file** | **MultipartFile**|  | 
+ **category** | **String**|  | 
  **displayName** | **String**|  | [optional] 
 
 ### Return type

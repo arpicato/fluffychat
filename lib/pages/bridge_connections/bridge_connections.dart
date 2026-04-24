@@ -44,7 +44,8 @@ class _BridgeConnectionsPageState extends State<BridgeConnectionsPage> {
         _bridgeStateFuture = Future.value(state);
       });
     }
-    final connected = state.connection?.status == api.BridgeConnectionStatusEnum.connected;
+    final connected =
+        state.connection?.status == api.BridgeConnectionStatusEnum.connected;
     return connected || state.logins.isNotEmpty;
   }
 
@@ -59,6 +60,17 @@ class _BridgeConnectionsPageState extends State<BridgeConnectionsPage> {
   }
 
   Future<void> _startFlow(api.BridgeLoginFlow flow) async {
+    final state = await _loadState();
+    final blockedMessage = _quotaExceededMessage(
+      connection: state.connection,
+      loginCount: state.logins.length,
+    );
+    if (blockedMessage != null) {
+      if (!mounted) return;
+      _showSnackBar(blockedMessage);
+      return;
+    }
+
     try {
       var step = await _service.startLogin(
         _client,
@@ -135,7 +147,14 @@ class _BridgeConnectionsPageState extends State<BridgeConnectionsPage> {
       }
     } catch (error) {
       if (!mounted) return;
-      await _showErrorDialog('Could not start bridge login', error);
+      await _showErrorDialog(
+        'Could not start bridge login',
+        _describePageError(
+          error,
+          connection: state.connection,
+          loginCount: state.logins.length,
+        ),
+      );
     }
   }
 
@@ -199,16 +218,66 @@ class _BridgeConnectionsPageState extends State<BridgeConnectionsPage> {
       _showSnackBar('WhatsApp disconnected.');
     } catch (error) {
       if (!mounted) return;
-      await _showErrorDialog('Could not disconnect WhatsApp', error);
+      await _showErrorDialog(
+        'Could not disconnect WhatsApp',
+        _describePageError(error),
+      );
     }
   }
 
-  Future<void> _showErrorDialog(String title, Object error) {
+  int? _maxAccounts(api.BridgeConnection? connection) {
+    final raw = connection?.limits?['max_accounts']?.value;
+    if (raw is num) return raw.toInt();
+    if (raw is String) return int.tryParse(raw);
+    return null;
+  }
+
+  String? _quotaExceededMessage({
+    api.BridgeConnection? connection,
+    required int loginCount,
+  }) {
+    final maxAccounts = _maxAccounts(connection);
+    if (maxAccounts == null || loginCount < maxAccounts) return null;
+    if (maxAccounts == 1) {
+      return 'This account already has its allowed WhatsApp login. Disconnect it before starting a new one.';
+    }
+    return 'This account already has $maxAccounts WhatsApp logins. Disconnect one before starting another.';
+  }
+
+  String _describePageError(
+    Object error, {
+    api.BridgeConnection? connection,
+    int loginCount = 0,
+  }) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map) {
+        final errorText = data['error']?.toString();
+        final messageText = data['message']?.toString();
+        final blockedMessage = _quotaExceededMessage(
+          connection: connection,
+          loginCount: loginCount,
+        );
+        if ((errorText != null &&
+                errorText.contains('quota exceeded: max_accounts')) ||
+            (messageText != null &&
+                messageText.contains('quota exceeded: max_accounts'))) {
+          return blockedMessage ??
+              'This account has reached its WhatsApp login limit. Disconnect an existing login before starting another.';
+        }
+        if (messageText != null && messageText.isNotEmpty) return messageText;
+        if (errorText != null && errorText.isNotEmpty) return errorText;
+      }
+    }
+    return error.toString();
+  }
+
+  Future<void> _showErrorDialog(String title, String message) {
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog.adaptive(
         title: Text(title),
-        content: SelectableText(error.toString()),
+        content: SelectableText(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -292,6 +361,10 @@ class _BridgeConnectionsPageState extends State<BridgeConnectionsPage> {
         final flows = state.flows;
         final logins = state.logins;
         final network = state.whoami?.network;
+        final blockedMessage = _quotaExceededMessage(
+          connection: connection,
+          loginCount: logins.length,
+        );
 
         return Scaffold(
           appBar: AppBar(
@@ -369,14 +442,27 @@ class _BridgeConnectionsPageState extends State<BridgeConnectionsPage> {
                                 ),
                               ],
                               const SizedBox(height: 16),
+                              if (blockedMessage != null) ...[
+                                Text(
+                                  blockedMessage,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.error,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
                               Wrap(
                                 spacing: 12,
                                 runSpacing: 12,
                                 children: flows
                                     .map(
                                       (flow) => FilledButton.icon(
-                                        onPressed: () => _startFlow(flow),
-                                        icon: const Icon(Icons.add_link_outlined),
+                                        onPressed: blockedMessage == null
+                                            ? () => _startFlow(flow)
+                                            : null,
+                                        icon: const Icon(
+                                          Icons.add_link_outlined,
+                                        ),
                                         label: Text(flow.name),
                                       ),
                                     )
@@ -419,7 +505,9 @@ class _BridgeConnectionsPageState extends State<BridgeConnectionsPage> {
                                 ),
                               const Divider(height: 1),
                               ListTile(
-                                leading: const Icon(Icons.delete_sweep_outlined),
+                                leading: const Icon(
+                                  Icons.delete_sweep_outlined,
+                                ),
                                 title: const Text('Disconnect all'),
                                 onTap: () => _logout('all'),
                               ),
@@ -464,7 +552,8 @@ class _BridgeDisplayDialogResult {
   final bool restart;
 }
 
-class _BridgeDisplayAndWaitDialogState extends State<_BridgeDisplayAndWaitDialog> {
+class _BridgeDisplayAndWaitDialogState
+    extends State<_BridgeDisplayAndWaitDialog> {
   late MessieBridgeProvisioningStep _step;
   Timer? _timer;
   bool _loading = false;
@@ -494,9 +583,7 @@ class _BridgeDisplayAndWaitDialogState extends State<_BridgeDisplayAndWaitDialog
       if (!mounted) return;
       if (!nextStep.isDisplayAndWait) {
         _timer?.cancel();
-        Navigator.of(
-          context,
-        ).pop(_BridgeDisplayDialogResult(step: nextStep));
+        Navigator.of(context).pop(_BridgeDisplayDialogResult(step: nextStep));
         return;
       }
       setState(() => _step = nextStep);
@@ -529,7 +616,8 @@ class _BridgeDisplayAndWaitDialogState extends State<_BridgeDisplayAndWaitDialog
     final data = error.response?.data;
     if (data is Map) {
       final errcode = data['errcode']?.toString();
-      final message = data['error']?.toString() ?? data['message']?.toString() ?? '';
+      final message =
+          data['error']?.toString() ?? data['message']?.toString() ?? '';
       return errcode == 'M_NOT_FOUND' || message.contains('Login not found');
     }
     return error.toString().contains('Login not found');
@@ -570,10 +658,7 @@ class _BridgeDisplayAndWaitDialogState extends State<_BridgeDisplayAndWaitDialog
           mainAxisSize: MainAxisSize.min,
           children: [
             if (instructionText.isNotEmpty) ...[
-              Text(
-                instructionText,
-                textAlign: TextAlign.center,
-              ),
+              Text(instructionText, textAlign: TextAlign.center),
               const SizedBox(height: 16),
             ],
             if (_step.data != null && _step.data!.isNotEmpty)
@@ -585,7 +670,9 @@ class _BridgeDisplayAndWaitDialogState extends State<_BridgeDisplayAndWaitDialog
                     vertical: 18,
                   ),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: SelectableText(
@@ -601,16 +688,15 @@ class _BridgeDisplayAndWaitDialogState extends State<_BridgeDisplayAndWaitDialog
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: PrettyQrView.data(data: _step.data!),
                 )
             else if (_step.imageUrl != null)
-              SelectableText(
-                _step.imageUrl!,
-                textAlign: TextAlign.center,
-              ),
+              SelectableText(_step.imageUrl!, textAlign: TextAlign.center),
             if (_error != null) ...[
               const SizedBox(height: 16),
               Text(
@@ -638,9 +724,9 @@ class _BridgeDisplayAndWaitDialogState extends State<_BridgeDisplayAndWaitDialog
         ),
         if (isCodeDisplay)
           TextButton(
-            onPressed: () => Navigator.of(context).pop(
-              const _BridgeDisplayDialogResult(restart: true),
-            ),
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(const _BridgeDisplayDialogResult(restart: true)),
             child: const Text('New code'),
           ),
         TextButton(

@@ -20,6 +20,7 @@ import 'package:messie_api/src/model/bridge_login_flow.dart';
 import 'package:messie_api/src/model/bridge_login_flows_response.dart';
 import 'package:messie_api/src/model/bridge_login_step.dart';
 import 'package:messie_api/src/model/bridge_name.dart';
+import 'package:messie_api/src/model/bridge_room_mapping.dart';
 import 'package:messie_api/src/model/bridge_state.dart';
 import 'package:messie_api/src/model/bridge_whoami_login.dart';
 import 'package:messie_api/src/model/bridge_whoami_login_profile.dart';
@@ -70,6 +71,7 @@ part 'serializers.g.dart';
   BridgeLoginFlowsResponse,
   BridgeLoginStep,
   BridgeName,
+  BridgeRoomMapping,
   BridgeState,
   BridgeWhoamiLogin,
   BridgeWhoamiLoginProfile,
@@ -121,6 +123,10 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<CalendarEvent>(),
       )
       ..addBuilderFactory(
+        const FullType(BuiltList, [FullType(BridgeRoomMapping)]),
+        () => ListBuilder<BridgeRoomMapping>(),
+      )
+      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(TodoItem)]),
         () => ListBuilder<TodoItem>(),
       )
@@ -130,6 +136,10 @@ Serializers serializers = (_$serializers.toBuilder()
       )
       ..addBuilderFactory(
         const FullType(BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
+        () => MapBuilder<String, JsonObject?>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltMap, [FullType(String), FullType(JsonObject)]),
         () => MapBuilder<String, JsonObject>(),
       )
       ..addBuilderFactory(

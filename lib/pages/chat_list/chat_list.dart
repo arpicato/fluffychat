@@ -14,6 +14,7 @@ import 'package:fluffychat/widgets/adaptive_dialogs/show_modal_action_popup.dart
 import 'package:fluffychat/widgets/adaptive_dialogs/show_ok_cancel_alert_dialog.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_text_input_dialog.dart';
 import 'package:fluffychat/widgets/avatar.dart';
+import 'package:fluffychat/widgets/bridge_aware_avatar.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:fluffychat/widgets/share_scaffold_dialog.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +29,8 @@ import 'package:url_launcher/url_launcher_string.dart';
 import '../../../utils/account_bundles.dart';
 import '../../config/setting_keys.dart';
 import '../../services/backend_session_service.dart';
+import '../../services/bridge_room_presentation.dart';
+import '../../services/messie_bridge_service.dart';
 import '../../services/messie_calendar_service.dart';
 import '../../services/messie_todo_service.dart';
 import '../../services/messie_workspace_refresh.dart';
@@ -141,9 +144,11 @@ class ChatListController extends State<ChatList>
       case ActiveFilter.allChats:
         return (room) => true;
       case ActiveFilter.messages:
-        return (room) => !room.isSpace && room.isDirectChat;
+        return (room) =>
+            !room.isSpace && bridgePresentationForRoom(room).isDirectLike;
       case ActiveFilter.groups:
-        return (room) => !room.isSpace && !room.isDirectChat;
+        return (room) =>
+            !room.isSpace && !bridgePresentationForRoom(room).isDirectLike;
       case ActiveFilter.unread:
         return (room) => room.isUnreadOrInvited;
       case ActiveFilter.spaces:
@@ -296,8 +301,12 @@ class ChatListController extends State<ChatList>
 
   final StreamController<Client> _clientStream = StreamController.broadcast();
   final BackendSessionService _backendSessionService = BackendSessionService();
+  final MessieBridgeService _messieBridgeService = MessieBridgeService();
   final MessieCalendarService _messieCalendarService = MessieCalendarService();
   final MessieTodoService _messieTodoService = MessieTodoService();
+  BridgeProviderCatalog _bridgeProviderCatalog =
+      const BridgeProviderCatalog.empty();
+  List<MessieBridgeRoomMapping> _bridgeRoomMappings = const [];
 
   List<MessieTodoList> todoLists = const [];
   bool isLoadingTodoLists = false;
@@ -305,6 +314,31 @@ class ChatListController extends State<ChatList>
   List<MessieCalendarEvent> upcomingCalendarEvents = const [];
   bool isLoadingCalendarEvents = false;
   Object? calendarEventsError;
+
+  BridgeProviderCatalog get bridgeProviderCatalog => _bridgeProviderCatalog;
+
+  Map<String, MessieBridgeRoomMapping> get _bridgeRoomMappingsByRoomId => {
+    for (final mapping in _bridgeRoomMappings) mapping.roomId: mapping,
+  };
+
+  Map<String, int> get _bridgeLoginCountByProvider {
+    final counts = <String, Set<String>>{};
+    for (final mapping in _bridgeRoomMappings) {
+      counts.putIfAbsent(mapping.provider, () => <String>{}).add(mapping.loginId);
+    }
+    return counts.map((provider, ids) => MapEntry(provider, ids.length));
+  }
+
+  BridgeRoomPresentation bridgePresentationForRoom(Room room) =>
+      BridgeRoomPresentation.fromRoom(
+        room,
+        _bridgeProviderCatalog,
+        roomMapping: _bridgeRoomMappingsByRoomId[room.id],
+        loginCountForProvider: _bridgeLoginCountByProvider[
+              _bridgeRoomMappingsByRoomId[room.id]?.provider ?? ''
+            ] ??
+            0,
+      );
 
   Stream<Client> get clientStream => _clientStream.stream;
 
@@ -448,7 +482,62 @@ class ChatListController extends State<ChatList>
   }
 
   Future<void> refreshWorkspaceItems() async {
-    await Future.wait([refreshTodoLists(), refreshCalendarEvents()]);
+    await Future.wait([
+      refreshTodoLists(),
+      refreshCalendarEvents(),
+      refreshBridgeProviderCatalog(),
+      refreshBridgeRoomMappings(),
+    ]);
+  }
+
+  Future<void> refreshBridgeProviderCatalog() async {
+    if (!mounted) return;
+
+    try {
+      final matrix = Matrix.of(context);
+      final states = await Future.wait(
+        BridgeProviderCatalog.supportedProviders.keys.map(
+          (provider) =>
+              _messieBridgeService.loadState(matrix.client, provider: provider),
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _bridgeProviderCatalog = BridgeProviderCatalog.fromStates(states);
+      });
+    } catch (error, stackTrace) {
+      Logs().w('Unable to load bridge provider catalog', error, stackTrace);
+      if (!mounted) return;
+      setState(() {
+        _bridgeProviderCatalog = const BridgeProviderCatalog.empty();
+      });
+    }
+  }
+
+  Future<void> refreshBridgeRoomMappings() async {
+    if (!mounted) return;
+
+    try {
+      final matrix = Matrix.of(context);
+      final allMappings = <MessieBridgeRoomMapping>[];
+      for (final provider in BridgeProviderCatalog.supportedProviders.keys) {
+        final mappings = await _messieBridgeService.getBridgeRoomMappings(
+          matrix.client,
+          provider: provider,
+        );
+        allMappings.addAll(mappings);
+      }
+      if (!mounted) return;
+      setState(() {
+        _bridgeRoomMappings = allMappings;
+      });
+    } catch (error, stackTrace) {
+      Logs().w('Unable to load bridge room mappings', error, stackTrace);
+      if (!mounted) return;
+      setState(() {
+        _bridgeRoomMappings = const [];
+      });
+    }
   }
 
   @override
@@ -613,9 +702,15 @@ class ChatListController extends State<ChatList>
       Offset.zero & overlay.size,
     );
 
-    final displayname = room.getLocalizedDisplayname(
-      MatrixLocals(L10n.of(context)),
-    );
+    final presentation = bridgePresentationForRoom(room);
+    final baseDisplayname =
+        presentation.displayName ??
+        room.getLocalizedDisplayname(MatrixLocals(L10n.of(context)));
+    final displayname =
+        presentation.showAccountLabel && presentation.loginName != null
+            ? '$baseDisplayname · ${presentation.loginName!}'
+            : baseDisplayname;
+    final avatarUrl = presentation.avatarUrl ?? room.avatar;
 
     final spacesWithPowerLevels = room.client.rooms
         .where(
@@ -635,7 +730,12 @@ class ChatListController extends State<ChatList>
           child: Row(
             spacing: 12.0,
             children: [
-              Avatar(mxContent: room.avatar, name: displayname, size: 24),
+              BridgeAwareAvatar(
+                mxContent: avatarUrl,
+                name: displayname,
+                size: 24,
+                provider: presentation.provider,
+              ),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 200),
                 child: Text(displayname, maxLines: 1, overflow: .ellipsis),

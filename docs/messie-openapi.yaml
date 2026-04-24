@@ -1053,6 +1053,31 @@ paths:
         "401":
           description: Unauthorized
 
+  /bridge/room-mappings:
+    get:
+      security:
+        - bearerAuth: []
+      summary: List bridge room to login mappings for current user
+      operationId: getBridgeRoomMappings
+      parameters:
+        - in: query
+          name: provider
+          required: true
+          schema:
+            type: string
+            example: whatsapp
+      responses:
+        "200":
+          description: Room mappings for bridged rooms owned by the current user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BridgeRoomMapping"
+        "401":
+          description: Unauthorized
+
   /bridge/provision/v3/logout/{login_id}:
     post:
       security:
@@ -1706,6 +1731,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BridgeWhoamiLogin"
+    BridgeRoomMapping:
+      type: object
+      required:
+        - provider
+        - room_id
+        - login_id
+      properties:
+        provider:
+          type: string
+          example: whatsapp
+        room_id:
+          type: string
+          format: matrix_room_id
+        login_id:
+          type: string
+        login_name:
+          type: string
+        space_room:
+          type: string
+          format: matrix_room_id
+          nullable: true
+        preferred:
+          type: boolean
     BridgeName:
       type: object
       description: Info about the bridged network

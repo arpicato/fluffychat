@@ -288,6 +288,7 @@ class ChatListViewBody extends StatelessWidget {
                     return switch (entry) {
                       _RoomChatListEntry(:final room) => ChatListItem(
                         room,
+                        presentation: controller.bridgePresentationForRoom(room),
                         space: spaceDelegateCandidates[room.id],
                         key: Key('chat_list_item_${room.id}'),
                         filter: filter,

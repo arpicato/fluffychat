@@ -53,13 +53,11 @@ class _$NewCalendarLinkSourceSerializer implements PrimitiveSerializer<NewCalend
       object.url,
       specifiedType: const FullType(String),
     );
-    if (object.category != null) {
-      yield r'category';
-      yield serializers.serialize(
-        object.category,
-        specifiedType: const FullType(String),
-      );
-    }
+    yield r'category';
+    yield serializers.serialize(
+      object.category,
+      specifiedType: const FullType(String),
+    );
     if (object.displayName != null) {
       yield r'display_name';
       yield serializers.serialize(

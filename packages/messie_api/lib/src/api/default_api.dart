@@ -14,6 +14,7 @@ import 'package:messie_api/src/api_util.dart';
 import 'package:messie_api/src/model/bridge_connection.dart';
 import 'package:messie_api/src/model/bridge_login_flows_response.dart';
 import 'package:messie_api/src/model/bridge_login_step.dart';
+import 'package:messie_api/src/model/bridge_room_mapping.dart';
 import 'package:messie_api/src/model/bridge_whoami_response.dart';
 import 'package:messie_api/src/model/calendar_event.dart';
 import 'package:messie_api/src/model/calendar_import_response.dart';
@@ -1564,6 +1565,92 @@ class DefaultApi {
     );
   }
 
+  /// List bridge room to login mappings for current user
+  /// 
+  ///
+  /// Parameters:
+  /// * [provider] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [BuiltList<BridgeRoomMapping>] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<BuiltList<BridgeRoomMapping>>> getBridgeRoomMappings({ 
+    required String provider,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/bridge/room-mappings';
+    final _options = Options(
+      method: r'GET',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      validateStatus: validateStatus,
+    );
+
+    final _queryParameters = <String, dynamic>{
+      r'provider': encodeQueryParameter(_serializers, provider, const FullType(String)),
+    };
+
+    final _response = await _dio.request<Object>(
+      _path,
+      options: _options,
+      queryParameters: _queryParameters,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    BuiltList<BridgeRoomMapping>? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(BuiltList, [FullType(BridgeRoomMapping)]),
+      ) as BuiltList<BridgeRoomMapping>;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<BuiltList<BridgeRoomMapping>>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
   /// Get a calendar event by ID
   /// 
   ///
@@ -2578,7 +2665,7 @@ class DefaultApi {
   /// Throws [DioException] if API call or serialization fails
   Future<Response<CalendarImportResponse>> importCalendarSource({ 
     required MultipartFile file,
-    String? category,
+    required String category,
     String? displayName,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -2612,7 +2699,7 @@ class DefaultApi {
     try {
       _bodyData = FormData.fromMap(<String, dynamic>{
         r'file': file,
-        if (category != null) r'category': encodeFormParameter(_serializers, category, const FullType(String)),
+        r'category': encodeFormParameter(_serializers, category, const FullType(String)),
         if (displayName != null) r'display_name': encodeFormParameter(_serializers, displayName, const FullType(String)),
       });
 

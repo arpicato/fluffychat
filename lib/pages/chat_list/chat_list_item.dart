@@ -1,9 +1,11 @@
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/unread_bubble.dart';
+import 'package:fluffychat/services/bridge_room_presentation.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/utils/room_status_extension.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_ok_cancel_alert_dialog.dart';
+import 'package:fluffychat/widgets/bridge_aware_avatar.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:fluffychat/widgets/hover_builder.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +23,7 @@ class ChatListItem extends StatelessWidget {
   final void Function()? onForget;
   final void Function() onTap;
   final String? filter;
+  final BridgeRoomPresentation presentation;
 
   const ChatListItem(
     this.room, {
@@ -30,6 +33,10 @@ class ChatListItem extends StatelessWidget {
     this.onForget,
     this.filter,
     this.space,
+    this.presentation = const BridgeRoomPresentation(
+      isDirectLike: false,
+      shouldHideSenderPrefixes: false,
+    ),
     super.key,
   });
 
@@ -41,15 +48,17 @@ class ChatListItem extends StatelessWidget {
     final typingText = room.getLocalizedTypingText(context);
     final lastEvent = room.lastEvent;
     final ownMessage = lastEvent?.senderId == room.client.userID;
-    final directChatMatrixId = room.directChatMatrixID;
-    final isDirectChat = directChatMatrixId != null;
+    final directChatMatrixId =
+        presentation.primaryUserId ?? room.directChatMatrixID;
+    final isDirectChat = presentation.isDirectLike;
     final hasNotifications = room.notificationCount > 0;
     final backgroundColor = activeChat
         ? theme.colorScheme.secondaryContainer
         : null;
-    final displayname = room.getLocalizedDisplayname(
-      MatrixLocals(L10n.of(context)),
-    );
+    final displayname =
+        presentation.displayName ??
+        room.getLocalizedDisplayname(MatrixLocals(L10n.of(context)));
+    final avatarUrl = presentation.avatarUrl ?? room.avatar;
     final filter = this.filter;
     if (filter != null && !displayname.toLowerCase().contains(filter)) {
       return const SizedBox.shrink();
@@ -87,7 +96,7 @@ class ChatListItem extends StatelessWidget {
                           Positioned(
                             top: 0,
                             left: 0,
-                            child: Avatar(
+                            child: BridgeAwareAvatar(
                               shapeBorder: RoundedSuperellipseBorder(
                                 side: BorderSide(
                                   width: 2,
@@ -111,7 +120,7 @@ class ChatListItem extends StatelessWidget {
                         Positioned(
                           bottom: 0,
                           right: 0,
-                          child: Avatar(
+                          child: BridgeAwareAvatar(
                             shapeBorder: space == null
                                 ? room.isSpace
                                       ? RoundedSuperellipseBorder(
@@ -140,12 +149,16 @@ class ChatListItem extends StatelessWidget {
                                     AppConfig.spaceBorderRadius,
                                   )
                                 : null,
-                            mxContent: room.avatar,
+                            mxContent: avatarUrl,
                             size: space != null
                                 ? Avatar.defaultSize * 0.75
                                 : Avatar.defaultSize,
                             name: displayname,
-                            presenceUserId: directChatMatrixId,
+                            provider: presentation.provider,
+                            presenceUserId:
+                                presentation.provider == null
+                                    ? directChatMatrixId
+                                    : null,
                             presenceBackgroundColor: backgroundColor,
                             onTap: () => onLongPress?.call(context),
                           ),
@@ -178,11 +191,32 @@ class ChatListItem extends StatelessWidget {
               title: Row(
                 children: <Widget>[
                   Expanded(
-                    child: Text(
-                      displayname,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false,
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            displayname,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                          ),
+                        ),
+                        if (presentation.showAccountLabel &&
+                            presentation.loginName != null) ...[
+                          const SizedBox(width: 6),
+                          Flexible(
+                            child: Text(
+                              presentation.loginName!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                   if (isMuted)
@@ -318,9 +352,9 @@ class ChatListItem extends StatelessWidget {
                                     plaintextBody: true,
                                     removeMarkdown: true,
                                     withSenderNamePrefix:
-                                        (!isDirectChat ||
+                                        !presentation.shouldHideSenderPrefixes ||
                                         directChatMatrixId !=
-                                            room.lastEvent?.senderId),
+                                            room.lastEvent?.senderId,
                                   )
                                 : null,
                             initialData: lastEvent?.calcLocalizedBodyFallback(
@@ -330,9 +364,8 @@ class ChatListItem extends StatelessWidget {
                               plaintextBody: true,
                               removeMarkdown: true,
                               withSenderNamePrefix:
-                                  (!isDirectChat ||
-                                  directChatMatrixId !=
-                                      room.lastEvent?.senderId),
+                                  !presentation.shouldHideSenderPrefixes ||
+                                  directChatMatrixId != room.lastEvent?.senderId,
                             ),
                             builder: (context, snapshot) => Text(
                               room.membership == Membership.invite

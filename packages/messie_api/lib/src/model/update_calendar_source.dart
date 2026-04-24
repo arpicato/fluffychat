@@ -19,7 +19,7 @@ abstract class UpdateCalendarSource implements Built<UpdateCalendarSource, Updat
   String? get category;
 
   @BuiltValueField(wireName: r'display_name')
-  String get displayName;
+  String? get displayName;
 
   UpdateCalendarSource._();
 
@@ -44,13 +44,11 @@ class _$UpdateCalendarSourceSerializer implements PrimitiveSerializer<UpdateCale
     UpdateCalendarSource object, {
     FullType specifiedType = FullType.unspecified,
   }) sync* {
-    if (object.category != null) {
-      yield r'category';
-      yield serializers.serialize(
-        object.category,
-        specifiedType: const FullType(String),
-      );
-    }
+    yield r'category';
+    yield serializers.serialize(
+      object.category,
+      specifiedType: const FullType(String),
+    );
     yield r'display_name';
     yield serializers.serialize(
       object.displayName,

@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **userId** | **String** |  | 
 **kind** | **String** |  | 
 **displayName** | **String** |  | 
+**category** | **String** |  | 
 **importMode** | **String** |  | 
 **sourceUrl** | **String** |  | [optional] 
 **refreshState** | **String** |  | 

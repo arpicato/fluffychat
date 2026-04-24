@@ -18,7 +18,8 @@ class _$NewCalendarLinkSource extends NewCalendarLinkSource {
           [void Function(NewCalendarLinkSourceBuilder)? updates]) =>
       (NewCalendarLinkSourceBuilder()..update(updates))._build();
 
-  _$NewCalendarLinkSource._({required this.url, this.category, this.displayName})
+  _$NewCalendarLinkSource._(
+      {required this.url, this.category, this.displayName})
       : super._();
   @override
   NewCalendarLinkSource rebuild(

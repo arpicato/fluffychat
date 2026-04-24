@@ -52,7 +52,10 @@ class MessieCalendarSource {
         id: source.id,
         userId: source.userId,
         kind: source.kind,
-        displayName: source.displayName,
+        displayName:
+            source.displayName ??
+            source.sourceUrl ??
+            'Calendar',
         category: source.category ?? defaultMessieCalendarCategory,
         importMode: source.importMode,
         refreshState: source.refreshState,
@@ -213,7 +216,7 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
   }) async {
     final response = await _api.importCalendarSource(
       file: MultipartFile.fromBytes(bytes, filename: filename),
-      category: category,
+      category: category ?? defaultMessieCalendarCategory,
       displayName: displayName,
     );
     return response.data!;
