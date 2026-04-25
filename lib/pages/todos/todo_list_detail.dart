@@ -4,6 +4,7 @@ import 'package:matrix/matrix.dart';
 import '../../services/backend_session_service.dart';
 import '../../services/messie_todo_service.dart';
 import '../../widgets/matrix.dart';
+import 'todo_list_detail_logic.dart';
 import 'todo_list_detail_view.dart';
 
 class TodoListDetailPage extends StatefulWidget {
@@ -26,6 +27,7 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
   final BackendSessionService _sessionService = BackendSessionService();
   final MessieTodoService _todoService = MessieTodoService();
   Future<TodoListDetailData>? _loadFuture;
+  bool showCompletedItems = false;
 
   Future<TodoListDetailData> get loadFuture => _loadFuture!;
 
@@ -39,6 +41,7 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
   void didUpdateWidget(covariant TodoListDetailPage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.listId != widget.listId) {
+      showCompletedItems = false;
       _loadFuture = load(context);
     }
   }
@@ -47,6 +50,11 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     setState(() {
       _loadFuture = load(context);
     });
+  }
+
+  void setShowCompletedItems(bool value) {
+    if (showCompletedItems == value) return;
+    setState(() => showCompletedItems = value);
   }
 
   Future<_TodoListSession> _session(BuildContext context) async {
@@ -159,26 +167,33 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
   Future<void> reorderItems(
     BuildContext context, {
     required List<MessieTodoItem> items,
+    required TodoItemGroup group,
     required int oldIndex,
     required int newIndex,
   }) async {
-    if (oldIndex < 0 ||
-        oldIndex >= items.length ||
-        newIndex < 0 ||
-        newIndex >= items.length ||
-        oldIndex == newIndex) {
-      return;
-    }
-
-    final reordered = [...items];
-    final moved = reordered.removeAt(oldIndex);
-    reordered.insert(newIndex, moved);
+    final reordered = reorderTodoItemsInGroup(
+      items,
+      group: group,
+      oldIndex: oldIndex,
+      newIndex: newIndex,
+    );
+    final session = await _session(context);
 
     for (var i = 0; i < reordered.length; i++) {
       final item = reordered[i];
       final nextPosition = _positionForIndex(i);
       if (item.position == nextPosition) continue;
-      await updateItem(context, item: item, position: nextPosition);
+      await _todoService.updateTodoItem(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.jwt,
+        listId: widget.listId,
+        itemId: item.id,
+        title: item.title,
+        description: item.description,
+        completed: item.completed,
+        position: nextPosition,
+        dueDate: item.dueDate,
+      );
     }
     refresh();
   }

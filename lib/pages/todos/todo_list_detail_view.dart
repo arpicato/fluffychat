@@ -11,6 +11,7 @@ import 'package:matrix/matrix.dart';
 
 import '../../widgets/matrix.dart';
 import 'todo_list_detail.dart';
+import 'todo_list_detail_logic.dart';
 
 void _showTodoError(BuildContext context, String message, Object error) {
   ScaffoldMessenger.of(
@@ -384,6 +385,7 @@ class TodoListDetailPageView extends StatelessWidget {
   Future<void> _moveItem(
     BuildContext context,
     TodoListDetailData data,
+    TodoItemGroup group,
     int oldIndex,
     int newIndex,
   ) async {
@@ -391,6 +393,7 @@ class TodoListDetailPageView extends StatelessWidget {
       await controller.reorderItems(
         context,
         items: data.items,
+        group: group,
         oldIndex: oldIndex,
         newIndex: newIndex,
       );
@@ -497,6 +500,7 @@ class TodoListDetailPageView extends StatelessWidget {
       }
 
       final data = snapshot.requireData;
+      final groupedItems = groupTodoItems(data.items);
       return Scaffold(
         appBar: AppBar(
           title: Text(data.list.title.isEmpty ? 'Todo list' : data.list.title),
@@ -629,89 +633,201 @@ class TodoListDetailPageView extends StatelessWidget {
                     ),
                   ),
                 ),
-              ...data.items.asMap().entries.map((entry) {
-                final index = entry.key;
-                final item = entry.value;
-                final descriptionParts = <String>[
-                  if (item.description.isNotEmpty) item.description,
-                  if (item.dueDate != null)
-                    'Due ${_formatTimestamp(item.dueDate)}',
-                ];
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: ListTile(
-                    leading: Checkbox(
-                      value: item.completed,
-                      onChanged: (value) {
-                        if (value == null) return;
-                        _toggleItem(context, item, value);
-                      },
-                    ),
-                    title: Text(
-                      item.title.isEmpty ? 'Untitled item' : item.title,
-                      style: item.completed
-                          ? theme.textTheme.titleMedium?.copyWith(
-                              decoration: TextDecoration.lineThrough,
-                            )
-                          : theme.textTheme.titleMedium,
-                    ),
-                    subtitle: descriptionParts.isEmpty
-                        ? const Text('No description')
-                        : Text(descriptionParts.join('\n')),
-                    isThreeLine: descriptionParts.length > 1,
-                    trailing: Wrap(
-                      spacing: 4,
-                      children: [
-                        IconButton(
-                          onPressed: index == 0
-                              ? null
-                              : () =>
-                                    _moveItem(context, data, index, index - 1),
-                          icon: const Icon(Icons.arrow_upward_outlined),
-                          tooltip: 'Move up',
-                        ),
-                        IconButton(
-                          onPressed: index == data.items.length - 1
-                              ? null
-                              : () =>
-                                    _moveItem(context, data, index, index + 1),
-                          icon: const Icon(Icons.arrow_downward_outlined),
-                          tooltip: 'Move down',
-                        ),
-                        PopupMenuButton<String>(
-                          onSelected: (value) {
-                            switch (value) {
-                              case 'edit':
-                                _editItem(context, item);
-                              case 'delete':
-                                _deleteItem(context, item);
-                            }
-                          },
-                          itemBuilder: (context) => const [
-                            PopupMenuItem(
-                              value: 'edit',
-                              child: Text('Edit item'),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text('Delete item'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }),
+              if (data.items.isNotEmpty)
+                TodoListItemsSection(
+                  groupedItems: groupedItems,
+                  showCompletedItems: controller.showCompletedItems,
+                  formatTimestamp: _formatTimestamp,
+                  onShowCompletedItemsChanged: controller.setShowCompletedItems,
+                  onToggleItem: (item, completed) =>
+                      _toggleItem(context, item, completed),
+                  onMoveItem: (group, oldIndex, newIndex) =>
+                      _moveItem(context, data, group, oldIndex, newIndex),
+                  onEditItem: (item) => _editItem(context, item),
+                  onDeleteItem: (item) => _deleteItem(context, item),
+                ),
             ],
           ),
         ),
       );
     },
   );
+}
+
+class TodoListItemsSection extends StatelessWidget {
+  const TodoListItemsSection({
+    required this.groupedItems,
+    required this.showCompletedItems,
+    required this.formatTimestamp,
+    required this.onShowCompletedItemsChanged,
+    required this.onToggleItem,
+    required this.onMoveItem,
+    required this.onEditItem,
+    required this.onDeleteItem,
+    super.key,
+  });
+
+  final GroupedTodoItems groupedItems;
+  final bool showCompletedItems;
+  final String Function(DateTime? value) formatTimestamp;
+  final ValueChanged<bool> onShowCompletedItemsChanged;
+  final Future<void> Function(MessieTodoItem item, bool completed) onToggleItem;
+  final Future<void> Function(TodoItemGroup group, int oldIndex, int newIndex)
+  onMoveItem;
+  final Future<void> Function(MessieTodoItem item) onEditItem;
+  final Future<void> Function(MessieTodoItem item) onDeleteItem;
+
+  @override
+  Widget build(BuildContext context) {
+    final children = <Widget>[
+      ...groupedItems.activeItems.asMap().entries.map(
+        (entry) => _TodoItemCard(
+          item: entry.value,
+          formatTimestamp: formatTimestamp,
+          onToggleItem: onToggleItem,
+          onMoveUp: entry.key == 0
+              ? null
+              : () =>
+                    onMoveItem(TodoItemGroup.active, entry.key, entry.key - 1),
+          onMoveDown: entry.key == groupedItems.activeItems.length - 1
+              ? null
+              : () =>
+                    onMoveItem(TodoItemGroup.active, entry.key, entry.key + 1),
+          onEditItem: onEditItem,
+          onDeleteItem: onDeleteItem,
+        ),
+      ),
+    ];
+
+    if (groupedItems.completedItems.isNotEmpty) {
+      children.add(
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: ListTile(
+            leading: const Icon(Icons.checklist_outlined),
+            title: Text('Done (${groupedItems.completedItems.length})'),
+            trailing: Icon(
+              showCompletedItems ? Icons.expand_less : Icons.expand_more,
+            ),
+            onTap: () => onShowCompletedItemsChanged(!showCompletedItems),
+          ),
+        ),
+      );
+    }
+
+    if (showCompletedItems) {
+      children.addAll(
+        groupedItems.completedItems.asMap().entries.map(
+          (entry) => _TodoItemCard(
+            item: entry.value,
+            formatTimestamp: formatTimestamp,
+            onToggleItem: onToggleItem,
+            onMoveUp: entry.key == 0
+                ? null
+                : () => onMoveItem(
+                    TodoItemGroup.completed,
+                    entry.key,
+                    entry.key - 1,
+                  ),
+            onMoveDown: entry.key == groupedItems.completedItems.length - 1
+                ? null
+                : () => onMoveItem(
+                    TodoItemGroup.completed,
+                    entry.key,
+                    entry.key + 1,
+                  ),
+            onEditItem: onEditItem,
+            onDeleteItem: onDeleteItem,
+          ),
+        ),
+      );
+    }
+
+    return Column(children: children);
+  }
+}
+
+class _TodoItemCard extends StatelessWidget {
+  const _TodoItemCard({
+    required this.item,
+    required this.formatTimestamp,
+    required this.onToggleItem,
+    required this.onMoveUp,
+    required this.onMoveDown,
+    required this.onEditItem,
+    required this.onDeleteItem,
+  });
+
+  final MessieTodoItem item;
+  final String Function(DateTime? value) formatTimestamp;
+  final Future<void> Function(MessieTodoItem item, bool completed) onToggleItem;
+  final Future<void> Function()? onMoveUp;
+  final Future<void> Function()? onMoveDown;
+  final Future<void> Function(MessieTodoItem item) onEditItem;
+  final Future<void> Function(MessieTodoItem item) onDeleteItem;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final descriptionParts = <String>[
+      if (item.description.isNotEmpty) item.description,
+      if (item.dueDate != null) 'Due ${formatTimestamp(item.dueDate)}',
+    ];
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      child: ListTile(
+        leading: Checkbox(
+          value: item.completed,
+          onChanged: (value) {
+            if (value == null) return;
+            onToggleItem(item, value);
+          },
+        ),
+        title: Text(
+          item.title.isEmpty ? 'Untitled item' : item.title,
+          style: item.completed
+              ? theme.textTheme.titleMedium?.copyWith(
+                  decoration: TextDecoration.lineThrough,
+                )
+              : theme.textTheme.titleMedium,
+        ),
+        subtitle: descriptionParts.isEmpty
+            ? const Text('No description')
+            : Text(descriptionParts.join('\n')),
+        isThreeLine: descriptionParts.length > 1,
+        trailing: Wrap(
+          spacing: 4,
+          children: [
+            IconButton(
+              onPressed: onMoveUp == null ? null : () => onMoveUp!.call(),
+              icon: const Icon(Icons.arrow_upward_outlined),
+              tooltip: 'Move up',
+            ),
+            IconButton(
+              onPressed: onMoveDown == null ? null : () => onMoveDown!.call(),
+              icon: const Icon(Icons.arrow_downward_outlined),
+              tooltip: 'Move down',
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    onEditItem(item);
+                  case 'delete':
+                    onDeleteItem(item);
+                }
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'edit', child: Text('Edit item')),
+                PopupMenuItem(value: 'delete', child: Text('Delete item')),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _CollaboratorsDialog extends StatefulWidget {

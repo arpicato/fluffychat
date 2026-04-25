@@ -41,20 +41,31 @@
 
 <body>
   <script>
-    window.addEventListener('load', function (ev) {
+    window.addEventListener('load', async function (ev) {
       {{flutter_js}}
       {{flutter_build_config}}
 
-      _flutter.loader.load({
-        serviceWorker: {
-          serviceWorkerVersion: {{flutter_service_worker_version}},
-        },
-      onEntrypointLoaded: function (engineInitializer) {
-        engineInitializer.initializeEngine({ useColorEmoji: true }).then(function (appRunner) {
-          appRunner.runApp();
-        });
+      const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+      if (isLocalhost && 'serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
       }
-      });
+
+      const loaderConfig = {
+        onEntrypointLoaded: function (engineInitializer) {
+          engineInitializer.initializeEngine({ useColorEmoji: true }).then(function (appRunner) {
+            appRunner.runApp();
+          });
+        }
+      };
+
+      if (!isLocalhost) {
+        loaderConfig.serviceWorker = {
+          serviceWorkerVersion: {{flutter_service_worker_version}},
+        };
+      }
+
+      _flutter.loader.load(loaderConfig);
     });
   </script>
   <picture id="splash">
