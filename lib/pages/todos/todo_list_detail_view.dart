@@ -435,8 +435,10 @@ class TodoListDetailPageView extends StatelessWidget {
     future: controller.loadFuture,
     builder: (context, snapshot) {
       final theme = Theme.of(context);
+      final currentData = controller.currentData;
 
-      if (snapshot.connectionState != ConnectionState.done) {
+      if (snapshot.connectionState != ConnectionState.done &&
+          currentData == null) {
         final title = controller.widget.initialTitle?.trim().isNotEmpty == true
             ? controller.widget.initialTitle!
             : 'Todo list';
@@ -499,7 +501,7 @@ class TodoListDetailPageView extends StatelessWidget {
         );
       }
 
-      final data = snapshot.requireData;
+      final data = currentData ?? snapshot.requireData;
       final groupedItems = groupTodoItems(data.items);
       return Scaffold(
         appBar: AppBar(
@@ -538,98 +540,113 @@ class TodoListDetailPageView extends StatelessWidget {
           ],
         ),
         body: MaxWidthBody(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data.list.title.isEmpty
-                            ? 'Untitled list'
-                            : data.list.title,
-                        style: theme.textTheme.titleLarge,
-                      ),
-                      if (data.list.description.isNotEmpty) ...[
-                        const SizedBox(height: 8),
+          withScrolling: false,
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Card(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          data.list.description,
-                          style: theme.textTheme.bodyMedium,
+                          data.list.title.isEmpty
+                              ? 'Untitled list'
+                              : data.list.title,
+                          style: theme.textTheme.titleLarge,
                         ),
-                      ],
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          Chip(
-                            avatar: const Icon(
-                              Icons.format_list_bulleted,
-                              size: 18,
-                            ),
-                            label: Text('${data.items.length} items'),
+                        if (data.list.description.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            data.list.description,
+                            style: theme.textTheme.bodyMedium,
                           ),
-                          Chip(
-                            avatar: const Icon(
-                              Icons.check_circle_outline,
-                              size: 18,
+                        ],
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            Chip(
+                              avatar: const Icon(
+                                Icons.format_list_bulleted,
+                                size: 18,
+                              ),
+                              label: Text('${data.items.length} items'),
                             ),
-                            label: Text(
-                              '${data.items.where((item) => item.completed).length} completed',
+                            Chip(
+                              avatar: const Icon(
+                                Icons.check_circle_outline,
+                                size: 18,
+                              ),
+                              label: Text(
+                                '${data.items.where((item) => item.completed).length} completed',
+                              ),
                             ),
-                          ),
-                          Chip(
-                            avatar: const Icon(Icons.group_outlined, size: 18),
-                            label: Text(
-                              '${data.collaborators.length} collaborator${data.collaborators.length == 1 ? '' : 's'}',
+                            Chip(
+                              avatar: const Icon(
+                                Icons.group_outlined,
+                                size: 18,
+                              ),
+                              label: Text(
+                                '${data.collaborators.length} collaborator${data.collaborators.length == 1 ? '' : 's'}',
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (data.collaboratorsError != null) ...[
+                          const SizedBox(height: 12),
+                          Text(
+                            'Collaborators are temporarily unavailable. You can still work with the list and items.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.error,
                             ),
                           ),
                         ],
-                      ),
-                      if (data.collaboratorsError != null) ...[
-                        const SizedBox(height: 12),
-                        Text(
-                          'Collaborators are temporarily unavailable. You can still work with the list and items.',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.error,
-                          ),
-                        ),
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-              Card(
-                margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                child: ListTile(
-                  leading: const Icon(Icons.add_task_outlined),
-                  title: const Text('Add todo item'),
-                  subtitle: const Text('Create a new item in this list.'),
-                  trailing: FilledButton.tonal(
-                    onPressed: () => _createItem(context, data),
-                    child: const Text('Add'),
-                  ),
-                ),
-              ),
-              if (data.items.isEmpty)
-                Card(
+              SliverToBoxAdapter(
+                child: Card(
                   margin: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 6,
                   ),
                   child: ListTile(
-                    leading: const Icon(Icons.playlist_add_check_outlined),
-                    title: const Text('No items yet'),
-                    subtitle: const Text(
-                      'This list exists, but it does not have any todo items yet.',
-                    ),
+                    leading: const Icon(Icons.add_task_outlined),
+                    title: const Text('Add todo item'),
+                    subtitle: const Text('Create a new item in this list.'),
                     trailing: FilledButton.tonal(
                       onPressed: () => _createItem(context, data),
-                      child: const Text('Add first item'),
+                      child: const Text('Add'),
+                    ),
+                  ),
+                ),
+              ),
+              if (data.items.isEmpty)
+                SliverToBoxAdapter(
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.playlist_add_check_outlined),
+                      title: const Text('No items yet'),
+                      subtitle: const Text(
+                        'This list exists, but it does not have any todo items yet.',
+                      ),
+                      trailing: FilledButton.tonal(
+                        onPressed: () => _createItem(context, data),
+                        child: const Text('Add first item'),
+                      ),
                     ),
                   ),
                 ),
@@ -679,90 +696,116 @@ class TodoListItemsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final children = <Widget>[
-      ...groupedItems.activeItems.asMap().entries.map(
-        (entry) => _TodoItemCard(
-          item: entry.value,
+    final slivers = <Widget>[
+      if (groupedItems.activeItems.isNotEmpty)
+        _TodoItemReorderableList(
+          key: const ValueKey('todo-items-active'),
+          group: TodoItemGroup.active,
+          items: groupedItems.activeItems,
           formatTimestamp: formatTimestamp,
           onToggleItem: onToggleItem,
-          onMoveUp: entry.key == 0
-              ? null
-              : () =>
-                    onMoveItem(TodoItemGroup.active, entry.key, entry.key - 1),
-          onMoveDown: entry.key == groupedItems.activeItems.length - 1
-              ? null
-              : () =>
-                    onMoveItem(TodoItemGroup.active, entry.key, entry.key + 1),
+          onMoveItem: onMoveItem,
           onEditItem: onEditItem,
           onDeleteItem: onDeleteItem,
         ),
-      ),
+      if (groupedItems.activeItems.isEmpty &&
+          groupedItems.completedItems.isEmpty)
+        const SliverToBoxAdapter(child: SizedBox.shrink()),
     ];
 
     if (groupedItems.completedItems.isNotEmpty) {
-      children.add(
-        Card(
-          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: ListTile(
-            leading: const Icon(Icons.checklist_outlined),
-            title: Text('Done (${groupedItems.completedItems.length})'),
-            trailing: Icon(
-              showCompletedItems ? Icons.expand_less : Icons.expand_more,
+      slivers.add(
+        SliverToBoxAdapter(
+          child: Card(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: ListTile(
+              leading: const Icon(Icons.checklist_outlined),
+              title: Text('Done (${groupedItems.completedItems.length})'),
+              trailing: Icon(
+                showCompletedItems ? Icons.expand_less : Icons.expand_more,
+              ),
+              onTap: () => onShowCompletedItemsChanged(!showCompletedItems),
             ),
-            onTap: () => onShowCompletedItemsChanged(!showCompletedItems),
           ),
         ),
       );
     }
 
     if (showCompletedItems) {
-      children.addAll(
-        groupedItems.completedItems.asMap().entries.map(
-          (entry) => _TodoItemCard(
-            item: entry.value,
-            formatTimestamp: formatTimestamp,
-            onToggleItem: onToggleItem,
-            onMoveUp: entry.key == 0
-                ? null
-                : () => onMoveItem(
-                    TodoItemGroup.completed,
-                    entry.key,
-                    entry.key - 1,
-                  ),
-            onMoveDown: entry.key == groupedItems.completedItems.length - 1
-                ? null
-                : () => onMoveItem(
-                    TodoItemGroup.completed,
-                    entry.key,
-                    entry.key + 1,
-                  ),
-            onEditItem: onEditItem,
-            onDeleteItem: onDeleteItem,
-          ),
+      slivers.add(
+        _TodoItemReorderableList(
+          key: const ValueKey('todo-items-completed'),
+          group: TodoItemGroup.completed,
+          items: groupedItems.completedItems,
+          formatTimestamp: formatTimestamp,
+          onToggleItem: onToggleItem,
+          onMoveItem: onMoveItem,
+          onEditItem: onEditItem,
+          onDeleteItem: onDeleteItem,
         ),
       );
     }
 
-    return Column(children: children);
+    return SliverMainAxisGroup(slivers: slivers);
   }
 }
 
-class _TodoItemCard extends StatelessWidget {
-  const _TodoItemCard({
-    required this.item,
+class _TodoItemReorderableList extends StatelessWidget {
+  const _TodoItemReorderableList({
+    super.key,
+    required this.group,
+    required this.items,
     required this.formatTimestamp,
     required this.onToggleItem,
-    required this.onMoveUp,
-    required this.onMoveDown,
+    required this.onMoveItem,
     required this.onEditItem,
     required this.onDeleteItem,
   });
 
+  final TodoItemGroup group;
+  final List<MessieTodoItem> items;
+  final String Function(DateTime? value) formatTimestamp;
+  final Future<void> Function(MessieTodoItem item, bool completed) onToggleItem;
+  final Future<void> Function(TodoItemGroup group, int oldIndex, int newIndex)
+  onMoveItem;
+  final Future<void> Function(MessieTodoItem item) onEditItem;
+  final Future<void> Function(MessieTodoItem item) onDeleteItem;
+
+  @override
+  Widget build(BuildContext context) => SliverReorderableList(
+    key: key,
+    itemCount: items.length,
+    onReorder: (oldIndex, newIndex) {
+      final adjustedNewIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
+      onMoveItem(group, oldIndex, adjustedNewIndex);
+    },
+    itemBuilder: (context, index) => _TodoItemCard(
+      key: ValueKey(items[index].id),
+      item: items[index],
+      index: index,
+      formatTimestamp: formatTimestamp,
+      onToggleItem: onToggleItem,
+      onEditItem: onEditItem,
+      onDeleteItem: onDeleteItem,
+    ),
+  );
+}
+
+class _TodoItemCard extends StatelessWidget {
+  const _TodoItemCard({
+    required this.index,
+    required this.item,
+    required this.formatTimestamp,
+    required this.onToggleItem,
+    required this.onEditItem,
+    required this.onDeleteItem,
+    super.key,
+  });
+
+  final int index;
   final MessieTodoItem item;
   final String Function(DateTime? value) formatTimestamp;
   final Future<void> Function(MessieTodoItem item, bool completed) onToggleItem;
-  final Future<void> Function()? onMoveUp;
-  final Future<void> Function()? onMoveDown;
   final Future<void> Function(MessieTodoItem item) onEditItem;
   final Future<void> Function(MessieTodoItem item) onDeleteItem;
 
@@ -799,15 +842,15 @@ class _TodoItemCard extends StatelessWidget {
         trailing: Wrap(
           spacing: 4,
           children: [
-            IconButton(
-              onPressed: onMoveUp == null ? null : () => onMoveUp!.call(),
-              icon: const Icon(Icons.arrow_upward_outlined),
-              tooltip: 'Move up',
-            ),
-            IconButton(
-              onPressed: onMoveDown == null ? null : () => onMoveDown!.call(),
-              icon: const Icon(Icons.arrow_downward_outlined),
-              tooltip: 'Move down',
+            ReorderableDragStartListener(
+              index: index,
+              child: const Tooltip(
+                message: 'Reorder',
+                child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Icon(Icons.drag_handle),
+                ),
+              ),
             ),
             PopupMenuButton<String>(
               onSelected: (value) {

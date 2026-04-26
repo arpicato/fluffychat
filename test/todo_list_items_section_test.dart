@@ -32,17 +32,21 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: StatefulBuilder(
-              builder: (context, setState) => TodoListItemsSection(
-                groupedItems: groupedItems,
-                showCompletedItems: showCompletedItems,
-                formatTimestamp: (_) => '',
-                onShowCompletedItemsChanged: (value) {
-                  setState(() => showCompletedItems = value);
-                },
-                onToggleItem: (_, __) async {},
-                onMoveItem: (_, __, ___) async {},
-                onEditItem: (_) async {},
-                onDeleteItem: (_) async {},
+              builder: (context, setState) => CustomScrollView(
+                slivers: [
+                  TodoListItemsSection(
+                    groupedItems: groupedItems,
+                    showCompletedItems: showCompletedItems,
+                    formatTimestamp: (_) => '',
+                    onShowCompletedItemsChanged: (value) {
+                      setState(() => showCompletedItems = value);
+                    },
+                    onToggleItem: (item, completed) async {},
+                    onMoveItem: (group, oldIndex, newIndex) async {},
+                    onEditItem: (item) async {},
+                    onDeleteItem: (item) async {},
+                  ),
+                ],
               ),
             ),
           ),
@@ -55,10 +59,77 @@ void main() {
     expect(find.text('Open item'), findsOneWidget);
     expect(find.text('Done (1)'), findsOneWidget);
     expect(find.text('Done item'), findsNothing);
+    expect(find.byTooltip('Reorder'), findsOneWidget);
 
     await tester.tap(find.text('Done (1)'));
     await tester.pumpAndSettle();
 
     expect(find.text('Done item'), findsOneWidget);
+    expect(find.byTooltip('Reorder'), findsNWidgets(2));
+  });
+
+  testWidgets('rebuilds cleanly when switching visible reorderable sections', (
+    tester,
+  ) async {
+    var groupedItems = groupTodoItems([
+      _item(id: '001', title: 'Open item', completed: false),
+      _item(id: '002', title: 'Done item', completed: true),
+    ]);
+    var showCompletedItems = true;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) => CustomScrollView(
+              slivers: [
+                TodoListItemsSection(
+                  groupedItems: groupedItems,
+                  showCompletedItems: showCompletedItems,
+                  formatTimestamp: (_) => '',
+                  onShowCompletedItemsChanged: (value) {
+                    setState(() => showCompletedItems = value);
+                  },
+                  onToggleItem: (item, completed) async {},
+                  onMoveItem: (group, oldIndex, newIndex) async {},
+                  onEditItem: (item) async {},
+                  onDeleteItem: (item) async {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    groupedItems = groupTodoItems([
+      _item(id: '002', title: 'Done item', completed: true),
+    ]);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              TodoListItemsSection(
+                groupedItems: groupedItems,
+                showCompletedItems: true,
+                formatTimestamp: (_) => '',
+                onShowCompletedItemsChanged: (_) {},
+                onToggleItem: (item, completed) async {},
+                onMoveItem: (group, oldIndex, newIndex) async {},
+                onEditItem: (item) async {},
+                onDeleteItem: (item) async {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Done item'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

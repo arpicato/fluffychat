@@ -27,9 +27,11 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
   final BackendSessionService _sessionService = BackendSessionService();
   final MessieTodoService _todoService = MessieTodoService();
   Future<TodoListDetailData>? _loadFuture;
+  TodoListDetailData? _data;
   bool showCompletedItems = false;
 
   Future<TodoListDetailData> get loadFuture => _loadFuture!;
+  TodoListDetailData? get currentData => _data;
 
   @override
   void didChangeDependencies() {
@@ -97,12 +99,16 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
 
     final sortedItems = items..sort((a, b) => a.position.compareTo(b.position));
 
-    return TodoListDetailData(
+    final data = TodoListDetailData(
       list: list,
       items: sortedItems,
       collaborators: collaborators,
       collaboratorsError: collaboratorsError,
     );
+    if (mounted) {
+      setState(() => _data = data);
+    }
+    return data;
   }
 
   Future<void> createItem(
@@ -113,10 +119,12 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     required List<MessieTodoItem> existingItems,
   }) async {
     final session = await _session(context);
-    final position = existingItems.isEmpty
-        ? _positionForIndex(0)
-        : '${existingItems.last.position}~';
-    await _todoService.createTodoItem(
+    final sortedItems = _sortedItems(existingItems);
+    final position = generateTodoItemPosition(
+      sortedItems.isEmpty ? null : sortedItems.last.position,
+      null,
+    );
+    final createdItem = await _todoService.createTodoItem(
       apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
       jwt: session.jwt,
       listId: widget.listId,
@@ -126,7 +134,13 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
       position: position,
       dueDate: dueDate,
     );
-    refresh();
+    final currentData = _data;
+    if (currentData == null) return;
+    _setData(
+      currentData.copyWith(
+        items: _sortedItems([...currentData.items, createdItem]),
+      ),
+    );
   }
 
   Future<void> updateItem(
@@ -138,30 +152,57 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     String? position,
     DateTime? dueDate,
   }) async {
-    final session = await _session(context);
-    await _todoService.updateTodoItem(
-      apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
-      jwt: session.jwt,
-      listId: widget.listId,
-      itemId: item.id,
-      title: title ?? item.title,
-      description: description ?? item.description,
-      completed: completed ?? item.completed,
-      position: position ?? item.position,
-      dueDate: dueDate ?? item.dueDate,
+    final previousData = _data;
+    if (previousData == null) return;
+    final optimisticItem = _copyItem(
+      item,
+      title: title,
+      description: description,
+      completed: completed,
+      position: position,
+      dueDate: dueDate,
     );
-    refresh();
+    _setData(previousData.replaceItem(optimisticItem));
+    final session = await _session(context);
+    try {
+      final updatedItem = await _todoService.updateTodoItem(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.jwt,
+        listId: widget.listId,
+        itemId: item.id,
+        title: title ?? item.title,
+        description: description ?? item.description,
+        completed: completed ?? item.completed,
+        position: position ?? item.position,
+        dueDate: dueDate ?? item.dueDate,
+      );
+      _setData(previousData.replaceItem(updatedItem));
+    } catch (error) {
+      _setData(previousData);
+      rethrow;
+    }
   }
 
   Future<void> deleteItem(BuildContext context, String itemId) async {
-    final session = await _session(context);
-    await _todoService.deleteTodoItem(
-      apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
-      jwt: session.jwt,
-      listId: widget.listId,
-      itemId: itemId,
+    final previousData = _data;
+    if (previousData == null) return;
+    _setData(
+      previousData.copyWith(
+        items: previousData.items.where((item) => item.id != itemId).toList(),
+      ),
     );
-    refresh();
+    final session = await _session(context);
+    try {
+      await _todoService.deleteTodoItem(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.jwt,
+        listId: widget.listId,
+        itemId: itemId,
+      );
+    } catch (error) {
+      _setData(previousData);
+      rethrow;
+    }
   }
 
   Future<void> reorderItems(
@@ -171,31 +212,68 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     required int oldIndex,
     required int newIndex,
   }) async {
+    final previousData = _data;
+    if (previousData == null) return;
     final reordered = reorderTodoItemsInGroup(
       items,
       group: group,
       oldIndex: oldIndex,
       newIndex: newIndex,
     );
+    final groupedItems = groupTodoItems(reordered);
+    final reorderedGroup = group == TodoItemGroup.active
+        ? groupedItems.activeItems
+        : groupedItems.completedItems;
+    if (newIndex < 0 || newIndex >= reorderedGroup.length) return;
+    final movedItem = reorderedGroup[newIndex];
+    final movedItemIndex = reordered.indexWhere(
+      (item) => item.id == movedItem.id,
+    );
+    if (movedItemIndex == -1) return;
+    final previousPosition = movedItemIndex > 0
+        ? reordered[movedItemIndex - 1].position
+        : null;
+    final nextPosition = movedItemIndex < reordered.length - 1
+        ? reordered[movedItemIndex + 1].position
+        : null;
+    final nextItemPosition = generateTodoItemPosition(
+      previousPosition,
+      nextPosition,
+    );
+    final optimisticMovedItem = _copyItem(
+      movedItem,
+      position: nextItemPosition,
+    );
+    final optimisticItems = _sortedItems([
+      for (final item in reordered)
+        if (item.id == optimisticMovedItem.id) optimisticMovedItem else item,
+    ]);
+    _setData(previousData.copyWith(items: optimisticItems));
     final session = await _session(context);
-
-    for (var i = 0; i < reordered.length; i++) {
-      final item = reordered[i];
-      final nextPosition = _positionForIndex(i);
-      if (item.position == nextPosition) continue;
-      await _todoService.updateTodoItem(
+    try {
+      final updatedItem = await _todoService.updateTodoItem(
         apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
         jwt: session.jwt,
         listId: widget.listId,
-        itemId: item.id,
-        title: item.title,
-        description: item.description,
-        completed: item.completed,
-        position: nextPosition,
-        dueDate: item.dueDate,
+        itemId: movedItem.id,
+        title: movedItem.title,
+        description: movedItem.description,
+        completed: movedItem.completed,
+        position: nextItemPosition,
+        dueDate: movedItem.dueDate,
       );
+      _setData(
+        previousData.copyWith(
+          items: _sortedItems([
+            for (final item in optimisticItems)
+              if (item.id == updatedItem.id) updatedItem else item,
+          ]),
+        ),
+      );
+    } catch (error) {
+      _setData(previousData);
+      rethrow;
     }
-    refresh();
   }
 
   Future<void> updateList(
@@ -203,15 +281,31 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     required String title,
     required String description,
   }) async {
-    final session = await _session(context);
-    await _todoService.updateTodoList(
-      apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
-      jwt: session.jwt,
-      listId: widget.listId,
-      title: title,
-      description: description,
+    final previousData = _data;
+    if (previousData == null) return;
+    _setData(
+      previousData.copyWith(
+        list: _copyList(
+          previousData.list,
+          title: title,
+          description: description,
+        ),
+      ),
     );
-    refresh();
+    final session = await _session(context);
+    try {
+      final updatedList = await _todoService.updateTodoList(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.jwt,
+        listId: widget.listId,
+        title: title,
+        description: description,
+      );
+      _setData(previousData.copyWith(list: updatedList));
+    } catch (error) {
+      _setData(previousData);
+      rethrow;
+    }
   }
 
   Future<void> deleteList(BuildContext context) async {
@@ -283,8 +377,45 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     if (refreshAfter) refresh();
   }
 
-  String _positionForIndex(int index) =>
-      ((index + 1) * 1000).toString().padLeft(12, '0');
+  void _setData(TodoListDetailData data) {
+    if (!mounted) return;
+    setState(() => _data = data);
+  }
+
+  List<MessieTodoItem> _sortedItems(List<MessieTodoItem> items) =>
+      [...items]..sort((a, b) => a.position.compareTo(b.position));
+
+  MessieTodoItem _copyItem(
+    MessieTodoItem item, {
+    String? title,
+    String? description,
+    bool? completed,
+    String? position,
+    DateTime? dueDate,
+  }) => MessieTodoItem(
+    id: item.id,
+    listId: item.listId,
+    title: title ?? item.title,
+    description: description ?? item.description,
+    completed: completed ?? item.completed,
+    position: position ?? item.position,
+    dueDate: dueDate ?? item.dueDate,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  );
+
+  MessieTodoList _copyList(
+    MessieTodoList list, {
+    String? title,
+    String? description,
+  }) => MessieTodoList(
+    id: list.id,
+    ownerId: list.ownerId,
+    title: title ?? list.title,
+    description: description ?? list.description,
+    createdAt: list.createdAt,
+    updatedAt: list.updatedAt,
+  );
 
   @override
   Widget build(BuildContext context) => TodoListDetailPageView(this);
@@ -302,7 +433,31 @@ class TodoListDetailData {
   final List<MessieTodoItem> items;
   final List<MessieTodoCollaborator> collaborators;
   final Object? collaboratorsError;
+
+  TodoListDetailData copyWith({
+    MessieTodoList? list,
+    List<MessieTodoItem>? items,
+    List<MessieTodoCollaborator>? collaborators,
+    Object? collaboratorsError = _todoListDetailDataSentinel,
+  }) => TodoListDetailData(
+    list: list ?? this.list,
+    items: items ?? this.items,
+    collaborators: collaborators ?? this.collaborators,
+    collaboratorsError:
+        identical(collaboratorsError, _todoListDetailDataSentinel)
+        ? this.collaboratorsError
+        : collaboratorsError,
+  );
+
+  TodoListDetailData replaceItem(MessieTodoItem updatedItem) => copyWith(
+    items: [
+      for (final item in items)
+        if (item.id == updatedItem.id) updatedItem else item,
+    ],
+  );
 }
+
+const _todoListDetailDataSentinel = Object();
 
 class _TodoListSession {
   _TodoListSession(this.jwt);

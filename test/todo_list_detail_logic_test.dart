@@ -71,4 +71,25 @@ void main() {
       expect(reordered.map((item) => item.id), ['a', 'b', 'c', 'd']);
     });
   });
+
+  group('generateTodoItemPosition', () {
+    test('returns initial midpoint for empty list', () {
+      expect(generateTodoItemPosition(null, null), 'm');
+    });
+
+    test('returns a key between two neighbors', () {
+      final position = generateTodoItemPosition('a', 'c');
+      expect(position.compareTo('a') > 0, isTrue);
+      expect(position.compareTo('c') < 0, isTrue);
+    });
+
+    test('appends after the previous item without changing others', () {
+      expect(generateTodoItemPosition('m', null), 'n');
+    });
+
+    test('prepends before the next item', () {
+      final position = generateTodoItemPosition(null, 'm');
+      expect(position.compareTo('m') < 0, isTrue);
+    });
+  });
 }
