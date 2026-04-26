@@ -37,10 +37,10 @@ Future<void> showMemberActionsPopupMenu({
   );
 
   const defaultPowerLevels = {
-    0,
-    kMatrixModeratorPowerLevel,
-    kMatrixAdminPowerLevel,
-    kMatrixOwnerPowerLevel,
+    PowerLevel.defaultUserLevel,
+    PowerLevel.defaultModeratorLevel,
+    PowerLevel.defaultAdminLevel,
+    PowerLevel.ownerPowerLevel,
   };
 
   final action = await showMenu<_MemberActions>(
@@ -87,7 +87,7 @@ Future<void> showMemberActionsPopupMenu({
           ),
         ),
       if (user.canChangeUserPowerLevel) ...[
-        if (user.powerLevel < kMatrixAdminPowerLevel)
+        if (user.powerLevel < PowerLevel.admin)
           PopupMenuItem(
             value: _MemberActions.makeAdmin,
             child: Row(
@@ -98,7 +98,7 @@ Future<void> showMemberActionsPopupMenu({
               ],
             ),
           ),
-        if (user.powerLevel < kMatrixModeratorPowerLevel)
+        if (user.powerLevel < PowerLevel.moderator)
           PopupMenuItem(
             value: _MemberActions.makeModerator,
             child: Row(
@@ -109,7 +109,7 @@ Future<void> showMemberActionsPopupMenu({
               ],
             ),
           ),
-        if (matrixPowerLevelRoleFor(user.powerLevel) ==
+        if (matrixPowerLevelRoleFor(user.powerLevel.level) ==
             MatrixPowerLevelRole.admin)
           PopupMenuItem(
             value: _MemberActions.removeAdmin,
@@ -121,7 +121,7 @@ Future<void> showMemberActionsPopupMenu({
               ],
             ),
           )
-        else if (matrixPowerLevelRoleFor(user.powerLevel) ==
+        else if (matrixPowerLevelRoleFor(user.powerLevel.level) ==
             MatrixPowerLevelRole.moderator)
           PopupMenuItem(
             value: _MemberActions.removeModerator,
@@ -135,7 +135,7 @@ Future<void> showMemberActionsPopupMenu({
           ),
       ],
       if (user.canChangeUserPowerLevel ||
-          !defaultPowerLevels.contains(user.powerLevel))
+          !defaultPowerLevels.contains(user.powerLevel.level))
         PopupMenuItem(
           value: _MemberActions.setPowerLevel,
           enabled: user.canChangeUserPowerLevel,
@@ -148,8 +148,8 @@ Future<void> showMemberActionsPopupMenu({
                     ? L10n.of(context).setPowerLevel
                     : L10n.of(context).powerLevel,
               ),
-              if (!defaultPowerLevels.contains(user.powerLevel))
-                Text(' (${user.powerLevel})'),
+              if (!defaultPowerLevels.contains(user.powerLevel.level))
+                Text(' (${user.powerLevel.level})'),
             ],
           ),
         ),
@@ -227,8 +227,8 @@ Future<void> showMemberActionsPopupMenu({
     case _MemberActions.setPowerLevel:
       final power = await showPermissionChooser(
         context,
-        currentLevel: user.powerLevel,
-        maxLevel: user.room.ownPowerLevel,
+        currentLevel: user.powerLevel.level,
+        maxLevel: user.room.ownPowerLevel.level,
       );
       if (power == null) return;
       if (!context.mounted) return;
@@ -331,7 +331,7 @@ Future<void> showMemberActionsPopupMenu({
         );
       }
     case _MemberActions.makeAdmin:
-      if (user.room.ownPowerLevel <= kMatrixAdminPowerLevel) {
+      if (user.room.ownPowerLevel <= PowerLevel.admin) {
         final consent = await showOkCancelAlertDialog(
           context: context,
           title: L10n.of(context).areYouSure,

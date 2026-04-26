@@ -387,7 +387,7 @@ class Message extends StatelessWidget {
                                       : Row(
                                           children: [
                                             if (matrixPowerLevelRoleFor(
-                                                  sender.powerLevel,
+                                                  sender.powerLevel.level,
                                                 ) !=
                                                 MatrixPowerLevelRole.user)
                                               Padding(
@@ -396,10 +396,12 @@ class Message extends StatelessWidget {
                                                 ),
                                                 child: Icon(
                                                   matrixPowerLevelRoleFor(
-                                                        sender.powerLevel,
-                                                      ) ==
-                                                      MatrixPowerLevelRole
-                                                          .moderator
+                                                            sender
+                                                                .powerLevel
+                                                                .level,
+                                                          ) ==
+                                                          MatrixPowerLevelRole
+                                                              .moderator
                                                       ? Icons
                                                             .add_moderator_outlined
                                                       : Icons

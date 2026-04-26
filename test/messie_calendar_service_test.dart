@@ -55,6 +55,9 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) async {
     requestedFrom = from;
     requestedTo = to;
@@ -252,6 +255,9 @@ class ThrowingMessieCalendarSdk implements MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) => throw UnimplementedError();
 
   @override
@@ -322,6 +328,9 @@ class ThrowingBytesMessieCalendarSdk implements MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) => throw UnimplementedError();
 
   @override
