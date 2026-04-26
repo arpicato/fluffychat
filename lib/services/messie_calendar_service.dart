@@ -8,6 +8,13 @@ import 'package:messie_api/messie_api.dart' as api;
 String _normalizeMessieCalendarApiBaseUrl(String value) =>
     value.endsWith('/') ? value : '$value/';
 
+String _normalizeMessieCalendarCategory(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty
+      ? defaultMessieCalendarCategory
+      : trimmed;
+}
+
 const defaultMessieCalendarCategory = 'My Calendars';
 
 class MessieCalendarSource {
@@ -56,7 +63,7 @@ class MessieCalendarSource {
             source.displayName ??
             source.sourceUrl ??
             'Calendar',
-        category: source.category ?? defaultMessieCalendarCategory,
+        category: source.category,
         importMode: source.importMode,
         refreshState: source.refreshState,
         sourceUrl: source.sourceUrl,
@@ -85,8 +92,7 @@ class MessieCalendarEvent {
     required this.status,
     required this.timezone,
     required this.sourceDisplayName,
-    this.recurrenceRaw,
-    this.rawIcsBlob,
+    this.recurrenceSummary,
     this.createdAt,
     this.updatedAt,
   });
@@ -103,13 +109,13 @@ class MessieCalendarEvent {
   final String status;
   final String timezone;
   final String sourceDisplayName;
-  final String? recurrenceRaw;
-  final String? rawIcsBlob;
+  final String? recurrenceSummary;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   bool get isUpcoming => endsAt.isAfter(DateTime.now().toUtc());
-  bool get isRecurring => recurrenceRaw != null && recurrenceRaw!.isNotEmpty;
+  bool get isRecurring =>
+      recurrenceSummary != null && recurrenceSummary!.isNotEmpty;
 
   factory MessieCalendarEvent.fromApi(api.CalendarEvent event) =>
       MessieCalendarEvent(
@@ -125,8 +131,7 @@ class MessieCalendarEvent {
         status: event.status,
         timezone: event.timezone,
         sourceDisplayName: event.sourceDisplayName,
-        recurrenceRaw: event.recurrenceRaw,
-        rawIcsBlob: event.rawIcsBlob,
+        recurrenceSummary: event.recurrenceSummary,
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
       );
@@ -183,6 +188,9 @@ abstract class MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   });
 
   Future<api.CalendarEvent> getCalendarEventById({required String eventId});
@@ -216,7 +224,7 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
   }) async {
     final response = await _api.importCalendarSource(
       file: MultipartFile.fromBytes(bytes, filename: filename),
-      category: category ?? defaultMessieCalendarCategory,
+      category: _normalizeMessieCalendarCategory(category),
       displayName: displayName,
     );
     return response.data!;
@@ -238,7 +246,7 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
       newCalendarLinkSource: api.NewCalendarLinkSource(
         (b) => b
           ..url = url
-          ..category = category
+          ..category = _normalizeMessieCalendarCategory(category)
           ..displayName = displayName,
       ),
     );
@@ -263,7 +271,7 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
       sourceId: sourceId,
       updateCalendarSource: api.UpdateCalendarSource(
         (b) => b
-          ..category = category
+          ..category = _normalizeMessieCalendarCategory(category)
           ..displayName = displayName,
       ),
     );
@@ -288,11 +296,17 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) async {
     final response = await _api.getCalendarEvents(
       from: from,
       to: to,
       sourceId: sourceId,
+      cursor: cursor,
+      direction: direction,
+      limit: limit,
     );
     return response.data?.toList() ?? const [];
   }
@@ -522,12 +536,18 @@ class MessieCalendarService {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) async => _wrapRequest(
     'Failed to load calendar events',
     (sdk) async => (await sdk.getCalendarEvents(
       from: from?.toUtc(),
       to: to?.toUtc(),
       sourceId: sourceId,
+      cursor: cursor?.toUtc(),
+      direction: direction,
+      limit: limit,
     )).map(MessieCalendarEvent.fromApi).toList(),
     apiBaseUrl: apiBaseUrl,
     jwt: jwt,

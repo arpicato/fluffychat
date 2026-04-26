@@ -10,7 +10,7 @@ class _$NewCalendarLinkSource extends NewCalendarLinkSource {
   @override
   final String url;
   @override
-  final String? category;
+  final String category;
   @override
   final String? displayName;
 
@@ -19,7 +19,7 @@ class _$NewCalendarLinkSource extends NewCalendarLinkSource {
       (NewCalendarLinkSourceBuilder()..update(updates))._build();
 
   _$NewCalendarLinkSource._(
-      {required this.url, this.category, this.displayName})
+      {required this.url, required this.category, this.displayName})
       : super._();
   @override
   NewCalendarLinkSource rebuild(
@@ -108,7 +108,8 @@ class NewCalendarLinkSourceBuilder
         _$NewCalendarLinkSource._(
           url: BuiltValueNullFieldError.checkNotNull(
               url, r'NewCalendarLinkSource', 'url'),
-          category: category,
+          category: BuiltValueNullFieldError.checkNotNull(
+              category, r'NewCalendarLinkSource', 'category'),
           displayName: displayName,
         );
     replace(_$result);

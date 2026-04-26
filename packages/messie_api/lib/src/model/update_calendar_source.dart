@@ -16,7 +16,7 @@ part 'update_calendar_source.g.dart';
 @BuiltValue()
 abstract class UpdateCalendarSource implements Built<UpdateCalendarSource, UpdateCalendarSourceBuilder> {
   @BuiltValueField(wireName: r'category')
-  String? get category;
+  String get category;
 
   @BuiltValueField(wireName: r'display_name')
   String? get displayName;
@@ -119,3 +119,4 @@ class _$UpdateCalendarSourceSerializer implements PrimitiveSerializer<UpdateCale
     return result.build();
   }
 }
+

@@ -1739,6 +1739,9 @@ class DefaultApi {
   /// * [from] 
   /// * [to] 
   /// * [sourceId] 
+  /// * [cursor] - Anchor timestamp for cursor-based schedule pagination.
+  /// * [direction] - Fetch events before or after the cursor.
+  /// * [limit] - Maximum number of events to return for cursor-based queries.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1752,6 +1755,9 @@ class DefaultApi {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -1782,6 +1788,9 @@ class DefaultApi {
       if (from != null) r'from': encodeQueryParameter(_serializers, from, const FullType(DateTime)),
       if (to != null) r'to': encodeQueryParameter(_serializers, to, const FullType(DateTime)),
       if (sourceId != null) r'sourceId': encodeQueryParameter(_serializers, sourceId, const FullType(String)),
+      if (cursor != null) r'cursor': encodeQueryParameter(_serializers, cursor, const FullType(DateTime)),
+      if (direction != null) r'direction': encodeQueryParameter(_serializers, direction, const FullType(String)),
+      if (limit != null) r'limit': encodeQueryParameter(_serializers, limit, const FullType(int)),
     };
 
     final _response = await _dio.request<Object>(

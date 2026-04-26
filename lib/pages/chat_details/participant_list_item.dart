@@ -24,7 +24,7 @@ class ParticipantListItem extends StatelessWidget {
       Membership.leave => L10n.of(context).leftTheChat,
     };
 
-    final powerLevelRole = matrixPowerLevelRoleFor(user.powerLevel);
+    final powerLevelRole = matrixPowerLevelRoleFor(user.powerLevel.level);
 
     final permissionBatch = switch (powerLevelRole) {
       MatrixPowerLevelRole.user => '',

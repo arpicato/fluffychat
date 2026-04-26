@@ -42,7 +42,7 @@ abstract class CalendarSource implements Built<CalendarSource, CalendarSourceBui
   String? get displayName;
 
   @BuiltValueField(wireName: r'category')
-  String? get category;
+  String get category;
 
   @BuiltValueField(wireName: r'import_mode')
   String get importMode;
@@ -364,3 +364,4 @@ class _$CalendarSourceSerializer implements PrimitiveSerializer<CalendarSource> 
     return result.build();
   }
 }
+

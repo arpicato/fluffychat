@@ -8,7 +8,7 @@ part of 'update_calendar_source.dart';
 
 class _$UpdateCalendarSource extends UpdateCalendarSource {
   @override
-  final String? category;
+  final String category;
   @override
   final String? displayName;
 
@@ -16,7 +16,8 @@ class _$UpdateCalendarSource extends UpdateCalendarSource {
           [void Function(UpdateCalendarSourceBuilder)? updates]) =>
       (UpdateCalendarSourceBuilder()..update(updates))._build();
 
-  _$UpdateCalendarSource._({this.category, this.displayName}) : super._();
+  _$UpdateCalendarSource._({required this.category, this.displayName})
+      : super._();
   @override
   UpdateCalendarSource rebuild(
           void Function(UpdateCalendarSourceBuilder) updates) =>
@@ -94,7 +95,8 @@ class UpdateCalendarSourceBuilder
   _$UpdateCalendarSource _build() {
     final _$result = _$v ??
         _$UpdateCalendarSource._(
-          category: category,
+          category: BuiltValueNullFieldError.checkNotNull(
+              category, r'UpdateCalendarSource', 'category'),
           displayName: displayName,
         );
     replace(_$result);

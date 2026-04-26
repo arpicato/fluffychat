@@ -1,5 +1,4 @@
 import 'package:cross_file/cross_file.dart';
-import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:fluffychat/services/messie_workspace_refresh.dart';
@@ -23,10 +22,15 @@ String _normalizeCalendarCategory(String? value) {
 }
 
 class _CalendarPageData {
-  const _CalendarPageData({required this.sources, required this.events});
+  const _CalendarPageData({
+    required this.sources,
+    required this.events,
+    required this.mobileScheduleEvents,
+  });
 
   final List<MessieCalendarSource> sources;
   final List<MessieCalendarEvent> events;
+  final List<MessieCalendarEvent> mobileScheduleEvents;
 }
 
 class _CalendarSourceDraft {
@@ -58,6 +62,26 @@ class _CalendarImportRequest {
   final XFile? file;
   final String? category;
   final String displayName;
+}
+
+sealed class _MobileScheduleItem {
+  const _MobileScheduleItem({required this.start, required this.end});
+
+  final DateTime start;
+  final DateTime end;
+
+  bool contains(DateTime day) =>
+      !day.isBefore(start) && !day.isAfter(end);
+}
+
+class _MobileScheduleDayItem extends _MobileScheduleItem {
+  _MobileScheduleDayItem({required DateTime day}) : super(start: day, end: day);
+
+  DateTime get day => start;
+}
+
+class _MobileScheduleGapItem extends _MobileScheduleItem {
+  const _MobileScheduleGapItem({required super.start, required super.end});
 }
 
 enum _CalendarInstructionPlatform { google, outlook, apple }
@@ -593,16 +617,23 @@ class CalendarPageView extends StatefulWidget {
 }
 
 class _CalendarPageViewState extends State<CalendarPageView> {
+  static const int _mobileScheduleBeforePageSize = 30;
+  static const int _mobileScheduleAfterPageSize = 120;
   final MessieCalendarService _calendarService = MessieCalendarService();
   late Future<_CalendarPageData> _loadFuture;
   late final ValueNotifier<DateTime> _visibleMonthNotifier;
   late final ValueNotifier<DateTime> _selectedDayNotifier;
   late final ValueNotifier<int> _visibilityVersionNotifier;
+  late final ScrollController _mobileScheduleScrollController;
   Set<String> _visibleSourceIds = <String>{};
   Set<String> _visibleCategoryNames = <String>{};
   Set<String> _knownSourceIds = <String>{};
   Set<String> _knownCategoryNames = <String>{};
+  final Map<String, GlobalKey> _mobileDaySectionKeys = <String, GlobalKey>{};
+  final GlobalKey _mobileScheduleViewportKey = GlobalKey();
   bool _hasInitializedSourceSelection = false;
+  bool _hasAutoScrolledMobileSchedule = false;
+  bool _hasUserScrolledMobileSchedule = false;
   _CalendarPageData? _latestPageData;
 
   CalendarPageController get controller => widget.controller;
@@ -618,20 +649,53 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       DateTime(now.year, now.month, now.day),
     );
     _visibilityVersionNotifier = ValueNotifier<int>(0);
+    _mobileScheduleScrollController = ScrollController()
+      ..addListener(_handleMobileScheduleScroll);
     _loadFuture = _load();
   }
 
   @override
   void dispose() {
+    _mobileScheduleScrollController
+      ..removeListener(_handleMobileScheduleScroll)
+      ..dispose();
     _visibleMonthNotifier.dispose();
     _selectedDayNotifier.dispose();
     _visibilityVersionNotifier.dispose();
     super.dispose();
   }
 
+  void _handleMobileScheduleScroll() {
+    if (!_mobileScheduleScrollController.hasClients) return;
+    if (_mobileScheduleScrollController.position.isScrollingNotifier.value ||
+        _mobileScheduleScrollController.offset > 0) {
+      _hasUserScrolledMobileSchedule = true;
+    }
+  }
+
   DateTime get _visibleMonth => _visibleMonthNotifier.value;
 
   DateTime get _selectedDay => _selectedDayNotifier.value;
+
+  GlobalKey _mobileDaySectionKey(DateTime day) {
+    final normalized = DateTime(day.year, day.month, day.day);
+    final key = normalized.toIso8601String();
+    return _mobileDaySectionKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
+  GlobalKey _mobileGapSectionKey(DateTime start, DateTime end) {
+    final normalizedStart = DateTime(start.year, start.month, start.day);
+    final normalizedEnd = DateTime(end.year, end.month, end.day);
+    final key =
+        'gap:${normalizedStart.toIso8601String()}:${normalizedEnd.toIso8601String()}';
+    return _mobileDaySectionKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
+  GlobalKey _mobileScheduleItemKey(_MobileScheduleItem item) => switch (item) {
+    _MobileScheduleDayItem(:final day) => _mobileDaySectionKey(day),
+    _MobileScheduleGapItem(:final start, :final end) =>
+      _mobileGapSectionKey(start, end),
+  };
 
   void _setVisibleMonth(DateTime month) {
     final normalized = DateTime(month.year, month.month);
@@ -649,6 +713,118 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final normalizedDay = DateTime(day.year, day.month, day.day);
     _setSelectedDay(normalizedDay);
     _setVisibleMonth(normalizedDay);
+  }
+
+  void _scrollMobileScheduleToTarget(GlobalKey targetKey) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_mobileScheduleScrollController.hasClients) return;
+      final targetContext = targetKey.currentContext;
+      final viewportContext = _mobileScheduleViewportKey.currentContext;
+      if (targetContext == null || viewportContext == null) return;
+
+      final targetBox = targetContext.findRenderObject() as RenderBox?;
+      final viewportBox = viewportContext.findRenderObject() as RenderBox?;
+      if (targetBox == null || viewportBox == null) return;
+
+      final targetOffsetInViewport =
+          targetBox.localToGlobal(Offset.zero, ancestor: viewportBox).dy;
+      final desiredOffset =
+          _mobileScheduleScrollController.offset +
+          targetOffsetInViewport -
+          (viewportBox.size.height * 0.08);
+      final clampedOffset = desiredOffset.clamp(
+        0.0,
+        _mobileScheduleScrollController.position.maxScrollExtent,
+      );
+
+      _mobileScheduleScrollController.animateTo(
+        clampedOffset,
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+      );
+    });
+  }
+
+  void _scrollMobileScheduleToDay(DateTime day) {
+    final targetKey = _mobileScheduleTargetKeyForDay(
+      day,
+      _mobileVisibleItems(_latestPageData),
+    );
+    if (targetKey == null) return;
+    _scrollMobileScheduleToTarget(targetKey);
+  }
+
+  void _jumpMobileScheduleToToday() {
+    final today = DateTime.now();
+    _selectDay(today);
+    final visibleDays = _mobileVisibleDays(_latestPageData);
+    final targetDay = _closestVisibleDayOnOrAfterToday(visibleDays);
+    if (targetDay == null) return;
+    _hasUserScrolledMobileSchedule = false;
+    _scrollMobileScheduleToDay(targetDay);
+  }
+
+  void _autoScrollMobileScheduleToToday(List<DateTime> visibleDays) {
+    if (_hasAutoScrolledMobileSchedule || _hasUserScrolledMobileSchedule) return;
+    _hasAutoScrolledMobileSchedule = true;
+    final targetDay = _closestVisibleDayOnOrAfterToday(visibleDays);
+    if (targetDay == null) return;
+    _scrollMobileScheduleToDay(targetDay);
+  }
+
+  DateTime? _closestVisibleDayOnOrAfter(
+    List<DateTime> visibleDays,
+    DateTime target,
+  ) {
+    if (visibleDays.isEmpty) return null;
+    final normalizedTarget = DateTime(target.year, target.month, target.day);
+    for (final day in visibleDays) {
+      if (!day.isBefore(normalizedTarget)) {
+        return day;
+      }
+    }
+    return visibleDays.last;
+  }
+
+  DateTime? _closestVisibleDayOnOrAfterToday(List<DateTime> visibleDays) {
+    if (visibleDays.isEmpty) return null;
+    final today = DateTime.now();
+    final normalizedToday = DateTime(today.year, today.month, today.day);
+    for (final day in visibleDays) {
+      if (!day.isBefore(normalizedToday)) {
+        return day;
+      }
+    }
+    return visibleDays.last;
+  }
+
+  List<DateTime> _mobileVisibleDays(_CalendarPageData? data) {
+    if (data == null) return const [];
+    final visibleEvents = _visibleEvents(data.mobileScheduleEvents)
+      ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
+    final eventsByDay = _buildEventsByDay(visibleEvents);
+    return eventsByDay.keys.toList()..sort((left, right) => left.compareTo(right));
+  }
+
+  List<_MobileScheduleItem> _mobileVisibleItems(_CalendarPageData? data) {
+    if (data == null) return const [];
+    final visibleEvents = _visibleEvents(data.mobileScheduleEvents)
+      ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
+    final eventsByDay = _buildEventsByDay(visibleEvents);
+    return _buildMobileScheduleItems(eventsByDay);
+  }
+
+  GlobalKey? _mobileScheduleTargetKeyForDay(
+    DateTime day,
+    List<_MobileScheduleItem> items,
+  ) {
+    if (items.isEmpty) return null;
+    final target = DateTime(day.year, day.month, day.day);
+    for (final item in items) {
+      if (item.contains(target)) return _mobileScheduleItemKey(item);
+      if (!item.start.isBefore(target)) return _mobileScheduleItemKey(item);
+    }
+    return _mobileScheduleItemKey(items.last);
   }
 
   Future<_CalendarPageData> _load() async {
@@ -669,16 +845,59 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         from: now.subtract(const Duration(days: 30)),
         to: now.add(const Duration(days: 180)),
       ),
+      _calendarService.getCalendarEvents(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.token,
+        cursor: DateTime(now.year, now.month, now.day),
+        direction: 'before',
+        limit: _mobileScheduleBeforePageSize,
+      ),
+      _calendarService.getCalendarEvents(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.token,
+        cursor: DateTime(now.year, now.month, now.day),
+        direction: 'after',
+        limit: _mobileScheduleAfterPageSize,
+      ),
     ]);
     final sources = results[0] as List<MessieCalendarSource>;
     final events = results[1] as List<MessieCalendarEvent>;
-    final data = _CalendarPageData(sources: sources, events: events);
+    final mobileScheduleEvents = _mergeCalendarEvents([
+      results[2] as List<MessieCalendarEvent>,
+      results[3] as List<MessieCalendarEvent>,
+    ]);
+    final data = _CalendarPageData(
+      sources: sources,
+      events: events,
+      mobileScheduleEvents: mobileScheduleEvents,
+    );
     _latestPageData = data;
     return data;
   }
 
+  List<MessieCalendarEvent> _mergeCalendarEvents(
+    Iterable<List<MessieCalendarEvent>> batches,
+  ) {
+    final mergedById = <String, MessieCalendarEvent>{};
+    for (final batch in batches) {
+      for (final event in batch) {
+        mergedById[event.id] = event;
+      }
+    }
+    final merged = mergedById.values.toList()
+      ..sort((left, right) {
+        final startComparison = left.startsAt.compareTo(right.startsAt);
+        if (startComparison != 0) return startComparison;
+        return left.createdAt?.compareTo(right.createdAt ?? left.startsAt) ??
+            0;
+      });
+    return merged;
+  }
+
   void _refreshPage() {
     setState(() {
+      _hasAutoScrolledMobileSchedule = false;
+      _hasUserScrolledMobileSchedule = false;
       _loadFuture = _load();
     });
     controller.refresh();
@@ -1134,6 +1353,28 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     return grouped;
   }
 
+  List<_MobileScheduleItem> _buildMobileScheduleItems(
+    Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
+  ) {
+    if (eventsByDay.isEmpty) return const [];
+    final sortedDays = eventsByDay.keys.toList()
+      ..sort((left, right) => left.compareTo(right));
+    final items = <_MobileScheduleItem>[];
+    DateTime? previousDay;
+    for (final day in sortedDays) {
+      if (previousDay != null) {
+        final gapStart = previousDay.add(const Duration(days: 1));
+        final gapEnd = day.subtract(const Duration(days: 1));
+        if (!gapStart.isAfter(gapEnd)) {
+          items.add(_MobileScheduleGapItem(start: gapStart, end: gapEnd));
+        }
+      }
+      items.add(_MobileScheduleDayItem(day: day));
+      previousDay = day;
+    }
+    return items;
+  }
+
   List<List<DateTime>> _monthWeeks(DateTime month) {
     final firstOfMonth = DateTime(month.year, month.month);
     final start = firstOfMonth.subtract(
@@ -1203,18 +1444,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     return Scaffold(
       appBar: isDesktopLayout
           ? null
-          : AppBar(
-              title: const Text('Calendar'),
-              automaticallyImplyLeading: !FluffyThemes.isColumnMode(context),
-              centerTitle: FluffyThemes.isColumnMode(context),
-              actions: [
-                IconButton(
-                  tooltip: 'Import calendar',
-                  onPressed: () => _openImportCalendarFlow(context),
-                  icon: const Icon(Icons.add),
-                ),
-              ],
-            ),
+          : null,
       body: FutureBuilder<_CalendarPageData>(
         future: _loadFuture,
         builder: (context, snapshot) {
@@ -1258,7 +1488,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
             return _buildDesktopCalendar(context, theme, data, sourceColors);
           }
 
-          return _buildMobileCalendar(context, theme, data);
+          return _buildMobileCalendar(context, theme, data, sourceColors);
         },
       ),
     );
@@ -2015,65 +2245,712 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     BuildContext context,
     ThemeData theme,
     _CalendarPageData data,
+    Map<String, Color> sourceColors,
   ) {
     return AnimatedBuilder(
-      animation: _visibilityVersionNotifier,
+      animation: Listenable.merge([
+        _visibilityVersionNotifier,
+        _visibleMonthNotifier,
+        _selectedDayNotifier,
+      ]),
       builder: (context, _) {
-        final visibleEvents = _visibleEvents(data.events);
+        final visibleEvents = _visibleEvents(data.mobileScheduleEvents)
+          ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
         final eventsByDay = _buildEventsByDay(visibleEvents);
-        final groupedEvents = <DateTime, List<MessieCalendarEvent>>{};
-        groupedEvents.addAll(eventsByDay);
-        final groupedEntries = groupedEvents.entries.toList()
-          ..sort((left, right) => left.key.compareTo(right.key));
+        final visibleDays = eventsByDay.keys.toList()
+          ..sort((left, right) => left.compareTo(right));
+        final scheduleItems = _buildMobileScheduleItems(eventsByDay);
+        _autoScrollMobileScheduleToToday(visibleDays);
+        MessieCalendarEvent? nextUpcomingEvent;
+        for (final event in visibleEvents) {
+          if (!calendarEventDisplayRange(event).end.isAfter(DateTime.now())) {
+            continue;
+          }
+          nextUpcomingEvent = event;
+          break;
+        }
+        final nextEvent = nextUpcomingEvent;
 
         return MaxWidthBody(
           withScrolling: false,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text(
-                  'Imported calendars',
-                  style: theme.textTheme.titleMedium,
+              Material(
+                color: theme.colorScheme.surface,
+                child: SafeArea(
+                  bottom: false,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            InkWell(
+                              borderRadius: BorderRadius.circular(18),
+                              onTap: () => _showMobileMonthPicker(
+                                context,
+                                theme,
+                                eventsByDay,
+                                sourceColors,
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 6,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.calendar_month_outlined,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    ValueListenableBuilder<DateTime>(
+                                      valueListenable: _visibleMonthNotifier,
+                                      builder: (context, visibleMonth, _) => Text(
+                                        _formatMobileHeaderMonth(visibleMonth),
+                                        style: theme.textTheme.headlineSmall,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.expand_more),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            PopupMenuButton<String>(
+                              tooltip: 'Calendar view',
+                              onSelected: (_) {},
+                              itemBuilder: (context) => const [
+                                PopupMenuItem<String>(
+                                  value: 'schedule',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.check, size: 18),
+                                      SizedBox(width: 8),
+                                      Text('Schedule'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceContainerHigh,
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.view_agenda_outlined, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Schedule',
+                                      style: theme.textTheme.labelLarge,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(Icons.expand_more, size: 18),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          height: 80,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _buildMobileQuickActionCard(
+                                  context,
+                                  theme,
+                                  width:
+                                      MediaQuery.sizeOf(context).width * 0.42,
+                                  icon: Icons.calendar_view_day_outlined,
+                                  label: 'Calendars',
+                                  value: '${_visibleSourceIds.length}',
+                                  compactValue: false,
+                                  onTap: () => _showMobileCalendarsSheet(
+                                    context,
+                                    theme,
+                                    data,
+                                    sourceColors,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                _buildMobileQuickActionCard(
+                                  context,
+                                  theme,
+                                  width:
+                                      MediaQuery.sizeOf(context).width * 0.42,
+                                  icon: Icons.today_outlined,
+                                  label: 'Today',
+                                  value:
+                                      '${DateTime.now().day}',
+                                  compactValue: false,
+                                  onTap: _jumpMobileScheduleToToday,
+                                ),
+                                const SizedBox(width: 12),
+                                _buildMobileQuickActionCard(
+                                  context,
+                                  theme,
+                                  width:
+                                      MediaQuery.sizeOf(context).width * 0.42,
+                                  icon: Icons.upcoming_outlined,
+                                  label: 'Next up',
+                                  value: nextEvent == null
+                                      ? 'None'
+                                      : nextEvent.title,
+                                  secondaryValue: nextEvent == null
+                                      ? null
+                                      : nextEvent.allDay
+                                      ? 'All day'
+                                      : _formatTime(context, nextEvent.startsAt),
+                                  compactValue: true,
+                                  onTap: nextEvent == null
+                                      ? null
+                                      : () => context.push(
+                                          '/rooms/calendar/events/${nextEvent.id}',
+                                          extra: <String, Object?>{
+                                            'title': nextEvent.title,
+                                            'sourceDisplayName':
+                                                nextEvent.sourceDisplayName,
+                                          },
+                                        ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
-              if (data.sources.isEmpty)
-                Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: ListTile(
-                    leading: const Icon(Icons.calendar_month_outlined),
-                    title: const Text('No calendars imported yet'),
-                    subtitle: const Text(
-                      'Import an .ics file to bring your existing calendar events into FluffyChat.',
-                    ),
-                    trailing: FilledButton.tonal(
-                      onPressed: () => _openImportCalendarFlow(context),
-                      child: const Text('Import'),
+              const Divider(height: 1),
+              Expanded(
+                child: Container(
+                  key: _mobileScheduleViewportKey,
+                  child: SingleChildScrollView(
+                    controller: _mobileScheduleScrollController,
+                    padding: const EdgeInsets.fromLTRB(4, 8, 4, 20),
+                    child: Column(
+                      children: [
+                        if (visibleDays.isEmpty)
+                          const Card(
+                            child: ListTile(
+                              leading: Icon(Icons.event_note_outlined),
+                              title: Text('No upcoming imported events'),
+                              subtitle: Text(
+                                'Imported events will appear here once calendars are visible.',
+                              ),
+                            ),
+                          ),
+                        for (final item in scheduleItems)
+                          Padding(
+                            key: _mobileScheduleItemKey(item),
+                            padding: EdgeInsets.only(
+                              bottom: item is _MobileScheduleDayItem ? 12 : 18,
+                            ),
+                            child: switch (item) {
+                              _MobileScheduleDayItem(:final day) =>
+                                _buildMobileScheduleDaySection(
+                                  context,
+                                  theme,
+                                  day: day,
+                                  events: _eventsForDay(eventsByDay, day),
+                                  sourceColors: sourceColors,
+                                ),
+                              _MobileScheduleGapItem(:final start, :final end) =>
+                                _buildMobileScheduleGapLabel(
+                                  context,
+                                  theme,
+                                  start: start,
+                                  end: end,
+                                ),
+                            },
+                          ),
+                      ],
                     ),
                   ),
                 ),
-              ...data.sources.map(
-                (source) => Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: ListTile(
-                    leading: const Icon(Icons.calendar_today_outlined),
-                    title: Text(_sourceLabel(source)),
-                    subtitle: Text(
-                      _formatSourceSubtitle(source),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileQuickActionCard(
+    BuildContext context,
+    ThemeData theme, {
+    required double width,
+    required IconData icon,
+    required String label,
+    required String value,
+    String? secondaryValue,
+    required bool compactValue,
+    required VoidCallback? onTap,
+  }) {
+    return SizedBox(
+      width: width.clamp(150, 210),
+      child: Card(
+        margin: EdgeInsets.zero,
+        clipBehavior: Clip.hardEdge,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 18, color: theme.colorScheme.primary),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Spacer(),
+                const SizedBox(height: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
+                      style: (compactValue
+                              ? theme.textTheme.titleMedium
+                              : theme.textTheme.headlineLarge)
+                          ?.copyWith(
+                        height: 1.0,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (action) =>
-                          _handleSourceAction(context, source, action),
+                    if (secondaryValue != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        secondaryValue,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.0,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showMobileCalendarsSheet(
+    BuildContext context,
+    ThemeData theme,
+    _CalendarPageData data,
+    Map<String, Color> sourceColors,
+  ) {
+    return showModalBottomSheet<void>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: theme.colorScheme.surface,
+      builder: (sheetContext) {
+        return FractionallySizedBox(
+          heightFactor: 0.96,
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
+                child: Row(
+                  children: [
+                    Text(
+                      'Calendars',
+                      style: theme.textTheme.headlineSmall,
+                    ),
+                    const Spacer(),
+                    FilledButton.tonalIcon(
+                      onPressed: () {
+                        Navigator.of(sheetContext).pop();
+                        _openImportCalendarFlow(context);
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('Import'),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: AnimatedBuilder(
+                  animation: _visibilityVersionNotifier,
+                  builder: (context, _) {
+                    final categories = _sourcesByCategory(data.sources);
+                    return ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      children: [
+                        Text(
+                          'Choose which imported calendars appear in the schedule.',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        if (data.sources.isEmpty)
+                          Card(
+                            child: ListTile(
+                              leading: const Icon(
+                                Icons.calendar_month_outlined,
+                              ),
+                              title: const Text('No calendars imported yet'),
+                              subtitle: const Text(
+                                'Import an .ics file or calendar link to populate this schedule.',
+                              ),
+                              trailing: FilledButton.tonal(
+                                onPressed: () {
+                                  Navigator.of(sheetContext).pop();
+                                  _openImportCalendarFlow(context);
+                                },
+                                child: const Text('Import'),
+                              ),
+                            ),
+                          ),
+                        for (final entry in categories.entries) ...[
+                          _buildMobileCalendarCategoryCard(
+                            context,
+                            theme,
+                            category: entry.key,
+                            sources: entry.value,
+                            sourceColors: sourceColors,
+                            onAction: (source, action) async {
+                              Navigator.of(sheetContext).pop();
+                              await _handleSourceAction(
+                                context,
+                                source,
+                                action,
+                              );
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showMobileMonthPicker(
+    BuildContext context,
+    ThemeData theme,
+    Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
+    Map<String, Color> sourceColors,
+  ) {
+    return showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Close calendar picker',
+      barrierColor: Colors.black54,
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return SafeArea(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              child: Material(
+                color: theme.colorScheme.surface,
+                elevation: 12,
+                borderRadius: BorderRadius.circular(24),
+                clipBehavior: Clip.antiAlias,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([
+                      _visibilityVersionNotifier,
+                      _visibleMonthNotifier,
+                      _selectedDayNotifier,
+                    ]),
+                    builder: (context, _) {
+                      final weeks = _monthWeeks(_visibleMonth);
+                      final labelStyle = theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      );
+                      const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  DateFormat.yMMMM().format(_visibleMonth),
+                                  style: theme.textTheme.headlineSmall,
+                                ),
+                                const Spacer(),
+                                IconButton(
+                                  onPressed: () => _setVisibleMonth(
+                                    DateTime(
+                                      _visibleMonth.year,
+                                      _visibleMonth.month - 1,
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.chevron_left),
+                                ),
+                                IconButton(
+                                  onPressed: () => _setVisibleMonth(
+                                    DateTime(
+                                      _visibleMonth.year,
+                                      _visibleMonth.month + 1,
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.chevron_right),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: weekdays
+                                  .map(
+                                    (label) => Expanded(
+                                      child: Center(
+                                        child: Text(label, style: labelStyle),
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 8),
+                            ...weeks.map(
+                              (week) => Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Row(
+                                  children: week
+                                      .map(
+                                        (day) => Expanded(
+                                          child: _buildMobileMonthPickerDay(
+                                            context,
+                                            theme,
+                                            day: day,
+                                            eventsByDay: eventsByDay,
+                                            sourceColors: sourceColors,
+                                            onSelected: () {
+                                              _selectDay(day);
+                                              Navigator.of(dialogContext).pop();
+                                              final visibleDays =
+                                                  _mobileVisibleDays(
+                                                    _latestPageData,
+                                                  );
+                                              final targetDay =
+                                                  _closestVisibleDayOnOrAfter(
+                                                    visibleDays,
+                                                    day,
+                                                  );
+                                              if (targetDay != null) {
+                                                _hasUserScrolledMobileSchedule =
+                                                    false;
+                                                _scrollMobileScheduleToDay(
+                                                  targetDay,
+                                                );
+                                              }
+                                            },
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, -0.08),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileMonthPickerDay(
+    BuildContext context,
+    ThemeData theme, {
+    required DateTime day,
+    required Map<DateTime, List<MessieCalendarEvent>> eventsByDay,
+    required Map<String, Color> sourceColors,
+    required VoidCallback onSelected,
+  }) {
+    final isCurrentMonth = day.month == _visibleMonth.month;
+    final isSelected = _isSameDay(day, _selectedDay);
+    final isToday = _isSameDay(day, DateTime.now());
+    final hasEvents = _eventsForDay(eventsByDay, day).isNotEmpty;
+
+    return Center(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: onSelected,
+        child: SizedBox(
+          width: 38,
+          height: 44,
+          child: Column(
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : isToday
+                      ? theme.colorScheme.primaryContainer
+                      : Colors.transparent,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${day.day}',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: isSelected
+                        ? theme.colorScheme.onPrimary
+                        : isCurrentMonth
+                        ? null
+                        : theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              if (hasEvents)
+                Container(
+                  width: 4,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color:
+                        sourceColors.values.firstOrNull ??
+                        theme.colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileCalendarCategoryCard(
+    BuildContext context,
+    ThemeData theme, {
+    required String category,
+    required List<MessieCalendarSource> sources,
+    required Map<String, Color> sourceColors,
+    required Future<void> Function(
+      MessieCalendarSource source,
+      String action,
+    )
+    onAction,
+  }) {
+    final isVisible = _isCategoryVisible(sources);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 10),
+        child: Column(
+          children: [
+            SwitchListTile(
+              value: isVisible,
+              title: Text(category, style: theme.textTheme.titleMedium),
+              subtitle: Text(
+                '${sources.length} calendar${sources.length == 1 ? '' : 's'}',
+              ),
+              onChanged: (value) => _toggleCategoryVisibility(sources, value),
+            ),
+            const Divider(height: 1),
+            ...sources.map(
+              (source) => ListTile(
+                enabled: isVisible,
+                leading: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: isVisible
+                        ? sourceColors[source.id] ?? theme.colorScheme.primary
+                        : theme.colorScheme.outlineVariant,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                title: Text(source.displayName),
+                subtitle: Text(
+                  _formatSourceSubtitle(source),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Switch(
+                      value: _visibleSourceIds.contains(source.id),
+                      onChanged: isVisible
+                          ? (_) => _toggleSourceVisibility(source.id)
+                          : null,
+                    ),
+                    PopupMenuButton<String>(
+                      enabled: isVisible,
+                      onSelected: (action) => onAction(source, action),
                       itemBuilder: (context) => [
                         const PopupMenuItem(
                           value: 'rename',
@@ -2090,75 +2967,216 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileScheduleDaySection(
+    BuildContext context,
+    ThemeData theme, {
+    required DateTime day,
+    required List<MessieCalendarEvent> events,
+    required Map<String, Color> sourceColors,
+  }) {
+    final isToday = _isSameDay(day, DateTime.now());
+    final isSelected = _isSameDay(day, _selectedDay);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 48,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                DateFormat.E().format(day),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: isToday || isSelected
+                      ? theme.colorScheme.primaryContainer
+                      : theme.colorScheme.surfaceContainerHighest,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  '${day.day}',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: isToday || isSelected
+                        ? theme.colorScheme.onPrimaryContainer
+                        : theme.colorScheme.onSurface,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Text('Events', style: theme.textTheme.titleMedium),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Stack(
+            children: [
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 18,
+                child: Container(
+                  height: 1,
+                  color: theme.dividerColor.withValues(alpha: 0.55),
+                ),
               ),
-              const SizedBox(height: 8),
-              if (groupedEntries.isEmpty)
-                const Card(
-                  margin: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  child: ListTile(
-                    leading: Icon(Icons.event_note_outlined),
-                    title: Text('No upcoming imported events'),
-                    subtitle: Text(
-                      'Imported events will appear here and in the main workspace list.',
-                    ),
-                  ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: events
+                    .map(
+                      (event) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _buildMobileScheduleEventCard(
+                          context,
+                          theme,
+                          day: day,
+                          event: event,
+                          color:
+                              sourceColors[event.sourceId] ??
+                              theme.colorScheme.primary,
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMobileScheduleGapLabel(
+    BuildContext context,
+    ThemeData theme, {
+    required DateTime start,
+    required DateTime end,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
+      child: Center(
+        child: Text(
+          _formatMobileGapRange(start, end),
+          textAlign: TextAlign.center,
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileScheduleEventCard(
+    BuildContext context,
+    ThemeData theme, {
+    required DateTime day,
+    required MessieCalendarEvent event,
+    required Color color,
+  }) {
+    final isContinuation =
+        !_isSameDay(event.startsAt.toLocal(), day) && _eventSpansDay(event, day);
+    final textColor = ThemeData.estimateBrightnessForColor(color) ==
+            Brightness.dark
+        ? Colors.white
+        : theme.colorScheme.onSurface;
+    return Material(
+      color: color.withValues(alpha: 0.88),
+      borderRadius: BorderRadius.circular(18),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => context.push(
+          '/rooms/calendar/events/${event.id}',
+          extra: <String, Object?>{
+            'title': event.title,
+            'sourceDisplayName': event.sourceDisplayName,
+          },
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                event.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                  height: 1.05,
                 ),
-              for (final entry in groupedEntries) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text(
-                    _formatShortDate(entry.key),
-                    style: theme.textTheme.titleSmall,
-                  ),
-                ),
-                ...entry.value.map(
-                  (event) => Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    child: ListTile(
-                      onTap: () => context.push(
-                        '/rooms/calendar/events/${event.id}',
-                        extra: <String, Object?>{
-                          'title': event.title,
-                          'sourceDisplayName': event.sourceDisplayName,
-                        },
-                      ),
-                      leading: const Icon(Icons.event_outlined),
-                      title: Text(event.title),
-                      subtitle: Text(
-                        [
-                          if (event.sourceDisplayName.isNotEmpty)
-                            event.sourceDisplayName,
-                          if (event.location.isNotEmpty) event.location,
-                          if (event.description.isNotEmpty) event.description,
-                        ].join(' · '),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      trailing: Text(
-                        event.allDay
-                            ? 'All day'
-                            : _formatTime(context, event.startsAt),
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
+              ),
+              if (!event.allDay) ...[
+                const SizedBox(height: 2),
+                Text(
+                  _formatMobileScheduleSubtitle(context, event, isContinuation),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: textColor.withValues(alpha: 0.82),
+                    height: 1.0,
                   ),
                 ),
               ],
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
+  }
+
+  String _formatMobileScheduleSubtitle(
+    BuildContext context,
+    MessieCalendarEvent event,
+    bool isContinuation,
+  ) {
+    final parts = <String>[
+      if (event.allDay)
+        'All day'
+      else if (isContinuation)
+        'Continues'
+      else
+        _formatTime(context, event.startsAt),
+      if (!event.allDay && !isContinuation) _formatTime(context, event.endsAt),
+    ];
+    return parts.join(' · ');
+  }
+
+  String _formatMobileGapRange(DateTime start, DateTime end) {
+    if (_isSameDay(start, end)) {
+      return DateFormat('d MMM').format(start);
+    }
+    final sameMonth = start.year == end.year && start.month == end.month;
+    if (sameMonth) {
+      return '${DateFormat('d').format(start)}–${DateFormat('d MMM').format(end)}';
+    }
+    return '${DateFormat('d MMM').format(start)} – ${DateFormat('d MMM').format(end)}';
+  }
+
+  String _formatMobileHeaderMonth(DateTime month) {
+    final now = DateTime.now();
+    return month.year == now.year
+        ? DateFormat.MMMM().format(month)
+        : DateFormat.yMMMM().format(month);
   }
 
   bool _isSameDay(DateTime left, DateTime right) =>

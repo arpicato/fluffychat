@@ -55,6 +55,9 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) async {
     requestedFrom = from;
     requestedTo = to;
@@ -252,6 +255,9 @@ class ThrowingMessieCalendarSdk implements MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) => throw UnimplementedError();
 
   @override
@@ -322,6 +328,9 @@ class ThrowingBytesMessieCalendarSdk implements MessieCalendarSdk {
     DateTime? from,
     DateTime? to,
     String? sourceId,
+    DateTime? cursor,
+    String? direction,
+    int? limit,
   }) => throw UnimplementedError();
 
   @override
@@ -478,6 +487,23 @@ void main() {
       expect(sdk.updatedDisplayName, 'Renamed');
       expect(result.category, 'Ops');
       expect(result.displayName, 'Renamed');
+    });
+
+    test('defaults blank categories to My Calendars', () async {
+      final sdk = RecordingMessieCalendarSdk();
+      final service = MessieCalendarService(
+        sdkFactory: ({required apiBaseUrl, required jwt}) => sdk,
+      );
+
+      await service.createLinkedCalendarSource(
+        apiBaseUrl: 'http://localhost:8080/api/v1',
+        jwt: 'jwt',
+        url: 'https://calendar.example.com/feed.ics',
+        category: '   ',
+        displayName: 'Team Calendar',
+      );
+
+      expect(sdk.linkedCategory, defaultMessieCalendarCategory);
     });
 
     test('loads a calendar source by id through generated client', () async {

@@ -30,9 +30,7 @@ class _$CalendarEvent extends CalendarEvent {
   @override
   final String timezone;
   @override
-  final String? recurrenceRaw;
-  @override
-  final String? rawIcsBlob;
+  final String? recurrenceSummary;
   @override
   final String sourceDisplayName;
   @override
@@ -55,8 +53,7 @@ class _$CalendarEvent extends CalendarEvent {
       required this.allDay,
       required this.status,
       required this.timezone,
-      this.recurrenceRaw,
-      this.rawIcsBlob,
+      this.recurrenceSummary,
       required this.sourceDisplayName,
       this.createdAt,
       this.updatedAt})
@@ -83,8 +80,7 @@ class _$CalendarEvent extends CalendarEvent {
         allDay == other.allDay &&
         status == other.status &&
         timezone == other.timezone &&
-        recurrenceRaw == other.recurrenceRaw &&
-        rawIcsBlob == other.rawIcsBlob &&
+        recurrenceSummary == other.recurrenceSummary &&
         sourceDisplayName == other.sourceDisplayName &&
         createdAt == other.createdAt &&
         updatedAt == other.updatedAt;
@@ -104,8 +100,7 @@ class _$CalendarEvent extends CalendarEvent {
     _$hash = $jc(_$hash, allDay.hashCode);
     _$hash = $jc(_$hash, status.hashCode);
     _$hash = $jc(_$hash, timezone.hashCode);
-    _$hash = $jc(_$hash, recurrenceRaw.hashCode);
-    _$hash = $jc(_$hash, rawIcsBlob.hashCode);
+    _$hash = $jc(_$hash, recurrenceSummary.hashCode);
     _$hash = $jc(_$hash, sourceDisplayName.hashCode);
     _$hash = $jc(_$hash, createdAt.hashCode);
     _$hash = $jc(_$hash, updatedAt.hashCode);
@@ -127,8 +122,7 @@ class _$CalendarEvent extends CalendarEvent {
           ..add('allDay', allDay)
           ..add('status', status)
           ..add('timezone', timezone)
-          ..add('recurrenceRaw', recurrenceRaw)
-          ..add('rawIcsBlob', rawIcsBlob)
+          ..add('recurrenceSummary', recurrenceSummary)
           ..add('sourceDisplayName', sourceDisplayName)
           ..add('createdAt', createdAt)
           ..add('updatedAt', updatedAt))
@@ -184,14 +178,10 @@ class CalendarEventBuilder
   String? get timezone => _$this._timezone;
   set timezone(String? timezone) => _$this._timezone = timezone;
 
-  String? _recurrenceRaw;
-  String? get recurrenceRaw => _$this._recurrenceRaw;
-  set recurrenceRaw(String? recurrenceRaw) =>
-      _$this._recurrenceRaw = recurrenceRaw;
-
-  String? _rawIcsBlob;
-  String? get rawIcsBlob => _$this._rawIcsBlob;
-  set rawIcsBlob(String? rawIcsBlob) => _$this._rawIcsBlob = rawIcsBlob;
+  String? _recurrenceSummary;
+  String? get recurrenceSummary => _$this._recurrenceSummary;
+  set recurrenceSummary(String? recurrenceSummary) =>
+      _$this._recurrenceSummary = recurrenceSummary;
 
   String? _sourceDisplayName;
   String? get sourceDisplayName => _$this._sourceDisplayName;
@@ -224,8 +214,7 @@ class CalendarEventBuilder
       _allDay = $v.allDay;
       _status = $v.status;
       _timezone = $v.timezone;
-      _recurrenceRaw = $v.recurrenceRaw;
-      _rawIcsBlob = $v.rawIcsBlob;
+      _recurrenceSummary = $v.recurrenceSummary;
       _sourceDisplayName = $v.sourceDisplayName;
       _createdAt = $v.createdAt;
       _updatedAt = $v.updatedAt;
@@ -271,8 +260,7 @@ class CalendarEventBuilder
               status, r'CalendarEvent', 'status'),
           timezone: BuiltValueNullFieldError.checkNotNull(
               timezone, r'CalendarEvent', 'timezone'),
-          recurrenceRaw: recurrenceRaw,
-          rawIcsBlob: rawIcsBlob,
+          recurrenceSummary: recurrenceSummary,
           sourceDisplayName: BuiltValueNullFieldError.checkNotNull(
               sourceDisplayName, r'CalendarEvent', 'sourceDisplayName'),
           createdAt: createdAt,
