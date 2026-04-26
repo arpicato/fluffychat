@@ -2392,7 +2392,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   context,
                                   theme,
                                   width:
-                                      MediaQuery.sizeOf(context).width * 0.42,
+                                      MediaQuery.sizeOf(context).width * 0.36,
                                   icon: Icons.calendar_view_day_outlined,
                                   label: 'Calendars',
                                   value: '${_visibleSourceIds.length}',
@@ -2409,7 +2409,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   context,
                                   theme,
                                   width:
-                                      MediaQuery.sizeOf(context).width * 0.42,
+                                      MediaQuery.sizeOf(context).width * 0.36,
                                   icon: Icons.today_outlined,
                                   label: 'Today',
                                   value: '${DateTime.now().day}',
@@ -2421,7 +2421,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   context,
                                   theme,
                                   width:
-                                      MediaQuery.sizeOf(context).width * 0.42,
+                                      MediaQuery.sizeOf(context).width * 0.36,
                                   icon: Icons.upcoming_outlined,
                                   label: 'Next up',
                                   value: nextEvent == null
@@ -2429,11 +2429,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                       : nextEvent.title,
                                   secondaryValue: nextEvent == null
                                       ? null
-                                      : nextEvent.allDay
-                                      ? 'All day'
-                                      : _formatTime(
+                                      : _formatNextUpSummary(
                                           context,
-                                          nextEvent.startsAt,
+                                          nextEvent,
                                         ),
                                   compactValue: true,
                                   onTap: nextEvent == null
@@ -2479,7 +2477,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                           Padding(
                             key: _mobileScheduleItemKey(item),
                             padding: EdgeInsets.only(
-                              bottom: item is _MobileScheduleDayItem ? 12 : 18,
+                              bottom: item is _MobileScheduleDayItem ? 20 : 24,
                             ),
                             child: switch (item) {
                               _MobileScheduleDayItem(:final day) =>
@@ -2526,7 +2524,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     required VoidCallback? onTap,
   }) {
     return SizedBox(
-      width: width.clamp(150, 210),
+      width: width.clamp(136, 188),
       child: Card(
         margin: EdgeInsets.zero,
         clipBehavior: Clip.hardEdge,
@@ -3122,9 +3120,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         : theme.colorScheme.onSurface;
     return Material(
       color: color.withValues(alpha: 0.88),
-      borderRadius: BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
         onTap: () => context.push(
           '/rooms/calendar/events/${event.id}',
           extra: <String, Object?>{
@@ -3133,32 +3131,46 @@ class _CalendarPageViewState extends State<CalendarPageView> {
           },
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Text(
-                event.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                  height: 1.05,
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 60),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                        height: 1.05,
+                      ),
+                    ),
+                    if (!event.allDay) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _formatMobileScheduleSubtitle(
+                          context,
+                          event,
+                          isContinuation,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: textColor.withValues(alpha: 0.82),
+                          height: 1.0,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              if (!event.allDay) ...[
-                const SizedBox(height: 2),
-                Text(
-                  _formatMobileScheduleSubtitle(context, event, isContinuation),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: textColor.withValues(alpha: 0.82),
-                    height: 1.0,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
@@ -3192,6 +3204,22 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       return '${DateFormat('d').format(start)}–${DateFormat('d MMM').format(end)}';
     }
     return '${DateFormat('d MMM').format(start)} – ${DateFormat('d MMM').format(end)}';
+  }
+
+  String _formatNextUpSummary(BuildContext context, MessieCalendarEvent event) {
+    final localStart = event.startsAt.toLocal();
+    final today = DateTime.now();
+    final parts = <String>[];
+    if (!_isSameDay(localStart, today)) {
+      final includeYear = localStart.year != today.year;
+      parts.add(
+        includeYear
+            ? DateFormat('d MMM yyyy').format(localStart)
+            : DateFormat('d MMM').format(localStart),
+      );
+    }
+    parts.add(event.allDay ? 'All day' : _formatTime(context, event.startsAt));
+    return parts.join(' · ');
   }
 
   String _formatMobileHeaderMonth(DateTime month) {
