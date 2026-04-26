@@ -1,6 +1,7 @@
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/utils/date_time_extension.dart';
+import 'package:fluffychat/widgets/avatar.dart';
 import 'package:fluffychat/widgets/hover_builder.dart';
 import 'package:flutter/material.dart';
 
@@ -42,10 +43,14 @@ class ChatListTodoItem extends StatelessWidget {
               duration: FluffyThemes.animationDuration,
               curve: FluffyThemes.animationCurve,
               scale: hovered ? 1.1 : 1.0,
-              child: CircleAvatar(
-                backgroundColor: theme.colorScheme.tertiaryContainer,
-                foregroundColor: theme.colorScheme.onTertiaryContainer,
-                child: const Icon(Icons.checklist_rtl_outlined),
+              child: SizedBox(
+                width: Avatar.defaultSize,
+                height: Avatar.defaultSize,
+                child: CircleAvatar(
+                  backgroundColor: theme.colorScheme.tertiaryContainer,
+                  foregroundColor: theme.colorScheme.onTertiaryContainer,
+                  child: const Icon(Icons.checklist_rtl_outlined),
+                ),
               ),
             ),
             title: Row(
