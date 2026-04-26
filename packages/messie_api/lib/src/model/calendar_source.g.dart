@@ -259,7 +259,6 @@ class CalendarSourceBuilder
               userId, r'CalendarSource', 'userId'),
           kind: BuiltValueNullFieldError.checkNotNull(
               kind, r'CalendarSource', 'kind'),
-          displayName: displayName,
           category: BuiltValueNullFieldError.checkNotNull(
               category, r'CalendarSource', 'category'),
           displayName: displayName,

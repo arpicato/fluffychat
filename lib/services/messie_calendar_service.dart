@@ -59,10 +59,7 @@ class MessieCalendarSource {
         id: source.id,
         userId: source.userId,
         kind: source.kind,
-        displayName:
-            source.displayName ??
-            source.sourceUrl ??
-            'Calendar',
+        displayName: source.displayName?.trim() ?? '',
         category: source.category,
         importMode: source.importMode,
         refreshState: source.refreshState,
@@ -435,7 +432,7 @@ class MessieCalendarService {
       await sdk.importCalendarSource(
         bytes: await file.readAsBytes(),
         filename: file.name.isEmpty ? 'calendar.ics' : file.name,
-        category: category,
+        category: _normalizeMessieCalendarCategory(category),
         displayName: displayName,
       ),
     ),
@@ -466,7 +463,7 @@ class MessieCalendarService {
     (sdk) async => MessieCalendarImportResult.fromApi(
       await sdk.createLinkedCalendarSource(
         url: url,
-        category: category,
+        category: _normalizeMessieCalendarCategory(category),
         displayName: displayName,
       ),
     ),
@@ -498,7 +495,7 @@ class MessieCalendarService {
     (sdk) async => MessieCalendarSource.fromApi(
       await sdk.updateCalendarSource(
         sourceId: sourceId,
-        category: category,
+        category: _normalizeMessieCalendarCategory(category),
         displayName: displayName,
       ),
     ),
