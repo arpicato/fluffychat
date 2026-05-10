@@ -16,6 +16,16 @@ class GroupedTodoItems {
   final List<MessieTodoItem> completedItems;
 }
 
+class TodoReorderPlan {
+  const TodoReorderPlan({
+    required this.items,
+    required this.updatedPositions,
+  });
+
+  final List<MessieTodoItem> items;
+  final Map<String, String> updatedPositions;
+}
+
 GroupedTodoItems groupTodoItems(List<MessieTodoItem> items) {
   final activeItems = <MessieTodoItem>[];
   final completedItems = <MessieTodoItem>[];
@@ -61,6 +71,62 @@ List<MessieTodoItem> reorderTodoItemsInGroup(
       : [...activeItems, ...sectionItems];
 }
 
+TodoReorderPlan buildTodoReorderPlan(
+  List<MessieTodoItem> items, {
+  required TodoItemGroup group,
+  required int oldIndex,
+  required int newIndex,
+}) {
+  final reordered = reorderTodoItemsInGroup(
+    items,
+    group: group,
+    oldIndex: oldIndex,
+    newIndex: newIndex,
+  );
+  final groupedItems = groupTodoItems(reordered);
+  final reorderedGroup = group == TodoItemGroup.active
+      ? groupedItems.activeItems
+      : groupedItems.completedItems;
+
+  if (newIndex < 0 || newIndex >= reorderedGroup.length) {
+    return TodoReorderPlan(items: reordered, updatedPositions: const {});
+  }
+
+  final movedItem = reorderedGroup[newIndex];
+  final previousPosition = newIndex > 0
+      ? reorderedGroup[newIndex - 1].position
+      : null;
+  final nextPosition = newIndex < reorderedGroup.length - 1
+      ? reorderedGroup[newIndex + 1].position
+      : null;
+
+  if (previousPosition == null ||
+      nextPosition == null ||
+      previousPosition.compareTo(nextPosition) < 0) {
+    final nextItemPosition = generateTodoItemPosition(
+      previousPosition,
+      nextPosition,
+    );
+    return TodoReorderPlan(
+      items: reordered,
+      updatedPositions: nextItemPosition == movedItem.position
+          ? const {}
+          : <String, String>{movedItem.id: nextItemPosition},
+    );
+  }
+
+  final updatedPositions = <String, String>{};
+  for (var i = 0; i < reorderedGroup.length; i++) {
+    final item = reorderedGroup[i];
+    final position = canonicalTodoItemPosition(i);
+    if (item.position != position) {
+      updatedPositions[item.id] = position;
+    }
+  }
+
+  return TodoReorderPlan(items: reordered, updatedPositions: updatedPositions);
+}
+
 String generateTodoItemPosition(
   String? previousPosition,
   String? nextPosition,
@@ -73,6 +139,9 @@ String generateTodoItemPosition(
 int _charToIndex(String char) => _fractionalIndexAlphabet.indexOf(char);
 
 String _indexToChar(int index) => _fractionalIndexAlphabet[index];
+
+String canonicalTodoItemPosition(int index) =>
+    ((index + 1) * 1000).toString().padLeft(12, '0');
 
 String _incrementPosition(String key) {
   var result = '';
