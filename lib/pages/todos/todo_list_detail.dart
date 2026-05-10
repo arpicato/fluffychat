@@ -214,62 +214,39 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
   }) async {
     final previousData = _data;
     if (previousData == null) return;
-    final reordered = reorderTodoItemsInGroup(
+    final reorderPlan = buildTodoReorderPlan(
       items,
       group: group,
       oldIndex: oldIndex,
       newIndex: newIndex,
     );
-    final groupedItems = groupTodoItems(reordered);
-    final reorderedGroup = group == TodoItemGroup.active
-        ? groupedItems.activeItems
-        : groupedItems.completedItems;
-    if (newIndex < 0 || newIndex >= reorderedGroup.length) return;
-    final movedItem = reorderedGroup[newIndex];
-    final movedItemIndex = reordered.indexWhere(
-      (item) => item.id == movedItem.id,
-    );
-    if (movedItemIndex == -1) return;
-    final previousPosition = movedItemIndex > 0
-        ? reordered[movedItemIndex - 1].position
-        : null;
-    final nextPosition = movedItemIndex < reordered.length - 1
-        ? reordered[movedItemIndex + 1].position
-        : null;
-    final nextItemPosition = generateTodoItemPosition(
-      previousPosition,
-      nextPosition,
-    );
-    final optimisticMovedItem = _copyItem(
-      movedItem,
-      position: nextItemPosition,
-    );
+    if (reorderPlan.updatedPositions.isEmpty) return;
     final optimisticItems = _sortedItems([
-      for (final item in reordered)
-        if (item.id == optimisticMovedItem.id) optimisticMovedItem else item,
+      for (final item in reorderPlan.items)
+        if (reorderPlan.updatedPositions.containsKey(item.id))
+          _copyItem(item, position: reorderPlan.updatedPositions[item.id])
+        else
+          item,
     ]);
     _setData(previousData.copyWith(items: optimisticItems));
     final session = await _session(context);
     try {
-      final updatedItem = await _todoService.updateTodoItem(
-        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
-        jwt: session.jwt,
-        listId: widget.listId,
-        itemId: movedItem.id,
-        title: movedItem.title,
-        description: movedItem.description,
-        completed: movedItem.completed,
-        position: nextItemPosition,
-        dueDate: movedItem.dueDate,
-      );
-      _setData(
-        previousData.copyWith(
-          items: _sortedItems([
-            for (final item in optimisticItems)
-              if (item.id == updatedItem.id) updatedItem else item,
-          ]),
-        ),
-      );
+      for (final item in reorderPlan.items) {
+        final updatedPosition = reorderPlan.updatedPositions[item.id];
+        if (updatedPosition == null) continue;
+        await _todoService.updateTodoItem(
+          apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+          jwt: session.jwt,
+          listId: widget.listId,
+          itemId: item.id,
+          title: item.title,
+          description: item.description,
+          completed: item.completed,
+          position: updatedPosition,
+          dueDate: item.dueDate,
+        );
+      }
+      refresh();
     } catch (error) {
       _setData(previousData);
       rethrow;

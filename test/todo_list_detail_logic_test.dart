@@ -92,4 +92,75 @@ void main() {
       expect(position.compareTo('m') < 0, isTrue);
     });
   });
+
+  group('buildTodoReorderPlan', () {
+    test('updates only the moved item when neighbor positions are ordered', () {
+      final items = [
+        _item(id: 'a', completed: false, position: '001'),
+        _item(id: 'b', completed: false, position: '002'),
+        _item(id: 'c', completed: false, position: '003'),
+      ];
+
+      final plan = buildTodoReorderPlan(
+        items,
+        group: TodoItemGroup.active,
+        oldIndex: 0,
+        newIndex: 1,
+      );
+
+      expect(plan.items.map((item) => item.id), ['b', 'a', 'c']);
+      expect(plan.updatedPositions.keys, ['a']);
+      expect(plan.updatedPositions['a']!.compareTo('002') > 0, isTrue);
+      expect(plan.updatedPositions['a']!.compareTo('003') < 0, isTrue);
+    });
+
+    test(
+      'uses same-group neighbors when other groups are interleaved',
+      () {
+        final items = [
+          _item(id: 'a', completed: false, position: '001'),
+          _item(id: 'c', completed: true, position: '002'),
+          _item(id: 'b', completed: false, position: '003'),
+          _item(id: 'd', completed: true, position: '004'),
+        ];
+
+        final plan = buildTodoReorderPlan(
+          items,
+          group: TodoItemGroup.active,
+          oldIndex: 0,
+          newIndex: 1,
+        );
+
+        expect(plan.items.map((item) => item.id), ['b', 'a', 'c', 'd']);
+        expect(plan.updatedPositions.keys, ['a']);
+        expect(plan.updatedPositions['a']!.compareTo('003') > 0, isTrue);
+      },
+    );
+
+    test('renumbers only the reordered group when its positions are corrupted', () {
+      final items = [
+        _item(id: 'a', completed: false, position: '300'),
+        _item(id: 'b', completed: false, position: '100'),
+        _item(id: 'c', completed: false, position: '200'),
+        _item(id: 'd', completed: true, position: '400'),
+      ];
+
+      final plan = buildTodoReorderPlan(
+        items,
+        group: TodoItemGroup.active,
+        oldIndex: 2,
+        newIndex: 1,
+      );
+
+      expect(plan.items.map((item) => item.id), ['a', 'c', 'b', 'd']);
+      expect(
+        plan.updatedPositions,
+        {
+          'a': canonicalTodoItemPosition(0),
+          'c': canonicalTodoItemPosition(1),
+          'b': canonicalTodoItemPosition(2),
+        },
+      );
+    });
+  });
 }
