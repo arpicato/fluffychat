@@ -70,7 +70,8 @@ sealed class _MobileScheduleItem {
   final DateTime start;
   final DateTime end;
 
-  bool contains(DateTime day) => !day.isBefore(start) && !day.isAfter(end);
+  bool contains(DateTime day) =>
+      !day.isBefore(start) && !day.isAfter(end);
 }
 
 class _MobileScheduleDayItem extends _MobileScheduleItem {
@@ -692,10 +693,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
 
   GlobalKey _mobileScheduleItemKey(_MobileScheduleItem item) => switch (item) {
     _MobileScheduleDayItem(:final day) => _mobileDaySectionKey(day),
-    _MobileScheduleGapItem(:final start, :final end) => _mobileGapSectionKey(
-      start,
-      end,
-    ),
+    _MobileScheduleGapItem(:final start, :final end) =>
+      _mobileGapSectionKey(start, end),
   };
 
   void _setVisibleMonth(DateTime month) {
@@ -727,9 +726,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       final viewportBox = viewportContext.findRenderObject() as RenderBox?;
       if (targetBox == null || viewportBox == null) return;
 
-      final targetOffsetInViewport = targetBox
-          .localToGlobal(Offset.zero, ancestor: viewportBox)
-          .dy;
+      final targetOffsetInViewport =
+          targetBox.localToGlobal(Offset.zero, ancestor: viewportBox).dy;
       final desiredOffset =
           _mobileScheduleScrollController.offset +
           targetOffsetInViewport -
@@ -767,9 +765,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   }
 
   void _autoScrollMobileScheduleToToday(List<DateTime> visibleDays) {
-    if (_hasAutoScrolledMobileSchedule || _hasUserScrolledMobileSchedule) {
-      return;
-    }
+    if (_hasAutoScrolledMobileSchedule || _hasUserScrolledMobileSchedule) return;
     _hasAutoScrolledMobileSchedule = true;
     final targetDay = _closestVisibleDayOnOrAfterToday(visibleDays);
     if (targetDay == null) return;
@@ -807,8 +803,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final visibleEvents = _visibleEvents(data.mobileScheduleEvents)
       ..sort((left, right) => left.startsAt.compareTo(right.startsAt));
     final eventsByDay = _buildEventsByDay(visibleEvents);
-    return eventsByDay.keys.toList()
-      ..sort((left, right) => left.compareTo(right));
+    return eventsByDay.keys.toList()..sort((left, right) => left.compareTo(right));
   }
 
   List<_MobileScheduleItem> _mobileVisibleItems(_CalendarPageData? data) {
@@ -893,7 +888,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       ..sort((left, right) {
         final startComparison = left.startsAt.compareTo(right.startsAt);
         if (startComparison != 0) return startComparison;
-        return left.createdAt?.compareTo(right.createdAt ?? left.startsAt) ?? 0;
+        return left.createdAt?.compareTo(right.createdAt ?? left.startsAt) ??
+            0;
       });
     return merged;
   }
@@ -1165,20 +1161,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   String _normalizeOptionalText(String? value) =>
       _normalizeCalendarCategory(value);
 
-  String _sourcePrimaryLabel(MessieCalendarSource source) {
-    final trimmedName = source.displayName.trim();
-    if (trimmedName.isEmpty) {
-      return _normalizeCalendarCategory(source.category);
-    }
-    return trimmedName;
-  }
-
-  String _sourceLabel(MessieCalendarSource source) {
-    final category = _normalizeCalendarCategory(source.category);
-    final trimmedName = source.displayName.trim();
-    if (trimmedName.isEmpty) return category;
-    return '$category / $trimmedName';
-  }
+  String _sourceLabel(MessieCalendarSource source) =>
+      '${_normalizeCalendarCategory(source.category)} / ${source.displayName}';
 
   String _decodeICalText(String value) => value
       .replaceAll(r'\n', '\n')
@@ -1458,7 +1442,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final theme = Theme.of(context);
     final isDesktopLayout = MediaQuery.sizeOf(context).width >= 960;
     return Scaffold(
-      appBar: isDesktopLayout ? null : null,
+      appBar: isDesktopLayout
+          ? null
+          : null,
       body: FutureBuilder<_CalendarPageData>(
         future: _loadFuture,
         builder: (context, snapshot) {
@@ -1723,7 +1709,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                               const SizedBox(width: 10),
                                               Expanded(
                                                 child: Text(
-                                                  _sourcePrimaryLabel(source),
+                                                  source.displayName,
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
@@ -2321,14 +2307,10 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                     const SizedBox(width: 10),
                                     ValueListenableBuilder<DateTime>(
                                       valueListenable: _visibleMonthNotifier,
-                                      builder: (context, visibleMonth, _) =>
-                                          Text(
-                                            _formatMobileHeaderMonth(
-                                              visibleMonth,
-                                            ),
-                                            style:
-                                                theme.textTheme.headlineSmall,
-                                          ),
+                                      builder: (context, visibleMonth, _) => Text(
+                                        _formatMobileHeaderMonth(visibleMonth),
+                                        style: theme.textTheme.headlineSmall,
+                                      ),
                                     ),
                                     const SizedBox(width: 4),
                                     const Icon(Icons.expand_more),
@@ -2364,10 +2346,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(
-                                      Icons.view_agenda_outlined,
-                                      size: 18,
-                                    ),
+                                    const Icon(Icons.view_agenda_outlined, size: 18),
                                     const SizedBox(width: 8),
                                     Text(
                                       'Schedule',
@@ -2392,7 +2371,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   context,
                                   theme,
                                   width:
-                                      MediaQuery.sizeOf(context).width * 0.36,
+                                      MediaQuery.sizeOf(context).width * 0.42,
                                   icon: Icons.calendar_view_day_outlined,
                                   label: 'Calendars',
                                   value: '${_visibleSourceIds.length}',
@@ -2409,10 +2388,11 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   context,
                                   theme,
                                   width:
-                                      MediaQuery.sizeOf(context).width * 0.36,
+                                      MediaQuery.sizeOf(context).width * 0.42,
                                   icon: Icons.today_outlined,
                                   label: 'Today',
-                                  value: '${DateTime.now().day}',
+                                  value:
+                                      '${DateTime.now().day}',
                                   compactValue: false,
                                   onTap: _jumpMobileScheduleToToday,
                                 ),
@@ -2421,7 +2401,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   context,
                                   theme,
                                   width:
-                                      MediaQuery.sizeOf(context).width * 0.36,
+                                      MediaQuery.sizeOf(context).width * 0.42,
                                   icon: Icons.upcoming_outlined,
                                   label: 'Next up',
                                   value: nextEvent == null
@@ -2429,10 +2409,9 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                       : nextEvent.title,
                                   secondaryValue: nextEvent == null
                                       ? null
-                                      : _formatNextUpSummary(
-                                          context,
-                                          nextEvent,
-                                        ),
+                                      : nextEvent.allDay
+                                      ? 'All day'
+                                      : _formatTime(context, nextEvent.startsAt),
                                   compactValue: true,
                                   onTap: nextEvent == null
                                       ? null
@@ -2477,7 +2456,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                           Padding(
                             key: _mobileScheduleItemKey(item),
                             padding: EdgeInsets.only(
-                              bottom: item is _MobileScheduleDayItem ? 20 : 24,
+                              bottom: item is _MobileScheduleDayItem ? 12 : 18,
                             ),
                             child: switch (item) {
                               _MobileScheduleDayItem(:final day) =>
@@ -2488,10 +2467,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                   events: _eventsForDay(eventsByDay, day),
                                   sourceColors: sourceColors,
                                 ),
-                              _MobileScheduleGapItem(
-                                :final start,
-                                :final end,
-                              ) =>
+                              _MobileScheduleGapItem(:final start, :final end) =>
                                 _buildMobileScheduleGapLabel(
                                   context,
                                   theme,
@@ -2524,7 +2500,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     required VoidCallback? onTap,
   }) {
     return SizedBox(
-      width: width.clamp(136, 188),
+      width: width.clamp(150, 210),
       child: Card(
         margin: EdgeInsets.zero,
         clipBehavior: Clip.hardEdge,
@@ -2562,14 +2538,13 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          (compactValue
-                                  ? theme.textTheme.titleMedium
-                                  : theme.textTheme.headlineLarge)
-                              ?.copyWith(
-                                height: 1.0,
-                                fontWeight: FontWeight.w600,
-                              ),
+                      style: (compactValue
+                              ? theme.textTheme.titleMedium
+                              : theme.textTheme.headlineLarge)
+                          ?.copyWith(
+                        height: 1.0,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     if (secondaryValue != null) ...[
                       const SizedBox(height: 4),
@@ -2613,7 +2588,10 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 12, 12),
                 child: Row(
                   children: [
-                    Text('Calendars', style: theme.textTheme.headlineSmall),
+                    Text(
+                      'Calendars',
+                      style: theme.textTheme.headlineSmall,
+                    ),
                     const Spacer(),
                     FilledButton.tonalIcon(
                       onPressed: () {
@@ -2920,7 +2898,10 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     required String category,
     required List<MessieCalendarSource> sources,
     required Map<String, Color> sourceColors,
-    required Future<void> Function(MessieCalendarSource source, String action)
+    required Future<void> Function(
+      MessieCalendarSource source,
+      String action,
+    )
     onAction,
   }) {
     final isVisible = _isCategoryVisible(sources);
@@ -2952,7 +2933,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                     shape: BoxShape.circle,
                   ),
                 ),
-                title: Text(_sourcePrimaryLabel(source)),
+                title: Text(source.displayName),
                 subtitle: Text(
                   _formatSourceSubtitle(source),
                   maxLines: 2,
@@ -3112,17 +3093,16 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     required Color color,
   }) {
     final isContinuation =
-        !_isSameDay(event.startsAt.toLocal(), day) &&
-        _eventSpansDay(event, day);
-    final textColor =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
+        !_isSameDay(event.startsAt.toLocal(), day) && _eventSpansDay(event, day);
+    final textColor = ThemeData.estimateBrightnessForColor(color) ==
+            Brightness.dark
         ? Colors.white
         : theme.colorScheme.onSurface;
     return Material(
       color: color.withValues(alpha: 0.88),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(18),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(18),
         onTap: () => context.push(
           '/rooms/calendar/events/${event.id}',
           extra: <String, Object?>{
@@ -3131,46 +3111,32 @@ class _CalendarPageViewState extends State<CalendarPageView> {
           },
         ),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 60),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Text(
-                      event.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: textColor,
-                        height: 1.05,
-                      ),
-                    ),
-                    if (!event.allDay) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        _formatMobileScheduleSubtitle(
-                          context,
-                          event,
-                          isContinuation,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: textColor.withValues(alpha: 0.82),
-                          height: 1.0,
-                        ),
-                      ),
-                    ],
-                  ],
+              Text(
+                event.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                  height: 1.05,
                 ),
               ),
+              if (!event.allDay) ...[
+                const SizedBox(height: 2),
+                Text(
+                  _formatMobileScheduleSubtitle(context, event, isContinuation),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: textColor.withValues(alpha: 0.82),
+                    height: 1.0,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -3204,22 +3170,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       return '${DateFormat('d').format(start)}–${DateFormat('d MMM').format(end)}';
     }
     return '${DateFormat('d MMM').format(start)} – ${DateFormat('d MMM').format(end)}';
-  }
-
-  String _formatNextUpSummary(BuildContext context, MessieCalendarEvent event) {
-    final localStart = event.startsAt.toLocal();
-    final today = DateTime.now();
-    final parts = <String>[];
-    if (!_isSameDay(localStart, today)) {
-      final includeYear = localStart.year != today.year;
-      parts.add(
-        includeYear
-            ? DateFormat('d MMM yyyy').format(localStart)
-            : DateFormat('d MMM').format(localStart),
-      );
-    }
-    parts.add(event.allDay ? 'All day' : _formatTime(context, event.startsAt));
-    return parts.join(' · ');
   }
 
   String _formatMobileHeaderMonth(DateTime month) {
