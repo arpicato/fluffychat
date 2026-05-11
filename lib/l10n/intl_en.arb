@@ -863,11 +863,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "extremeOffensive": "Extremely offensive",
-    "@extremeOffensive": {
-        "type": "String",
-        "placeholders": {}
-    },
     "fileName": "File name",
     "@fileName": {
         "type": "String",
@@ -959,11 +954,6 @@
     "hideRedactedMessages": "Hide redacted messages",
     "hideRedactedMessagesBody": "If someone redacts a message, this message won't be visible in the chat anymore.",
     "hideInvalidOrUnknownMessageFormats": "Hide invalid or unknown message formats",
-    "howOffensiveIsThisContent": "How offensive is this content?",
-    "@howOffensiveIsThisContent": {
-        "type": "String",
-        "placeholders": {}
-    },
     "id": "ID",
     "@id": {
         "type": "String",
@@ -980,11 +970,6 @@
     },
     "incorrectPassphraseOrKey": "Incorrect passphrase or recovery key",
     "@incorrectPassphraseOrKey": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "inoffensive": "Inoffensive",
-    "@inoffensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -1288,11 +1273,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "offensive": "Offensive",
-    "@offensive": {
-        "type": "String",
-        "placeholders": {}
-    },
     "offline": "Offline",
     "@offline": {
         "type": "String",
@@ -1339,7 +1319,6 @@
     "addToBundle": "Add to bundle",
     "removeFromBundle": "Remove from this bundle",
     "bundleName": "Bundle name",
-    "enableMultiAccounts": "(BETA) Enable multi accounts on this device",
     "openInMaps": "Open in maps",
     "@openInMaps": {
         "type": "String",
@@ -2497,31 +2476,8 @@
     "loginWithMatrixId": "Login with Matrix-ID",
     "doesNotSeemToBeAValidHomeserver": "Doesn't seem to be a compatible homeserver. Wrong URL?",
     "calculatingFileSize": "Calculating file size...",
-    "prepareSendingAttachment": "Prepare sending attachment...",
     "sendingAttachment": "Sending attachment...",
-    "generatingVideoThumbnail": "Generating video thumbnail...",
     "compressVideo": "Compressing video...",
-    "sendingAttachmentCountOfCount": "Sending attachment {index} of {length}...",
-    "@sendingAttachmentCountOfCount": {
-        "type": "integer",
-        "placeholders": {
-            "index": {
-                "type": "int"
-            },
-            "length": {
-                "type": "int"
-            }
-        }
-    },
-    "serverLimitReached": "Server limit reached! Waiting {seconds} seconds...",
-    "@serverLimitReached": {
-        "type": "integer",
-        "placeholders": {
-            "seconds": {
-                "type": "int"
-            }
-        }
-    },
     "oneOfYourDevicesIsNotVerified": "One of your devices is not verified",
     "noticeChatBackupDeviceVerification": "Note: When you connect all your devices to the chat backup, they are automatically verified.",
     "continueText": "Continue",
@@ -2784,10 +2740,6 @@
     "reset": "Reset",
     "supportFluffyChat": "Support FluffyChat",
     "support": "Support",
-    "fluffyChatSupportBannerMessage": "FluffyChat needs YOUR help!\n❤️❤️❤️\nFluffyChat will always be free, but development and hosting still cost money.\nThe future of the project depends on support from people like you.",
-    "skipSupportingFluffyChat": "Skip supporting FluffyChat",
-    "iDoNotWantToSupport": "I do not want to support",
-    "iAlreadySupportFluffyChat": "I already support FluffyChat",
     "setLowPriority": "Set low priority",
     "unsetLowPriority": "Unset low priority",
     "removeCallFromChat": "Remove call from chat",
@@ -2802,5 +2754,8 @@
     "addTag": "Add tag",
     "removeTag": "Remove tag",
     "tagName": "Tag name",
-    "createNewTag": "Create new tag"
+    "createNewTag": "Create new tag",
+    "hideRoomsInSpaces": "Hide rooms that are in a space",
+    "possibleByYou": "This release was only possible thanks to your support. FluffyChat remains free, open-source, and entirely community-driven.",
+    "showThumbnailsInTimeline": "Show thumbnails of images and videos"
 }

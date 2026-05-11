@@ -70,7 +70,13 @@ class ChatListViewBody extends StatelessWidget {
           .where((s) => s.hasRoomUpdate)
           .rateLimit(const Duration(seconds: 1)),
       builder: (context, _) {
-        final rooms = controller.filteredRooms;
+        final rooms = controller.filteredRooms
+            .where(
+              (room) =>
+                  !AppSettings.hideRoomsInSpaces.value ||
+                  spaceDelegateCandidates[room.id] == null,
+            )
+            .toList();
         final includeTodoLists =
             !controller.isSearchMode &&
             controller.activeFilter == ActiveFilter.allChats;
@@ -427,6 +433,7 @@ class PublicRoomsHorizontalList extends StatelessWidget {
                 avatar: publicRooms[i].avatarUrl,
                 onPressed: () => showAdaptiveDialog(
                   context: context,
+                  barrierDismissible: true,
                   builder: (c) => PublicRoomDialog(
                     roomAlias:
                         publicRooms[i].canonicalAlias ?? publicRooms[i].roomId,

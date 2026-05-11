@@ -741,11 +741,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "extremeOffensive": "Äärmiselt solvav",
-    "@extremeOffensive": {
-        "type": "String",
-        "placeholders": {}
-    },
     "fileName": "Faili nimi",
     "@fileName": {
         "type": "String",
@@ -837,11 +832,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "howOffensiveIsThisContent": "Kui solvav see sisu on?",
-    "@howOffensiveIsThisContent": {
-        "type": "String",
-        "placeholders": {}
-    },
     "id": "ID",
     "@id": {
         "type": "String",
@@ -864,11 +854,6 @@
     },
     "incorrectPassphraseOrKey": "Vigane salafraas või taastevõti",
     "@incorrectPassphraseOrKey": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "inoffensive": "Kahjutu",
-    "@inoffensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -1158,11 +1143,6 @@
     },
     "obtainingLocation": "Tuvastan asukohta…",
     "@obtainingLocation": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "offensive": "Solvav",
-    "@offensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -1894,7 +1874,6 @@
     "sendOnEnter": "Saada sõnum sisestusklahvi vajutusel",
     "homeserver": "Koduserver",
     "serverRequiresEmail": "See koduserver eeldab registreerimisel kasutatava e-postiaadressi kinnitamist.",
-    "enableMultiAccounts": "(KATSELINE) Pruugi selles seadmes mitut Matrix'i kasutajakontot",
     "bundleName": "Köite nimi",
     "removeFromBundle": "Eemalda sellest köitest",
     "addToBundle": "Lisa köitesse",
@@ -2466,30 +2445,7 @@
     "noChatsFoundHere": "Siin ei leidu veel ühtegi vestlust. Alusta uut vestlust klõpsides allpool asuvat nuppu. ⤵️",
     "loginWithMatrixId": "Logi sisse Matrix-ID alusel",
     "doesNotSeemToBeAValidHomeserver": "Ei tundu olema ühilduv koduserver. Kas võrguaadress on ikka õige?",
-    "prepareSendingAttachment": "Valmistume manuse saatmiseks...",
-    "generatingVideoThumbnail": "Loome video pisipilti...",
     "compressVideo": "Pakime videot väiksemaks...",
-    "sendingAttachmentCountOfCount": "Saadame manust: {index} pikkusega {length}...",
-    "@sendingAttachmentCountOfCount": {
-        "type": "integer",
-        "placeholders": {
-            "index": {
-                "type": "int"
-            },
-            "length": {
-                "type": "int"
-            }
-        }
-    },
-    "serverLimitReached": "Serveri poolt lubatud ülempiir on käes. Ootame {seconds} sekundit...",
-    "@serverLimitReached": {
-        "type": "integer",
-        "placeholders": {
-            "seconds": {
-                "type": "int"
-            }
-        }
-    },
     "sendingAttachment": "Saadame manust...",
     "calculatingFileSize": "Arvutame faili suurust...",
     "oneOfYourDevicesIsNotVerified": "Üks sinu seadmetest pole verifitseeritud",
@@ -2795,10 +2751,6 @@
     "reset": "Lähtesta",
     "supportFluffyChat": "Toeta FluffyChati",
     "support": "Toeta meid",
-    "iAlreadySupportFluffyChat": "Ma juba toetan FluffyChati arendust",
-    "fluffyChatSupportBannerMessage": "FluffyChat vajab SINU abi!\n❤️❤️❤️\nFluffyChat jääb alati vabaks ja vabalt saadavaks, aga arendus ja serveriteenused vajavad ikkagi rahastamist.\nMeie projekti tulevik sõltub sinust ja teistest kasutajatest, nagu sina.",
-    "skipSupportingFluffyChat": "Jäta FluffyChati toetamine vahele",
-    "iDoNotWantToSupport": "Ma ei soovi toetada",
     "setLowPriority": "Märgi vähetähtsaks",
     "unsetLowPriority": "Eemalda märkimine vähetähtsaks",
     "removeCallFromChat": "Eemalda kõne vestlusest",

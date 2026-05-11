@@ -840,7 +840,6 @@
             }
         }
     },
-    "enableMultiAccounts": "(БЭТА) Уключыць некалькі ўліковых запісаў на гэтай прыладзе",
     "enterAnEmailAddress": "Увядзіце электроную пошту (email)",
     "@enterAnEmailAddress": {
         "type": "String",
@@ -858,11 +857,6 @@
     },
     "everythingReady": "Усё гатова!",
     "@everythingReady": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "extremeOffensive": "Занадта абражальны",
-    "@extremeOffensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -957,11 +951,6 @@
     "hideRedactedMessages": "Схаваць адрэдагаваныя паведамленні",
     "hideRedactedMessagesBody": "Калі хтосьці рэдагуе паведамленне, яно будзе схавана ў чаце.",
     "hideInvalidOrUnknownMessageFormats": "Хаваць памылковыя ці невядомыя фарматы паведамленняў",
-    "howOffensiveIsThisContent": "Наколькі абражальны гэты кантэнт?",
-    "@howOffensiveIsThisContent": {
-        "type": "String",
-        "placeholders": {}
-    },
     "id": "ID",
     "@id": {
         "type": "String",
@@ -978,11 +967,6 @@
     },
     "incorrectPassphraseOrKey": "Няслушныя фраза-пароль ці ключ аднаўлення",
     "@incorrectPassphraseOrKey": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "inoffensive": "Безабідны",
-    "@inoffensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -1734,11 +1718,6 @@
     },
     "obtainingLocation": "Атрыманне месцазнаходжання…",
     "@obtainingLocation": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "offensive": "Абражальна",
-    "@offensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -2568,31 +2547,8 @@
     "loginWithMatrixId": "Увайсці з Matrix-ID",
     "doesNotSeemToBeAValidHomeserver": "Гэта не выглядае як дамашні сервер. Няслушны URL?",
     "calculatingFileSize": "Вылічэнне памеру файла...",
-    "prepareSendingAttachment": "Падрыхтоўка адпраўкі прыкладання...",
     "sendingAttachment": "Адпраўка прыкладання...",
-    "generatingVideoThumbnail": "Стварэнне вокладкі відэа...",
     "compressVideo": "Сцісканне відэа...",
-    "sendingAttachmentCountOfCount": "Адпраўляецца прыкладанне {index} з {length}...",
-    "@sendingAttachmentCountOfCount": {
-        "type": "integer",
-        "placeholders": {
-            "index": {
-                "type": "int"
-            },
-            "length": {
-                "type": "int"
-            }
-        }
-    },
-    "serverLimitReached": "Дасягнуты серверны ліміт! Пачакайце {seconds} секунд...",
-    "@serverLimitReached": {
-        "type": "integer",
-        "placeholders": {
-            "seconds": {
-                "type": "int"
-            }
-        }
-    },
     "oneOfYourDevicesIsNotVerified": "Адна з вашых прылад не спраўджана",
     "noticeChatBackupDeviceVerification": "Заўвага: Калі вы падключыце ўсе свае прылады да рэзервовага капіравання, яны аўтаматычна спраўдзяцца.",
     "welcomeText": "Вітаначкі 👋 Гэта FluffyChat. Вы можаце ўвайсці на любы дамашні сервер, што сумяшчальны з https://matrix.org, а потым паразмаўляць з кім-небудзь. Гэта вялізная дэцэнтралізаваная сетка абмену паведамленнямі!",
@@ -2782,10 +2738,6 @@
     "reset": "Скінуць",
     "supportFluffyChat": "Падтрымаць FluffyChat",
     "support": "Падтрымаць",
-    "fluffyChatSupportBannerMessage": "FluffyChat патрэбна ВАША дапамога!\n❤️❤️❤️\nFluffyChat будзе заўсёды бясплатным, bале распрацоўка і арэнда сервероў мае свой кошт.\nБудучыня праекту залежыць ад падтрымкі людзей як вы.",
-    "skipSupportingFluffyChat": "Прапусціць падтрымку FluffyChat",
-    "iDoNotWantToSupport": "Я не хачу падтрымаць",
-    "iAlreadySupportFluffyChat": "Я ўжо падтрымаў FluffyChat",
     "setLowPriority": "Прызначыць нізкі прыярытэт",
     "unsetLowPriority": "Скасаваць нізкі прыярытэт",
     "removeCallFromChat": "Прыбраць выклік з чату",

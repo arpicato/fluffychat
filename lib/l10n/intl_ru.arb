@@ -741,11 +741,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "extremeOffensive": "Крайне оскорбительный",
-    "@extremeOffensive": {
-        "type": "String",
-        "placeholders": {}
-    },
     "fileName": "Имя файла",
     "@fileName": {
         "type": "String",
@@ -837,11 +832,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "howOffensiveIsThisContent": "Насколько оскорбительным является этот контент?",
-    "@howOffensiveIsThisContent": {
-        "type": "String",
-        "placeholders": {}
-    },
     "id": "ID",
     "@id": {
         "type": "String",
@@ -864,11 +854,6 @@
     },
     "incorrectPassphraseOrKey": "Неверный пароль или ключ восстановления",
     "@incorrectPassphraseOrKey": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "inoffensive": "Безобидный",
-    "@inoffensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -1149,11 +1134,6 @@
     },
     "obtainingLocation": "Получение местоположения…",
     "@obtainingLocation": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "offensive": "Оскорбительный",
-    "@offensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -1885,7 +1865,6 @@
     "sendOnEnter": "Отправлять по Enter",
     "homeserver": "Домашний сервер",
     "serverRequiresEmail": "Этот сервер должен подтвердить ваш адрес электронной почты для регистрации.",
-    "enableMultiAccounts": "(БЕТА) Включить несколько учетных записей на этом устройстве",
     "bundleName": "Название пакета",
     "removeFromBundle": "Удалить из этого пакета",
     "addToBundle": "Добавить в пакет",
@@ -2054,10 +2033,10 @@
             }
         }
     },
-    "commandHint_cuddle": "Отправить улыбку",
+    "commandHint_cuddle": "Отправить объятия",
     "readUpToHere": "Непрочитанное",
     "commandHint_hug": "Отправить обнимашки",
-    "cuddleContent": "{senderName} обнимает вас",
+    "cuddleContent": "{senderName} нежно обнимает вас",
     "@cuddleContent": {
         "type": "String",
         "placeholders": {
@@ -2066,7 +2045,7 @@
             }
         }
     },
-    "hugContent": "{senderName} обнял(а) Вас",
+    "hugContent": "{senderName} обнимает Вас",
     "@hugContent": {
         "type": "String",
         "placeholders": {
@@ -2097,11 +2076,11 @@
     "encryptThisChat": "Зашифровать этот чат",
     "reopenChat": "Открыть чат заново",
     "commandHint_googly": "Отправить выпученные глаза",
-    "notAnImage": "Это не картинка.",
+    "notAnImage": "Это не изображение.",
     "importNow": "Импортировать сейчас",
     "importEmojis": "Импортировать эмодзи",
-    "importFromZipFile": "Импортировать из zip-файла",
-    "exportEmotePack": "Экспортировать набор эмодзи как zip",
+    "importFromZipFile": "Импортировать из .zip файла",
+    "exportEmotePack": "Экспортировать набор эмодзи как .zip",
     "replace": "Заменить",
     "googlyEyesContent": "{senderName} выпучил глаза",
     "@googlyEyesContent": {
@@ -2431,27 +2410,13 @@
     "compressVideo": "Сжатие видео...",
     "oneOfYourDevicesIsNotVerified": "Одно из ваших устройств не подтверждено",
     "chatPermissionsDescription": "Задайте уровень власти, необходимый для совершения определённых действий в этом чате. Уровни власти 0, 50 и 100 обычно означают пользователей, модераторов и администраторов соответственно, но любая градация также возможна.",
-    "prepareSendingAttachment": "Подготовка к отправке вложения...",
     "sendRoomNotifications": "Упоминать @room",
     "calculatingFileSize": "Вычисление размера файла...",
     "sendingAttachment": "Отправка вложения...",
-    "generatingVideoThumbnail": "Создание превью видео...",
     "noticeChatBackupDeviceVerification": "Примечание: Если вы подключите все свои устройства к резервному копированию чатов, то они автоматически станут подтверждёнными.",
     "changeTheCanonicalRoomAlias": "Изменить основной общедоступный адрес чата",
     "loginWithMatrixId": "Войти через Matrix ID",
     "serverInformation": "Информация о сервере:",
-    "sendingAttachmentCountOfCount": "Отправляется вложение {index} из {length}...",
-    "@sendingAttachmentCountOfCount": {
-        "type": "integer",
-        "placeholders": {
-            "index": {
-                "type": "int"
-            },
-            "length": {
-                "type": "int"
-            }
-        }
-    },
     "welcomeText": "Привет. Это FluffyChat. Вы можете подписаться на любой сервер, который совместим с https://matrix.org. А потом поболтать с кем нибудь. Это огромная децентрализованная сеть обмена сообщениями!",
     "noContactInformationProvided": "Сервер не предоставляет никакой правдивой контактной информации",
     "aboutHomeserver": "О сервере {homeserver}",
@@ -2736,15 +2701,6 @@
         "type": "String",
         "count": {}
     },
-    "serverLimitReached": "Достигнут серверный лимит! Подождите {seconds} секунд...",
-    "@serverLimitReached": {
-        "type": "integer",
-        "placeholders": {
-            "seconds": {
-                "type": "int"
-            }
-        }
-    },
     "countVotes": "{count, plural, =1{Один голос} other{{count} голоса(-ов)}}",
     "@countVotes": {
         "type": "int",
@@ -2795,10 +2751,6 @@
     "reset": "Сброс",
     "supportFluffyChat": "Поддержите FluffyChat",
     "support": "Поддержка",
-    "fluffyChatSupportBannerMessage": "FluffyChat нуждается в ВАШЕЙ помощи!\n❤️❤️❤️\nFluffyChat всегда будет бесплатным, но разработка и хостинг всё равно требуют затрат.\nБудущее проекта зависит от поддержки таких людей, как вы.",
-    "skipSupportingFluffyChat": "Пропустить помощь FluffyChat",
-    "iAlreadySupportFluffyChat": "Я уже поддерживаю FluffyChat",
-    "iDoNotWantToSupport": "Я не хочу поддерживать",
     "setLowPriority": "Установить низкий приоритет",
     "unsetLowPriority": "Неопределенный приоритет",
     "removeCallFromChat": "Удалить сообщение из чата",

@@ -1596,11 +1596,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "extremeOffensive": "Extremadament ofensiu",
-    "@extremeOffensive": {
-        "type": "String",
-        "placeholders": {}
-    },
     "yourChatBackupHasBeenSetUp": "S’ha configurat la còpia de seguretat del xat.",
     "contentHasBeenReported": "El contingut s’ha denunciat als administradors del servidor",
     "@contentHasBeenReported": {
@@ -1771,11 +1766,6 @@
             }
         }
     },
-    "howOffensiveIsThisContent": "Com d’ofensiu és aquest contingut?",
-    "@howOffensiveIsThisContent": {
-        "type": "String",
-        "placeholders": {}
-    },
     "commandHint_clearcache": "Neteja la memòria cau",
     "@commandHint_clearcache": {
         "type": "String",
@@ -1921,11 +1911,6 @@
     },
     "encryptThisChat": "Xifra aquest xat",
     "reopenChat": "Reobre el xat",
-    "inoffensive": "Inofensiu",
-    "@inoffensive": {
-        "type": "String",
-        "placeholders": {}
-    },
     "addToBundle": "Afegeix al pquet",
     "countFiles": "{count} arxius",
     "@countFiles": {
@@ -1949,11 +1934,6 @@
     "chatPermissions": "Permisos del xat",
     "sender": "Remitent",
     "storeInAndroidKeystore": "Desa en la Android KeyStore",
-    "offensive": "Ofensiu",
-    "@offensive": {
-        "type": "String",
-        "placeholders": {}
-    },
     "makeAdminDescription": "Un cop hagis fet admin aquesta persona ja no podràs desfer-ho, ja que llavors tindrà els mateixos permisos que tu.",
     "saveKeyManuallyDescription": "Per desar aquesta clau manualment, pica l'eina de compartir o copia-la al porta-retalls.",
     "editBundlesForAccount": "Edita paquets per aquest compte",
@@ -2194,7 +2174,6 @@
     "importNow": "Importa-ho ara",
     "pinMessage": "Fixa a la sala",
     "invite": "Convida",
-    "enableMultiAccounts": "(Beta) Activa multi-compte en aquest dispositiu",
     "unsupportedAndroidVersionLong": "Aquesta funcionalitat només funciona amb versions d'Android més noves.",
     "storeSecurlyOnThisDevice": "Desa de forma segura en aquest dispositiu",
     "screenSharingDetail": "Estàs compartint la teva pantalla a FluffyChat",
@@ -2466,8 +2445,6 @@
         }
     },
     "calculatingFileSize": "S'està calculant la mida de l'arxiu...",
-    "prepareSendingAttachment": "S'està preparant per enviar l'adjunt...",
-    "generatingVideoThumbnail": "S'està generant la miniatura del vídeo...",
     "noticeChatBackupDeviceVerification": "Nota: quan connectes tots els dispositius al backup del xat, es verifiquen automàticament.",
     "continueText": "Continua",
     "strikeThrough": "Text ratllat",
@@ -2485,27 +2462,6 @@
     },
     "sendingAttachment": "S'està enviant l'adjunt...",
     "compressVideo": "S'està comprimint el vídeo...",
-    "sendingAttachmentCountOfCount": "S'està enviant l'adjunt {index} de {length}...",
-    "@sendingAttachmentCountOfCount": {
-        "type": "integer",
-        "placeholders": {
-            "index": {
-                "type": "int"
-            },
-            "length": {
-                "type": "int"
-            }
-        }
-    },
-    "serverLimitReached": "S'ha arribat al límit del servidor! Esperant {seconds} segons...",
-    "@serverLimitReached": {
-        "type": "integer",
-        "placeholders": {
-            "seconds": {
-                "type": "int"
-            }
-        }
-    },
     "oneOfYourDevicesIsNotVerified": "Un dels teus dispositius no està verificat",
     "welcomeText": "Hola hola! 👋 Això és FluffyChat. Pots iniciar sessió en qualsevol servidor compatible amb https://matrix.org. I llavors xatejar amb qualsevol. És una xarxa enorme de missatgeria descentralitzada !",
     "blur": "Difumina:",
@@ -2794,10 +2750,6 @@
     "reset": "Reseteja",
     "supportFluffyChat": "Dona suport a FluffyChat",
     "support": "Aporta",
-    "fluffyChatSupportBannerMessage": "El FluffyChat necessita la teva ajuda!\n❤️❤️❤️\nFluffyChat serà sempre gratuït, però el seu desenvolupament i allotjament costa diners.\nEl futur del projecte depèn del suport de persones com tu.",
-    "skipSupportingFluffyChat": "Ignora el suport a FluffyChat",
-    "iDoNotWantToSupport": "No vull donar suport",
-    "iAlreadySupportFluffyChat": "Ja estic donant-hi suport",
     "setLowPriority": "Estableix una prioritat baixa",
     "unsetLowPriority": "Restableix la prioritat",
     "removeCallFromChat": "Treu la trucada del xat",

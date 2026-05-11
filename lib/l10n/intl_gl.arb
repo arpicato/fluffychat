@@ -741,11 +741,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "extremeOffensive": "Extremadamente ofensivo",
-    "@extremeOffensive": {
-        "type": "String",
-        "placeholders": {}
-    },
     "fileName": "Nome do ficheiro",
     "@fileName": {
         "type": "String",
@@ -837,11 +832,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "howOffensiveIsThisContent": "É moi ofensivo este contido?",
-    "@howOffensiveIsThisContent": {
-        "type": "String",
-        "placeholders": {}
-    },
     "id": "ID",
     "@id": {
         "type": "String",
@@ -864,11 +854,6 @@
     },
     "incorrectPassphraseOrKey": "Frase de paso ou chave de recuperación incorrecta",
     "@incorrectPassphraseOrKey": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "inoffensive": "Inofensivo",
-    "@inoffensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -1158,11 +1143,6 @@
     },
     "obtainingLocation": "Obtendo a localización…",
     "@obtainingLocation": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "offensive": "Ofensivo",
-    "@offensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -1894,7 +1874,6 @@
     "sendOnEnter": "Enter para enviar",
     "homeserver": "Servidor de inicio",
     "serverRequiresEmail": "O servidor precisa validar o teu enderezo de email para rexistrarte.",
-    "enableMultiAccounts": "(BETA) Activar varias contas neste dispositivo",
     "addAccount": "Engadir conta",
     "oneClientLoggedOut": "Un dos teus clientes foi desconectado",
     "link": "Ligazón",
@@ -2467,31 +2446,8 @@
     "loginWithMatrixId": "Acceder co ID-Matrix",
     "doesNotSeemToBeAValidHomeserver": "Non semella ser un servidor de inicio compatible. É o URL correcto?",
     "calculatingFileSize": "Calculando o tamaño do ficheiro…",
-    "prepareSendingAttachment": "Preparando o envío…",
     "sendingAttachment": "Enviando o anexo…",
-    "generatingVideoThumbnail": "Creando miniatura do vídeo…",
     "compressVideo": "Comprimindo o vídeo…",
-    "serverLimitReached": "Acadouse o límite do servidor! Agarda {seconds} segundos…",
-    "@serverLimitReached": {
-        "type": "integer",
-        "placeholders": {
-            "seconds": {
-                "type": "int"
-            }
-        }
-    },
-    "sendingAttachmentCountOfCount": "Enviando o anexo {index} de {length}…",
-    "@sendingAttachmentCountOfCount": {
-        "type": "integer",
-        "placeholders": {
-            "index": {
-                "type": "int"
-            },
-            "length": {
-                "type": "int"
-            }
-        }
-    },
     "oneOfYourDevicesIsNotVerified": "Un dos teus dispositivos non está verificado",
     "noticeChatBackupDeviceVerification": "Nota: Cando conectas todos os teus dispositivos á copia de apoio da conversa quedan verificados automaticamente.",
     "blur": "Néboa:",
@@ -2795,10 +2751,6 @@
     "reset": "Restablecer",
     "supportFluffyChat": "Apoia a FluffyChat",
     "support": "Axuda",
-    "fluffyChatSupportBannerMessage": "FluffyChat precisa a TÚA axuda!\n❤️❤️❤️\nFluffyChat vai ser sempre gratuíta, pero o desenvolvemento e a hospedaxe costan cartos.\nO futuro do proxecto depende da axuda de persoas coma ti.",
-    "skipSupportingFluffyChat": "Omitir apoiar a FluffyChat",
-    "iDoNotWantToSupport": "Non quero axudar",
-    "iAlreadySupportFluffyChat": "Xa apoiei a FluffyChat",
     "setLowPriority": "Establecer prioridade baixa",
     "unsetLowPriority": "Non establecer prioridade baixa",
     "removeCallFromChat": "Eliminar a chamada da conversa",

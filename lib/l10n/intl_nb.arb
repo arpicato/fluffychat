@@ -585,11 +585,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "extremeOffensive": "Veldig",
-    "@extremeOffensive": {
-        "type": "String",
-        "placeholders": {}
-    },
     "fileName": "Filnavn",
     "@fileName": {
         "type": "String",
@@ -681,11 +676,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "howOffensiveIsThisContent": "Hvor støtende er innholdet?",
-    "@howOffensiveIsThisContent": {
-        "type": "String",
-        "placeholders": {}
-    },
     "id": "ID",
     "@id": {
         "type": "String",
@@ -708,11 +698,6 @@
     },
     "incorrectPassphraseOrKey": "Feilaktig passord eller gjenopprettingsnøkkel",
     "@incorrectPassphraseOrKey": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "inoffensive": "Harmløst",
-    "@inoffensive": {
         "type": "String",
         "placeholders": {}
     },
@@ -967,11 +952,6 @@
                 "type": "int"
             }
         }
-    },
-    "offensive": "Støtende",
-    "@offensive": {
-        "type": "String",
-        "placeholders": {}
     },
     "offline": "Frakoblet",
     "@offline": {
@@ -1892,7 +1872,6 @@
     "hydrate": "Gjenopprett fra sikkerhetskopifil",
     "oneClientLoggedOut": "En av klientene dine har blitt logget ut",
     "addAccount": "Legg til konto",
-    "enableMultiAccounts": "(BETA) Aktiver flere kontoer på denne enheten",
     "openInMaps": "Åpne i kart",
     "@openInMaps": {
         "type": "String",
@@ -2072,15 +2051,6 @@
         }
     },
     "jumpToLastReadMessage": "Hopp til sist leste melding",
-    "serverLimitReached": "Grensen for server er nådd! Venter i {seconds} sekunder...",
-    "@serverLimitReached": {
-        "type": "integer",
-        "placeholders": {
-            "seconds": {
-                "type": "int"
-            }
-        }
-    },
     "blur": "Uskarphet:",
     "opacity": "Ugjennomsiktighet:",
     "noContactInformationProvided": "Serveren oppgir ingen gyldig kontaktinformasjon",
@@ -2366,8 +2336,6 @@
         "description": "Usage hint for the command /clearcache"
     },
     "doesNotSeemToBeAValidHomeserver": "Ser ikke ut til å være en kompatibel hjemmeserver. Feil URL?",
-    "prepareSendingAttachment": "Forbered sending av vedlegg...",
-    "generatingVideoThumbnail": "Genererer videominiatyrbilde ...",
     "compressVideo": "Komprimerer video...",
     "welcomeText": "Hei, hei! 👋 Dette er FluffyChat. Du kan logge på hvilken som helst hjemmeserver som er kompatibel med https://matrix.org. Og deretter chatte med hvem som helst. Det er et stort desentralisert meldingsnettverk!",
     "notificationRuleIsUserMentionDescription": "Varsler brukeren når de er direkte nevnt i en melding.",
@@ -2744,18 +2712,6 @@
             }
         }
     },
-    "sendingAttachmentCountOfCount": "Sender vedlegg {index} av {length}...",
-    "@sendingAttachmentCountOfCount": {
-        "type": "integer",
-        "placeholders": {
-            "index": {
-                "type": "int"
-            },
-            "length": {
-                "type": "int"
-            }
-        }
-    },
     "spaceMemberOf": "Områdemedlem av {spaces}",
     "@spaceMemberOf": {
         "type": "String",
@@ -2802,10 +2758,6 @@
     "reset": "Nullstill",
     "supportFluffyChat": "Støtt FluffyChat",
     "support": "Støtte",
-    "fluffyChatSupportBannerMessage": "FluffyChat trenger DIN hjelp!\n❤️❤️❤️\nFluffyChat vil alltid være gratis, men utvikling og drift koster fortsatt penger. \nProsjektets fremtid avhenger av støtte fra folk som deg.",
-    "skipSupportingFluffyChat": "Hopp over støtte til FluffyChat",
-    "iDoNotWantToSupport": "Jeg ønsker ikke å støtte",
-    "iAlreadySupportFluffyChat": "Jeg støtter allerede FluffyChat",
     "setLowPriority": "Sett lav prioritet",
     "unsetLowPriority": "Fjern lav prioritet",
     "removeCallFromChat": "Fjern anrop fra chat",
