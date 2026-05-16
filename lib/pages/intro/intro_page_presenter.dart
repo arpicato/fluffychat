@@ -109,24 +109,35 @@ class _IntroPagePresenterState extends State<IntroPagePresenter> {
   }
 
   void _register() async {
+    setState(() => isLoading = true);
     final presetHomeserver = AppSettings.presetHomeserver.value;
     if (presetHomeserver.isEmpty) {
+      setState(() => isLoading = false);
       context.go('${GoRouterState.of(context).uri.path}/sign_up');
       return;
     }
 
-    final matrix = Matrix.of(context);
-    final client = await matrix.getLoginClient();
-    var homeserver = Uri.parse(presetHomeserver);
-    if (homeserver.scheme.isEmpty) {
-      homeserver = Uri.https(presetHomeserver, '');
+    try {
+      final matrix = Matrix.of(context);
+      final client = await matrix.getLoginClient();
+      var homeserver = Uri.parse(presetHomeserver);
+      if (homeserver.scheme.isEmpty) {
+        homeserver = Uri.https(presetHomeserver, '');
+      }
+      await client.checkHomeserver(homeserver);
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      context.go(
+        '${GoRouterState.of(context).uri.path}/register',
+        extra: client,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
     }
-    await client.checkHomeserver(homeserver);
-    if (!mounted) return;
-    context.go(
-      '${GoRouterState.of(context).uri.path}/register',
-      extra: client,
-    );
   }
 
   @override
