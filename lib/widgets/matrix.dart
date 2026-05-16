@@ -346,6 +346,8 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
       _registerSubs(c.clientName);
     }
 
+    _migrateHomeserverUrl();
+
     if (PlatformInfos.isMobile) {
       backgroundPush = BackgroundPush(
         this,
@@ -377,6 +379,34 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     }
 
     createVoipPlugin();
+  }
+
+  /// Migrates stored homeserver URLs when the preset homeserver changes.
+  /// This ensures existing sessions reconnect to the correct server after
+  /// a domain change, across all platforms (web, Android, desktop).
+  void _migrateHomeserverUrl() {
+    final preset = AppSettings.presetHomeserver.value;
+    if (preset.isEmpty) return;
+
+    var targetHomeserver = Uri.tryParse(preset);
+    if (targetHomeserver == null) return;
+    if (targetHomeserver.scheme.isEmpty) {
+      targetHomeserver = Uri.https(preset, '');
+    }
+
+    for (final c in widget.clients) {
+      if (!c.isLogged()) continue;
+      final current = c.homeserver;
+      if (current == null) continue;
+      if (current.host == targetHomeserver.host &&
+          current.scheme == targetHomeserver.scheme) {
+        continue;
+      }
+      Logs().i(
+        '[HomeserverMigration] Updating ${c.clientName} from $current to $targetHomeserver',
+      );
+      c.homeserver = targetHomeserver;
+    }
   }
 
   Future<void> createVoipPlugin() async {
