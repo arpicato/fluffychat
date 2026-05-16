@@ -1,0 +1,8 @@
+services:
+  fluffychat-web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    ports:
+      - "${FLUFFYCHAT_PORT:-3000}:80"
+    restart: unless-stopped
