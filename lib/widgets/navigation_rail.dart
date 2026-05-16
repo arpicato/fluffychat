@@ -14,13 +14,13 @@ import 'package:matrix/matrix.dart';
 class SpacesNavigationRail extends StatelessWidget {
   final String? activeSpaceId;
   final void Function() onGoToChats;
-  final void Function() onGoToWorkspace;
+  final void Function() onGoToCalendar;
   final void Function(String) onGoToSpaceId;
 
   const SpacesNavigationRail({
     required this.activeSpaceId,
     required this.onGoToChats,
-    required this.onGoToWorkspace,
+    required this.onGoToCalendar,
     required this.onGoToSpaceId,
     super.key,
   });
@@ -50,7 +50,6 @@ class SpacesNavigationRail extends StatelessWidget {
                   NaviRailItem(
                     isSelected:
                         activeSpaceId == null &&
-                        !activePath.startsWith('/rooms/workspace') &&
                         !activePath.startsWith('/rooms/calendar') &&
                         !activePath.startsWith('/rooms/todos'),
                     onTap: onGoToChats,
@@ -67,19 +66,17 @@ class SpacesNavigationRail extends StatelessWidget {
                   ),
                   NaviRailItem(
                     isSelected:
-                        activePath.startsWith('/rooms/workspace') ||
-                        activePath.startsWith('/rooms/calendar') ||
-                        activePath.startsWith('/rooms/todos'),
-                    onTap: onGoToWorkspace,
+                        activePath.startsWith('/rooms/calendar'),
+                    onTap: onGoToCalendar,
                     icon: const Padding(
                       padding: EdgeInsets.all(8.0),
-                      child: Icon(Icons.workspaces_outlined),
+                      child: Icon(Icons.calendar_month_outlined),
                     ),
                     selectedIcon: const Padding(
                       padding: EdgeInsets.all(8.0),
-                      child: Icon(Icons.workspaces),
+                      child: Icon(Icons.calendar_month),
                     ),
-                    toolTip: 'Workspace',
+                    toolTip: 'Calendar',
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(

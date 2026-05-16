@@ -45,9 +45,9 @@ class ChatListView extends StatelessWidget {
                 controller.clearActiveSpace();
                 context.go('/rooms');
               },
-              onGoToWorkspace: () {
+              onGoToCalendar: () {
                 controller.clearActiveSpace();
-                context.go('/rooms/workspace');
+                context.go('/rooms/calendar');
               },
               onGoToSpaceId: controller.setActiveSpace,
             ),

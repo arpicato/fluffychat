@@ -35,7 +35,6 @@ import 'package:fluffychat/pages/settings_security/settings_security.dart';
 import 'package:fluffychat/pages/settings_style/settings_style.dart';
 import 'package:fluffychat/pages/todos/todo_list_detail.dart';
 import 'package:fluffychat/pages/todos/todos.dart';
-import 'package:fluffychat/pages/workspace_home/workspace_home.dart';
 import 'package:fluffychat/widgets/config_viewer.dart';
 import 'package:fluffychat/widgets/layouts/empty_page.dart';
 import 'package:fluffychat/widgets/layouts/two_column_layout.dart';
@@ -223,12 +222,6 @@ abstract class AppRoutes {
                   spaceId: state.uri.queryParameters['space_id'],
                 ),
               ),
-              redirect: loggedOutRedirect,
-            ),
-            GoRoute(
-              path: 'workspace',
-              pageBuilder: (context, state) =>
-                  defaultPageBuilder(context, state, const WorkspaceHomePage()),
               redirect: loggedOutRedirect,
             ),
             GoRoute(
@@ -632,7 +625,6 @@ class _MobileWorkspaceBottomBar extends StatelessWidget {
 
   bool get _showBottomBar =>
       currentPath == '/rooms' ||
-      currentPath.startsWith('/rooms/workspace') ||
       currentPath.startsWith('/rooms/calendar') ||
       currentPath == '/rooms/todos' ||
       currentPath.startsWith('/rooms/todos/') ||
@@ -640,8 +632,7 @@ class _MobileWorkspaceBottomBar extends StatelessWidget {
       currentPath.startsWith('/rooms/settings/');
 
   int get _selectedIndex {
-    if (currentPath.startsWith('/rooms/workspace') ||
-        currentPath.startsWith('/rooms/calendar') ||
+    if (currentPath.startsWith('/rooms/calendar') ||
         currentPath == '/rooms/todos' ||
         currentPath.startsWith('/rooms/todos/')) {
       return 1;
@@ -666,7 +657,7 @@ class _MobileWorkspaceBottomBar extends StatelessWidget {
               context.go('/rooms');
               break;
             case 1:
-              context.go('/rooms/workspace');
+              context.go('/rooms/calendar');
               break;
             case 2:
               context.go('/rooms/settings');
@@ -680,9 +671,9 @@ class _MobileWorkspaceBottomBar extends StatelessWidget {
             label: L10n.of(context).chats,
           ),
           const NavigationDestination(
-            icon: Icon(Icons.workspaces_outlined),
-            selectedIcon: Icon(Icons.workspaces),
-            label: 'Workspace',
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'Calendar',
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_outlined),
