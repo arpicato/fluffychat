@@ -13,6 +13,7 @@ class IntroPage extends StatelessWidget {
   final bool isLoading, hasPresetHomeserver;
   final String? loggingInToHomeserver, welcomeText;
   final VoidCallback login;
+  final VoidCallback? register;
 
   const IntroPage({
     required this.isLoading,
@@ -21,6 +22,7 @@ class IntroPage extends StatelessWidget {
     required this.hasPresetHomeserver,
     required this.welcomeText,
     required this.login,
+    this.register,
   });
 
   @override
@@ -139,43 +141,41 @@ class IntroPage extends StatelessWidget {
                               mainAxisSize: .min,
                               crossAxisAlignment: .stretch,
                               children: [
-                                if (!hasPresetHomeserver)
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          theme.colorScheme.secondary,
-                                      foregroundColor:
-                                          theme.colorScheme.onSecondary,
-                                    ),
-                                    onPressed: () => context.go(
-                                      '${GoRouterState.of(context).uri.path}/sign_up',
-                                    ),
-                                    child: Text(
-                                      L10n.of(context).createNewAccount,
-                                    ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor:
+                                        theme.colorScheme.secondary,
+                                    foregroundColor:
+                                        theme.colorScheme.onSecondary,
                                   ),
+                                  onPressed: register ??
+                                      () => context.go(
+                                            '${GoRouterState.of(context).uri.path}/sign_up',
+                                          ),
+                                  child: Text(
+                                    L10n.of(context).createNewAccount,
+                                  ),
+                                ),
                                 SizedBox(height: 16),
                                 ElevatedButton(
                                   onPressed: login,
                                   child: Text(L10n.of(context).signIn),
                                 ),
-
-                                if (!hasPresetHomeserver)
-                                  TextButton(
-                                    onPressed: () async {
-                                      final client = await Matrix.of(
-                                        context,
-                                      ).getLoginClient();
-                                      if (!context.mounted) return;
-                                      context.go(
-                                        '${GoRouterState.of(context).uri.path}/login',
-                                        extra: client,
-                                      );
-                                    },
-                                    child: Text(
-                                      L10n.of(context).loginWithMatrixId,
-                                    ),
+                                TextButton(
+                                  onPressed: () async {
+                                    final client = await Matrix.of(
+                                      context,
+                                    ).getLoginClient();
+                                    if (!context.mounted) return;
+                                    context.go(
+                                      '${GoRouterState.of(context).uri.path}/login',
+                                      extra: client,
+                                    );
+                                  },
+                                  child: Text(
+                                    L10n.of(context).loginWithMatrixId,
                                   ),
+                                ),
                               ],
                             ),
                           ),
