@@ -2,6 +2,7 @@
   "applicationName": "FluffyChat",
   "defaultHomeserver": "http://messie.localhost",
   "presetHomeserver": "http://messie.localhost",
+  "enableMatrixNativeOIDC": true,
   "welcomeText": "Sign in with your Messie Matrix homeserver.",
   "privacyUrl": "https://github.com/krille-chan/fluffychat/blob/main/PRIVACY.md",
   "audioRecordingNumChannels": 1,

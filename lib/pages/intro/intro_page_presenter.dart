@@ -108,6 +108,27 @@ class _IntroPagePresenterState extends State<IntroPagePresenter> {
     );
   }
 
+  void _register() async {
+    final presetHomeserver = AppSettings.presetHomeserver.value;
+    if (presetHomeserver.isEmpty) {
+      context.go('${GoRouterState.of(context).uri.path}/sign_up');
+      return;
+    }
+
+    final matrix = Matrix.of(context);
+    final client = await matrix.getLoginClient();
+    var homeserver = Uri.parse(presetHomeserver);
+    if (homeserver.scheme.isEmpty) {
+      homeserver = Uri.https(presetHomeserver, '');
+    }
+    await client.checkHomeserver(homeserver);
+    if (!mounted) return;
+    context.go(
+      '${GoRouterState.of(context).uri.path}/register',
+      extra: client,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return IntroPage(
@@ -118,6 +139,7 @@ class _IntroPagePresenterState extends State<IntroPagePresenter> {
           ? null
           : AppSettings.welcomeText.value,
       login: _login,
+      register: _register,
     );
   }
 }

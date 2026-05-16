@@ -31,6 +31,7 @@ import '../../services/bridge_room_presentation.dart';
 import '../../services/messie_bridge_service.dart';
 import '../../utils/url_launcher.dart';
 import '../../widgets/matrix.dart';
+import 'chat_list_workspace_mixin.dart';
 
 enum ActiveFilter { allChats, messages, groups, unread, spaces, tag }
 
@@ -71,7 +72,7 @@ class ChatList extends StatefulWidget {
 }
 
 class ChatListController extends State<ChatList>
-    with TickerProviderStateMixin, RouteAware {
+    with TickerProviderStateMixin, RouteAware, ChatListWorkspaceMixin {
   StreamSubscription? _intentDataStreamSubscription;
 
   StreamSubscription? _intentFileStreamSubscription;
@@ -501,6 +502,7 @@ class ChatListController extends State<ChatList>
     }
 
     super.initState();
+    initWorkspace();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       refreshBridgeProviderCatalog();
       refreshBridgeRoomMappings();
@@ -512,6 +514,7 @@ class ChatListController extends State<ChatList>
     _intentDataStreamSubscription?.cancel();
     _intentFileStreamSubscription?.cancel();
     _onRoomTagUpdate?.cancel();
+    disposeWorkspace();
     scrollController.removeListener(_onScroll);
     super.dispose();
   }
