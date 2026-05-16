@@ -114,10 +114,24 @@ class ChatListViewBody extends StatelessWidget {
           ...rooms.map(_ChatListEntry.room),
           ...visibleTodoLists.map(_ChatListEntry.todo),
         ]..sort((a, b) {
-          // Pinned rooms always sort to top
-          final aPin = a is _RoomChatListEntry && a.room.isFavourite;
-          final bPin = b is _RoomChatListEntry && b.room.isFavourite;
-          if (aPin != bPin) return aPin ? -1 : 1;
+          // Preserve SDK room ordering (respects pins, unread, low-priority)
+          // Only interleave todos by time among non-pinned rooms
+          final aIsRoom = a is _RoomChatListEntry;
+          final bIsRoom = b is _RoomChatListEntry;
+          final aPin = aIsRoom && (a as _RoomChatListEntry).room.isFavourite;
+          final bPin = bIsRoom && (b as _RoomChatListEntry).room.isFavourite;
+
+          // Pinned rooms always first
+          if (aPin && !bPin) return -1;
+          if (bPin && !aPin) return 1;
+
+          // Among pinned rooms, preserve SDK order (by room index in original list)
+          if (aPin && bPin) {
+            return rooms.indexOf((a as _RoomChatListEntry).room)
+                .compareTo(rooms.indexOf((b as _RoomChatListEntry).room));
+          }
+
+          // Non-pinned: sort by time
           return b.sortTime.compareTo(a.sortTime);
         });
         final calendarEntries = <_ChatListEntry>[
