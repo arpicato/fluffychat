@@ -85,7 +85,7 @@ Future<void> _tryPushHelper(
     return;
   }
 
-  final clientName = notification.devices?.first.data?.tryGet<String>(
+  final clientName = notification.devices?.firstOrNull?.data?.tryGet<String>(
     'client_name',
   );
   final store = await AppSettings.init();
@@ -298,7 +298,9 @@ Future<void> _tryPushHelper(
             ),
           ],
   );
-  const iOSPlatformChannelSpecifics = DarwinNotificationDetails();
+  final iOSPlatformChannelSpecifics = DarwinNotificationDetails(
+    threadIdentifier: event.room.id,
+  );
   final platformChannelSpecifics = NotificationDetails(
     android: androidPlatformChannelSpecifics,
     iOS: iOSPlatformChannelSpecifics,

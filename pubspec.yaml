@@ -21,7 +21,7 @@ dependencies:
   cross_file: ^0.3.5
   desktop_drop: ^0.7.1
   desktop_notifications: ^0.6.3
-  device_info_plus: ^12.3.0
+  device_info_plus: ^12.4.0
   dio: ^5.9.2
   dynamic_color: ^1.8.1
   emoji_picker_flutter: ^4.4.0
@@ -36,7 +36,7 @@ dependencies:
     sdk: flutter
   flutter_map: ^8.3.0
   flutter_new_badger: ^1.1.1
-  flutter_secure_storage: ^10.0.0
+  flutter_secure_storage: ^10.2.0
   flutter_shortcuts_new: ^2.0.0
   flutter_vodozemac: ^0.5.0
   flutter_web_auth_2: ^5.0.2
@@ -52,7 +52,7 @@ dependencies:
   intl: any
   just_audio: ^0.10.5
   latlong2: ^0.9.1
-  matrix: ^7.1.0
+  matrix: ^7.1.2
   messie_api:
     path: packages/messie_api
   mime: ^2.0.0
