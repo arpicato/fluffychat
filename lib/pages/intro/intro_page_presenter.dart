@@ -127,10 +127,7 @@ class _IntroPagePresenterState extends State<IntroPagePresenter> {
       await client.checkHomeserver(homeserver);
       if (!mounted) return;
       setState(() => isLoading = false);
-      context.go(
-        '${GoRouterState.of(context).uri.path}/register',
-        extra: client,
-      );
+      context.go('/home/register', extra: client);
     } catch (e) {
       if (!mounted) return;
       setState(() => isLoading = false);
