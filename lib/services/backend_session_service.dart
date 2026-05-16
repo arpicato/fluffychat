@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/utils/custom_http_client.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:matrix/matrix.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -35,7 +37,15 @@ class BackendSession {
 }
 
 class BackendSessionService {
-  static const defaultApiBaseUrl = 'http://localhost:8080/api/v1';
+  static String get defaultApiBaseUrl {
+    if (kIsWeb) return '/api/v1';
+    final preset = AppSettings.presetHomeserver.value;
+    if (preset.isEmpty) return '/api/v1';
+    var uri = Uri.tryParse(preset);
+    if (uri == null) return '/api/v1';
+    if (uri.scheme.isEmpty) uri = Uri.https(preset, '');
+    return '${uri.origin}/api/v1';
+  }
   static const _sessionStoreKey = 'messie_backend_session';
   static const _refreshLeewayMs = 5 * 60 * 1000;
 
@@ -47,8 +57,9 @@ class BackendSessionService {
   Future<BackendSession> ensureSession(
     Client client,
     SharedPreferences store, {
-    String apiBaseUrl = defaultApiBaseUrl,
+    String? apiBaseUrl,
   }) async {
+    apiBaseUrl ??= defaultApiBaseUrl;
     final userId = client.userID;
     if (userId == null || userId.isEmpty) {
       throw Exception('Matrix user is not logged in.');

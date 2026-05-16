@@ -179,8 +179,9 @@ class MessieBridgeService {
 
   MessieBridgeService({
     BackendSessionService? sessionService,
-    this.apiBaseUrl = BackendSessionService.defaultApiBaseUrl,
-  }) : _sessionService = sessionService ?? BackendSessionService();
+    String? apiBaseUrl,
+  }) : _sessionService = sessionService ?? BackendSessionService(),
+       apiBaseUrl = apiBaseUrl ?? BackendSessionService.defaultApiBaseUrl;
 
   final BackendSessionService _sessionService;
   final String apiBaseUrl;
