@@ -1,10 +1,12 @@
 # Stage 1: Build FluffyChat web
-FROM ghcr.io/cirruslabs/flutter:3.32.0 AS builder
+FROM ghcr.io/cirruslabs/flutter:3.41.6 AS builder
 
 # Install Rust toolchain and wasm-pack
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && . "$HOME/.cargo/env" \
     && rustup target add wasm32-unknown-unknown \
+    && rustup toolchain install nightly \
+    && rustup component add rust-src --toolchain nightly \
     && cargo install wasm-pack
 
 # Install build dependencies
@@ -17,8 +19,26 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 WORKDIR /app
 COPY . .
 
-# Prepare web (compile Vodozemac WASM, native_imaging, native_executor)
-RUN sh scripts/prepare-web.sh
+# Prepare web (compile Vodozemac WASM, native_imaging)
+# Run prepare-web.sh but allow dart compile js to fail (web worker optional in matrix 7.x)
+RUN set -e; \
+    version=$(yq ".dependencies.flutter_vodozemac" < pubspec.yaml | tr -d '"^'); \
+    git clone https://github.com/famedly/dart-vodozemac.git -b ${version} .vodozemac; \
+    cd .vodozemac; \
+    cargo install flutter_rust_bridge_codegen; \
+    flutter_rust_bridge_codegen build-web --dart-root dart --rust-root $(readlink -f rust) --release; \
+    cd ..; \
+    rm -f ./assets/vodozemac/vodozemac_bindings_dart*; \
+    mv .vodozemac/dart/web/pkg/vodozemac_bindings_dart* ./assets/vodozemac/; \
+    rm -rf .vodozemac; \
+    flutter pub get; \
+    dart compile js ./web/native_executor.dart -o ./web/native_executor.js -m || true; \
+    version=$(yq ".dependencies.native_imaging" < pubspec.yaml | tr -d '"^'); \
+    curl -L "https://github.com/famedly/dart_native_imaging/releases/download/v${version}/native_imaging.zip" > native_imaging.zip; \
+    unzip native_imaging.zip; \
+    mv js/* web/; \
+    rmdir js; \
+    rm native_imaging.zip
 
 # Build Flutter web release
 RUN flutter build web --release --source-maps
