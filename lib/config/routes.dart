@@ -19,6 +19,7 @@ import 'package:fluffychat/pages/device_settings/device_settings.dart';
 import 'package:fluffychat/pages/intro/intro_page_presenter.dart';
 import 'package:fluffychat/pages/invitation_selection/invitation_selection.dart';
 import 'package:fluffychat/pages/messie_auth/login/messie_login.dart';
+import 'package:fluffychat/pages/messie_auth/register/messie_register.dart';
 import 'package:fluffychat/pages/messie_auth/sign_in/messie_sign_in_page.dart';
 import 'package:fluffychat/pages/new_group/new_group.dart';
 import 'package:fluffychat/pages/new_private_chat/new_private_chat.dart';
@@ -100,6 +101,15 @@ abstract class AppRoutes {
             context,
             state,
             MessieLogin(client: state.extra as Client),
+          ),
+          redirect: loggedInRedirect,
+        ),
+        GoRoute(
+          path: 'register',
+          pageBuilder: (context, state) => defaultPageBuilder(
+            context,
+            state,
+            MessieRegister(client: state.extra as Client),
           ),
           redirect: loggedInRedirect,
         ),
