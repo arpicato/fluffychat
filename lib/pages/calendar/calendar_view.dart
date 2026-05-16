@@ -1945,7 +1945,7 @@ class _CalendarPageViewState extends State<CalendarPageView> {
             ),
             const SizedBox(height: 12),
             FilledButton.tonalIcon(
-              onPressed: () => _showCreateEventPlaceholder(_selectedDay),
+              onPressed: null,
               icon: const Icon(Icons.add),
               label: const Text('Create event'),
             ),
@@ -2157,7 +2157,6 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                 Positioned.fill(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
-                    onTap: () => _showCreateEventPlaceholder(day),
                   ),
                 ),
                 Padding(
