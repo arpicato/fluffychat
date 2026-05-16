@@ -27,12 +27,8 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../../utils/account_bundles.dart';
 import '../../config/setting_keys.dart';
-import '../../services/backend_session_service.dart';
 import '../../services/bridge_room_presentation.dart';
 import '../../services/messie_bridge_service.dart';
-import '../../services/messie_calendar_service.dart';
-import '../../services/messie_todo_service.dart';
-import '../../services/messie_workspace_refresh.dart';
 import '../../utils/url_launcher.dart';
 import '../../widgets/matrix.dart';
 
@@ -299,20 +295,10 @@ class ChatListController extends State<ChatList>
   final ValueNotifier<bool> scrolledToTop = ValueNotifier(true);
 
   final StreamController<Client> _clientStream = StreamController.broadcast();
-  final BackendSessionService _backendSessionService = BackendSessionService();
   final MessieBridgeService _messieBridgeService = MessieBridgeService();
-  final MessieCalendarService _messieCalendarService = MessieCalendarService();
-  final MessieTodoService _messieTodoService = MessieTodoService();
   BridgeProviderCatalog _bridgeProviderCatalog =
       const BridgeProviderCatalog.empty();
   List<MessieBridgeRoomMapping> _bridgeRoomMappings = const [];
-
-  List<MessieTodoList> todoLists = const [];
-  bool isLoadingTodoLists = false;
-  Object? todoListsError;
-  List<MessieCalendarEvent> upcomingCalendarEvents = const [];
-  bool isLoadingCalendarEvents = false;
-  Object? calendarEventsError;
 
   BridgeProviderCatalog get bridgeProviderCatalog => _bridgeProviderCatalog;
 
@@ -323,7 +309,9 @@ class ChatListController extends State<ChatList>
   Map<String, int> get _bridgeLoginCountByProvider {
     final counts = <String, Set<String>>{};
     for (final mapping in _bridgeRoomMappings) {
-      counts.putIfAbsent(mapping.provider, () => <String>{}).add(mapping.loginId);
+      counts
+          .putIfAbsent(mapping.provider, () => <String>{})
+          .add(mapping.loginId);
     }
     return counts.map((provider, ids) => MapEntry(provider, ids.length));
   }
@@ -333,9 +321,10 @@ class ChatListController extends State<ChatList>
         room,
         _bridgeProviderCatalog,
         roomMapping: _bridgeRoomMappingsByRoomId[room.id],
-        loginCountForProvider: _bridgeLoginCountByProvider[
-              _bridgeRoomMappingsByRoomId[room.id]?.provider ?? ''
-            ] ??
+        loginCountForProvider:
+            _bridgeLoginCountByProvider[_bridgeRoomMappingsByRoomId[room.id]
+                    ?.provider ??
+                ''] ??
             0,
       );
 
@@ -411,83 +400,6 @@ class ChatListController extends State<ChatList>
   }
 
   StreamSubscription? _onRoomTagUpdate;
-
-  Future<void> refreshTodoLists() async {
-    if (isLoadingTodoLists || !mounted) return;
-
-    setState(() {
-      isLoadingTodoLists = true;
-      todoListsError = null;
-    });
-
-    try {
-      final matrix = Matrix.of(context);
-      final session = await _backendSessionService.ensureSession(
-        matrix.client,
-        matrix.store,
-      );
-      final todoLists = await _messieTodoService.getTodoLists(
-        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
-        jwt: session.token,
-        userId: session.userId,
-      );
-      if (!mounted) return;
-      setState(() {
-        this.todoLists = todoLists;
-        isLoadingTodoLists = false;
-      });
-    } catch (error, stackTrace) {
-      Logs().w('Unable to load Messie todo lists', error, stackTrace);
-      if (!mounted) return;
-      setState(() {
-        isLoadingTodoLists = false;
-        todoListsError = error;
-      });
-    }
-  }
-
-  Future<void> refreshCalendarEvents() async {
-    if (isLoadingCalendarEvents || !mounted) return;
-
-    setState(() {
-      isLoadingCalendarEvents = true;
-      calendarEventsError = null;
-    });
-
-    try {
-      final matrix = Matrix.of(context);
-      final session = await _backendSessionService.ensureSession(
-        matrix.client,
-        matrix.store,
-      );
-      final events = await _messieCalendarService.getUpcomingCalendarEvents(
-        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
-        jwt: session.token,
-        limit: 25,
-      );
-      if (!mounted) return;
-      setState(() {
-        upcomingCalendarEvents = events;
-        isLoadingCalendarEvents = false;
-      });
-    } catch (error, stackTrace) {
-      Logs().w('Unable to load Messie calendar events', error, stackTrace);
-      if (!mounted) return;
-      setState(() {
-        isLoadingCalendarEvents = false;
-        calendarEventsError = error;
-      });
-    }
-  }
-
-  Future<void> refreshWorkspaceItems() async {
-    await Future.wait([
-      refreshTodoLists(),
-      refreshCalendarEvents(),
-      refreshBridgeProviderCatalog(),
-      refreshBridgeRoomMappings(),
-    ]);
-  }
 
   Future<void> refreshBridgeProviderCatalog() async {
     if (!mounted) return;
@@ -589,8 +501,10 @@ class ChatListController extends State<ChatList>
     }
 
     super.initState();
-    MessieWorkspaceRefresh.instance.addListener(refreshWorkspaceItems);
-    WidgetsBinding.instance.addPostFrameCallback((_) => refreshWorkspaceItems());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      refreshBridgeProviderCatalog();
+      refreshBridgeRoomMappings();
+    });
   }
 
   @override
@@ -598,7 +512,6 @@ class ChatListController extends State<ChatList>
     _intentDataStreamSubscription?.cancel();
     _intentFileStreamSubscription?.cancel();
     _onRoomTagUpdate?.cancel();
-    MessieWorkspaceRefresh.instance.removeListener(refreshWorkspaceItems);
     scrollController.removeListener(_onScroll);
     super.dispose();
   }
@@ -630,8 +543,8 @@ class ChatListController extends State<ChatList>
         room.getLocalizedDisplayname(MatrixLocals(L10n.of(context)));
     final displayname =
         presentation.showAccountLabel && presentation.loginName != null
-            ? '$baseDisplayname · ${presentation.loginName!}'
-            : baseDisplayname;
+        ? '$baseDisplayname · ${presentation.loginName!}'
+        : baseDisplayname;
     final avatarUrl = presentation.avatarUrl ?? room.avatar;
 
     final spacesWithPowerLevels = room.client.rooms

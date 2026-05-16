@@ -2,10 +2,10 @@ import 'dart:convert';
 
 import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/pages/intro/intro_page.dart';
-import 'package:fluffychat/pages/sign_in/view_model/model/public_homeserver_data.dart';
+import 'package:fluffychat/pages/messie_auth/sign_in/view_model/model/messie_public_homeserver_data.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/oidc_session_json_extension.dart';
-import 'package:fluffychat/utils/sign_in_flows/check_homeserver.dart';
+import 'package:fluffychat/utils/messie_auth/messie_check_homeserver.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -100,8 +100,8 @@ class _IntroPagePresenterState extends State<IntroPagePresenter> {
       return;
     }
 
-    connectToHomeserverFlow(
-      PublicHomeserverData(name: presetHomeserver),
+    messieConnectToHomeserverFlow(
+      MessiePublicHomeserverData(name: presetHomeserver),
       context,
       (snapshot) {},
       false,

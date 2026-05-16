@@ -14,13 +14,13 @@ import 'package:matrix/matrix.dart';
 class SpacesNavigationRail extends StatelessWidget {
   final String? activeSpaceId;
   final void Function() onGoToChats;
-  final void Function() onGoToCalendar;
+  final void Function() onGoToWorkspace;
   final void Function(String) onGoToSpaceId;
 
   const SpacesNavigationRail({
     required this.activeSpaceId,
     required this.onGoToChats,
-    required this.onGoToCalendar,
+    required this.onGoToWorkspace,
     required this.onGoToSpaceId,
     super.key,
   });
@@ -50,7 +50,9 @@ class SpacesNavigationRail extends StatelessWidget {
                   NaviRailItem(
                     isSelected:
                         activeSpaceId == null &&
-                        !activePath.startsWith('/rooms/calendar'),
+                        !activePath.startsWith('/rooms/workspace') &&
+                        !activePath.startsWith('/rooms/calendar') &&
+                        !activePath.startsWith('/rooms/todos'),
                     onTap: onGoToChats,
                     icon: const Padding(
                       padding: EdgeInsets.all(8.0),
@@ -64,17 +66,20 @@ class SpacesNavigationRail extends StatelessWidget {
                     unreadBadgeFilter: (room) => true,
                   ),
                   NaviRailItem(
-                    isSelected: activePath.startsWith('/rooms/calendar'),
-                    onTap: onGoToCalendar,
+                    isSelected:
+                        activePath.startsWith('/rooms/workspace') ||
+                        activePath.startsWith('/rooms/calendar') ||
+                        activePath.startsWith('/rooms/todos'),
+                    onTap: onGoToWorkspace,
                     icon: const Padding(
                       padding: EdgeInsets.all(8.0),
-                      child: Icon(Icons.calendar_month_outlined),
+                      child: Icon(Icons.workspaces_outlined),
                     ),
                     selectedIcon: const Padding(
                       padding: EdgeInsets.all(8.0),
-                      child: Icon(Icons.calendar_month),
+                      child: Icon(Icons.workspaces),
                     ),
-                    toolTip: 'Calendar',
+                    toolTip: 'Workspace',
                   ),
                   Padding(
                     padding: const EdgeInsets.symmetric(

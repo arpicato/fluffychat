@@ -45,9 +45,9 @@ class ChatListView extends StatelessWidget {
                 controller.clearActiveSpace();
                 context.go('/rooms');
               },
-              onGoToCalendar: () {
+              onGoToWorkspace: () {
                 controller.clearActiveSpace();
-                context.go('/rooms/calendar');
+                context.go('/rooms/workspace');
               },
               onGoToSpaceId: controller.setActiveSpace,
             ),
@@ -64,9 +64,7 @@ class ChatListView extends StatelessWidget {
                     !controller.isSearchMode &&
                         controller.activeSpaceId == null &&
                         !FluffyThemes.isColumnMode(context)
-                    ? StartChatFab(
-                        onCreateTodoList: controller.refreshTodoLists,
-                      )
+                    ? const StartChatFab()
                     : const SizedBox.shrink(),
               ),
             ),

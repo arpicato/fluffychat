@@ -1,21 +1,16 @@
 import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
-import 'package:fluffychat/pages/chat_list/chat_list_calendar_item.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_item.dart';
-import 'package:fluffychat/pages/chat_list/chat_list_todo_item.dart';
 import 'package:fluffychat/pages/chat_list/dummy_chat_list_item.dart';
 import 'package:fluffychat/pages/chat_list/search_title.dart';
 import 'package:fluffychat/pages/chat_list/space_view.dart';
 import 'package:fluffychat/pages/chat_list/status_msg_list.dart';
-import 'package:fluffychat/services/messie_calendar_service.dart';
-import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/utils/stream_extension.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/public_room_dialog.dart';
 import 'package:fluffychat/widgets/avatar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../config/themes.dart';
@@ -32,7 +27,6 @@ class ChatListViewBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final activeRoute = GoRouterState.of(context).uri.path;
 
     final client = Matrix.of(context).client;
     final activeSpace = controller.activeSpaceId;
@@ -77,52 +71,8 @@ class ChatListViewBody extends StatelessWidget {
                   spaceDelegateCandidates[room.id] == null,
             )
             .toList();
-        final includeTodoLists =
-            !controller.isSearchMode &&
-            controller.activeFilter == ActiveFilter.allChats;
-        final visibleTodoLists = includeTodoLists
-            ? controller.todoLists.where((todoList) {
-                if (filter.isEmpty) return true;
-                final title = todoList.title.toLowerCase();
-                final description = todoList.description.toLowerCase();
-                return title.contains(filter) || description.contains(filter);
-              }).toList()
-            : const <MessieTodoList>[];
-        final visibleCalendarEvents = includeTodoLists
-            ? controller.upcomingCalendarEvents
-                  .where((event) {
-                    final now = DateTime.now().toUtc();
-                    final end = now.add(const Duration(days: 7));
-                    if (event.startsAt.isAfter(end) ||
-                        event.endsAt.isBefore(now)) {
-                      return false;
-                    }
-                    if (filter.isEmpty) return true;
-                    final title = event.title.toLowerCase();
-                    final description = event.description.toLowerCase();
-                    final location = event.location.toLowerCase();
-                    final source = event.sourceDisplayName.toLowerCase();
-                    return title.contains(filter) ||
-                        description.contains(filter) ||
-                        location.contains(filter) ||
-                        source.contains(filter);
-                  })
-                  .take(2)
-                  .toList()
-            : const <MessieCalendarEvent>[];
-        final timelineEntries = <_ChatListEntry>[
-          ...rooms.map(_ChatListEntry.room),
-          ...visibleTodoLists.map(_ChatListEntry.todo),
-        ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
-        final calendarEntries = <_ChatListEntry>[
-          ...visibleCalendarEvents.map(_ChatListEntry.calendar),
-        ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
-        final entries = <_ChatListEntry>[
-          ...calendarEntries,
-          if (calendarEntries.isNotEmpty && timelineEntries.isNotEmpty)
-            const _DividerChatListEntry(),
-          ...timelineEntries,
-        ];
+        final entries = <_ChatListEntry>[...rooms.map(_ChatListEntry.room)]
+          ..sort((a, b) => b.sortTime.compareTo(a.sortTime));
 
         return SafeArea(
           child: CustomScrollView(
@@ -236,8 +186,7 @@ class ChatListViewBody extends StatelessWidget {
                     ),
                   if (client.prevBatch != null &&
                       entries.isEmpty &&
-                      !controller.isSearchMode &&
-                      !controller.isLoadingTodoLists) ...[
+                      !controller.isSearchMode) ...[
                     Column(
                       mainAxisAlignment: .center,
                       children: [
@@ -261,7 +210,7 @@ class ChatListViewBody extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.all(16.0),
                           child: Text(
-                            client.rooms.isEmpty && controller.todoLists.isEmpty
+                            client.rooms.isEmpty
                                 ? L10n.of(context).noChatsFoundHere
                                 : L10n.of(context).noMoreChatsFound,
                             textAlign: TextAlign.center,
@@ -294,7 +243,9 @@ class ChatListViewBody extends StatelessWidget {
                     return switch (entry) {
                       _RoomChatListEntry(:final room) => ChatListItem(
                         room,
-                        presentation: controller.bridgePresentationForRoom(room),
+                        presentation: controller.bridgePresentationForRoom(
+                          room,
+                        ),
                         space: spaceDelegateCandidates[room.id],
                         key: Key('chat_list_item_${room.id}'),
                         filter: filter,
@@ -305,47 +256,6 @@ class ChatListViewBody extends StatelessWidget {
                           spaceDelegateCandidates[room.id],
                         ),
                         activeChat: controller.activeChat == room.id,
-                      ),
-                      _TodoChatListEntry(:final todoList) => ChatListTodoItem(
-                        key: Key('chat_list_todo_${todoList.id}'),
-                        todoList: todoList,
-                        active:
-                            activeRoute == '/rooms/todos/${todoList.id}' ||
-                            activeRoute.startsWith(
-                              '/rooms/todos/${todoList.id}/',
-                            ),
-                        onTap: () => context.go(
-                          '/rooms/todos/${todoList.id}',
-                          extra: <String, Object?>{
-                            'title': todoList.title,
-                            'description': todoList.description,
-                          },
-                        ),
-                      ),
-                      _CalendarChatListEntry(:final event) =>
-                        ChatListCalendarItem(
-                          key: Key('chat_list_calendar_${event.id}'),
-                          event: event,
-                          active:
-                              activeRoute ==
-                                  '/rooms/calendar/events/${event.id}' ||
-                              activeRoute.startsWith(
-                                '/rooms/calendar/events/${event.id}/',
-                              ),
-                          onTap: () => context.push(
-                            '/rooms/calendar/events/${event.id}',
-                            extra: <String, Object?>{
-                              'title': event.title,
-                              'sourceDisplayName': event.sourceDisplayName,
-                            },
-                          ),
-                        ),
-                      _DividerChatListEntry() => Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                        child: Divider(
-                          color: theme.colorScheme.outlineVariant,
-                          height: 1,
-                        ),
                       ),
                     };
                   },
@@ -362,9 +272,6 @@ sealed class _ChatListEntry {
   const _ChatListEntry();
 
   factory _ChatListEntry.room(Room room) = _RoomChatListEntry;
-  factory _ChatListEntry.todo(MessieTodoList todoList) = _TodoChatListEntry;
-  factory _ChatListEntry.calendar(MessieCalendarEvent event) =
-      _CalendarChatListEntry;
 
   DateTime get sortTime;
 }
@@ -376,34 +283,6 @@ class _RoomChatListEntry extends _ChatListEntry {
 
   @override
   DateTime get sortTime => room.latestEventReceivedTime;
-}
-
-class _TodoChatListEntry extends _ChatListEntry {
-  const _TodoChatListEntry(this.todoList);
-
-  final MessieTodoList todoList;
-
-  @override
-  DateTime get sortTime =>
-      todoList.updatedAt ??
-      todoList.createdAt ??
-      DateTime.fromMillisecondsSinceEpoch(0);
-}
-
-class _CalendarChatListEntry extends _ChatListEntry {
-  const _CalendarChatListEntry(this.event);
-
-  final MessieCalendarEvent event;
-
-  @override
-  DateTime get sortTime => event.startsAt;
-}
-
-class _DividerChatListEntry extends _ChatListEntry {
-  const _DividerChatListEntry();
-
-  @override
-  DateTime get sortTime => DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 class PublicRoomsHorizontalList extends StatelessWidget {

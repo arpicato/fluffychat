@@ -18,7 +18,8 @@ import 'package:fluffychat/pages/chat_search/chat_search_page.dart';
 import 'package:fluffychat/pages/device_settings/device_settings.dart';
 import 'package:fluffychat/pages/intro/intro_page_presenter.dart';
 import 'package:fluffychat/pages/invitation_selection/invitation_selection.dart';
-import 'package:fluffychat/pages/login/login.dart';
+import 'package:fluffychat/pages/messie_auth/login/messie_login.dart';
+import 'package:fluffychat/pages/messie_auth/sign_in/messie_sign_in_page.dart';
 import 'package:fluffychat/pages/new_group/new_group.dart';
 import 'package:fluffychat/pages/new_private_chat/new_private_chat.dart';
 import 'package:fluffychat/pages/settings/settings.dart';
@@ -31,8 +32,9 @@ import 'package:fluffychat/pages/settings_notifications/settings_notifications.d
 import 'package:fluffychat/pages/settings_password/settings_password.dart';
 import 'package:fluffychat/pages/settings_security/settings_security.dart';
 import 'package:fluffychat/pages/settings_style/settings_style.dart';
-import 'package:fluffychat/pages/sign_in/sign_in_page.dart';
 import 'package:fluffychat/pages/todos/todo_list_detail.dart';
+import 'package:fluffychat/pages/todos/todos.dart';
+import 'package:fluffychat/pages/workspace_home/workspace_home.dart';
 import 'package:fluffychat/widgets/config_viewer.dart';
 import 'package:fluffychat/widgets/layouts/empty_page.dart';
 import 'package:fluffychat/widgets/layouts/two_column_layout.dart';
@@ -76,14 +78,20 @@ abstract class AppRoutes {
       routes: [
         GoRoute(
           path: 'sign_in',
-          pageBuilder: (context, state) =>
-              defaultPageBuilder(context, state, SignInPage(signUp: false)),
+          pageBuilder: (context, state) => defaultPageBuilder(
+            context,
+            state,
+            MessieSignInPage(signUp: false),
+          ),
           redirect: loggedInRedirect,
         ),
         GoRoute(
           path: 'sign_up',
-          pageBuilder: (context, state) =>
-              defaultPageBuilder(context, state, SignInPage(signUp: true)),
+          pageBuilder: (context, state) => defaultPageBuilder(
+            context,
+            state,
+            MessieSignInPage(signUp: true),
+          ),
           redirect: loggedInRedirect,
         ),
         GoRoute(
@@ -91,7 +99,7 @@ abstract class AppRoutes {
           pageBuilder: (context, state) => defaultPageBuilder(
             context,
             state,
-            Login(client: state.extra as Client),
+            MessieLogin(client: state.extra as Client),
           ),
           redirect: loggedInRedirect,
         ),
@@ -208,12 +216,15 @@ abstract class AppRoutes {
               redirect: loggedOutRedirect,
             ),
             GoRoute(
+              path: 'workspace',
+              pageBuilder: (context, state) =>
+                  defaultPageBuilder(context, state, const WorkspaceHomePage()),
+              redirect: loggedOutRedirect,
+            ),
+            GoRoute(
               path: 'calendar',
-              pageBuilder: (context, state) => defaultPageBuilder(
-                context,
-                state,
-                const CalendarPage(),
-              ),
+              pageBuilder: (context, state) =>
+                  defaultPageBuilder(context, state, const CalendarPage()),
               routes: [
                 GoRoute(
                   path: 'events/:eventId',
@@ -222,7 +233,8 @@ abstract class AppRoutes {
                     final initialTitle = extra is Map<String, Object?>
                         ? extra['title'] as String?
                         : null;
-                    final initialSourceDisplayName = extra is Map<String, Object?>
+                    final initialSourceDisplayName =
+                        extra is Map<String, Object?>
                         ? extra['sourceDisplayName'] as String?
                         : null;
                     return defaultPageBuilder(
@@ -238,6 +250,12 @@ abstract class AppRoutes {
                   redirect: loggedOutRedirect,
                 ),
               ],
+              redirect: loggedOutRedirect,
+            ),
+            GoRoute(
+              path: 'todos',
+              pageBuilder: (context, state) =>
+                  defaultPageBuilder(context, state, const TodosPage()),
               redirect: loggedOutRedirect,
             ),
             GoRoute(
@@ -356,7 +374,7 @@ abstract class AppRoutes {
                           pageBuilder: (context, state) => defaultPageBuilder(
                             context,
                             state,
-                            SignInPage(signUp: false),
+                            MessieSignInPage(signUp: false),
                           ),
                           redirect: loggedOutRedirect,
                         ),
@@ -365,7 +383,7 @@ abstract class AppRoutes {
                           pageBuilder: (context, state) => defaultPageBuilder(
                             context,
                             state,
-                            SignInPage(signUp: true),
+                            MessieSignInPage(signUp: true),
                           ),
                           redirect: loggedOutRedirect,
                         ),
@@ -374,7 +392,7 @@ abstract class AppRoutes {
                           pageBuilder: (context, state) => defaultPageBuilder(
                             context,
                             state,
-                            Login(client: state.extra as Client),
+                            MessieLogin(client: state.extra as Client),
                           ),
                           redirect: loggedOutRedirect,
                         ),
@@ -604,12 +622,20 @@ class _MobileWorkspaceBottomBar extends StatelessWidget {
 
   bool get _showBottomBar =>
       currentPath == '/rooms' ||
+      currentPath.startsWith('/rooms/workspace') ||
       currentPath.startsWith('/rooms/calendar') ||
+      currentPath == '/rooms/todos' ||
+      currentPath.startsWith('/rooms/todos/') ||
       currentPath == '/rooms/settings' ||
       currentPath.startsWith('/rooms/settings/');
 
   int get _selectedIndex {
-    if (currentPath.startsWith('/rooms/calendar')) return 1;
+    if (currentPath.startsWith('/rooms/workspace') ||
+        currentPath.startsWith('/rooms/calendar') ||
+        currentPath == '/rooms/todos' ||
+        currentPath.startsWith('/rooms/todos/')) {
+      return 1;
+    }
     if (currentPath.startsWith('/rooms/settings')) return 2;
     return 0;
   }
@@ -630,7 +656,7 @@ class _MobileWorkspaceBottomBar extends StatelessWidget {
               context.go('/rooms');
               break;
             case 1:
-              context.go('/rooms/calendar');
+              context.go('/rooms/workspace');
               break;
             case 2:
               context.go('/rooms/settings');
@@ -644,9 +670,9 @@ class _MobileWorkspaceBottomBar extends StatelessWidget {
             label: L10n.of(context).chats,
           ),
           const NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Calendar',
+            icon: Icon(Icons.workspaces_outlined),
+            selectedIcon: Icon(Icons.workspaces),
+            label: 'Workspace',
           ),
           NavigationDestination(
             icon: const Icon(Icons.settings_outlined),
