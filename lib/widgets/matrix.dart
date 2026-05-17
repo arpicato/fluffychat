@@ -320,6 +320,12 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
         }
         onNotification[name] ??= c.onNotification.stream.listen((event) {
           _logNotificationEvent('notification', name, event);
+          // Suppress notifications for old messages (e.g. bridge backfill).
+          // Bridge-backfilled messages have originServerTs set to the original
+          // WhatsApp message time via ?ts= parameter, so they appear old.
+          final age = DateTime.now().millisecondsSinceEpoch -
+              event.originServerTs.millisecondsSinceEpoch;
+          if (age > 60 * 60 * 1000) return; // older than 1 hour
           showLocalNotification(event);
         });
       });
