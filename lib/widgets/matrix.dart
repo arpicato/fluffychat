@@ -347,6 +347,7 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     }
 
     _migrateHomeserverUrl();
+    _ensureBridgePushRules();
 
     if (PlatformInfos.isMobile) {
       backgroundPush = BackgroundPush(
@@ -406,6 +407,40 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
         '[HomeserverMigration] Updating ${c.clientName} from $current to $targetHomeserver',
       );
       c.homeserver = targetHomeserver;
+    }
+  }
+
+  /// Ensures push rules are set to suppress notifications from bridge puppet
+  /// senders (e.g. @whatsapp_*). This prevents notification spam during
+  /// backfill. Runs once per client, idempotent.
+  Future<void> _ensureBridgePushRules() async {
+    const ruleId = 'com.messie.suppress_bridge_senders';
+    for (final c in widget.clients) {
+      if (!c.isLogged()) continue;
+      try {
+        // Check if rule already exists
+        final rules = c.globalPushRules;
+        final existing = rules?.override?.any((r) => r.ruleId == ruleId);
+        if (existing == true) continue;
+
+        // Add override rule: don't notify for @whatsapp_* senders
+        await c.setPushRule(
+          'global',
+          PushRuleKind.override,
+          ruleId,
+          [PushRuleAction.dontNotify],
+          conditions: [
+            PushCondition(
+              kind: 'event_match',
+              key: 'sender',
+              pattern: '@whatsapp_*',
+            ),
+          ],
+        );
+        Logs().i('[PushRules] Added bridge notification suppression rule');
+      } catch (e, s) {
+        Logs().w('[PushRules] Failed to set bridge push rule', e, s);
+      }
     }
   }
 
