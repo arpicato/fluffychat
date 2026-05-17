@@ -320,16 +320,6 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
         }
         onNotification[name] ??= c.onNotification.stream.listen((event) {
           _logNotificationEvent('notification', name, event);
-          // Skip notifications for bridge-backfilled messages:
-          // 1. Events with double puppet source (sent as user during backfill)
-          // 2. Events older than 2 minutes (covers offline gaps but catches bulk backfill)
-          final content = event.content;
-          if (content is Map && content.containsKey('fi.mau.double_puppet_source')) {
-            return;
-          }
-          final age = DateTime.now().millisecondsSinceEpoch -
-              event.originServerTs.millisecondsSinceEpoch;
-          if (age > 2 * 60 * 1000) return;
           showLocalNotification(event);
         });
       });
