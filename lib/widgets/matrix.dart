@@ -320,6 +320,8 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
         }
         onNotification[name] ??= c.onNotification.stream.listen((event) {
           _logNotificationEvent('notification', name, event);
+          if (_isBridgeBackfillNotification(event)) return;
+          if (_isBridgeBotInvite(event)) return;
           showLocalNotification(event);
         });
       });
@@ -339,6 +341,69 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     onTimelineDebug.remove(name);
     onHistoryDebug[name]?.cancel();
     onHistoryDebug.remove(name);
+  }
+
+  /// Bridge sender prefixes — used to detect bridged rooms and suppress
+  /// backfill notifications. Add new bridge prefixes here as bridges are added.
+  static const _bridgeSenderPrefixes = [
+    '@whatsapp_',
+    '@telegram_',
+    '@signal_',
+    '@discord_',
+    '@instagram_',
+  ];
+
+  static const _bridgeBotLocalparts = [
+    'whatsappbot',
+    'telegrambot',
+    'signalbot',
+    'discordbot',
+    'instagrambot',
+  ];
+
+  /// Returns true if the sender looks like a bridge puppet or bot.
+  static bool _isBridgeSender(String senderId) {
+    return _bridgeSenderPrefixes.any((p) => senderId.startsWith(p));
+  }
+
+  static bool _isBridgeBot(String senderId) {
+    final localpart = senderId.split(':').first;
+    return _bridgeBotLocalparts.any((b) => localpart == '@$b');
+  }
+
+  /// Detects bridge backfill notifications that should be suppressed.
+  /// Suppresses when:
+  /// - Room has bridge puppet members
+  /// - Room was created/joined AFTER the event's originServerTs
+  ///   (message is older than the room join — it's backfill)
+  /// - Event is NOT a highlight/mention
+  bool _isBridgeBackfillNotification(Event event) {
+    final room = event.room;
+
+    // Highlights always notify
+    if (room.highlightCount > 0) return false;
+
+    // Check if room is bridged
+    final isBridged = room.getParticipants().any(
+      (u) => _isBridgeSender(u.id),
+    );
+    if (!isBridged) return false;
+
+    // Core heuristic: room was created after the message was sent = backfill
+    final createEvent = room.getState(EventTypes.RoomCreate);
+    if (createEvent is MatrixEvent) {
+      if (createEvent.originServerTs.isAfter(event.originServerTs)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Returns true if this is an invite from a bridge bot.
+  bool _isBridgeBotInvite(Event event) {
+    return event.type == EventTypes.RoomMember &&
+        _isBridgeBot(event.senderId);
   }
 
   void initMatrix() {
