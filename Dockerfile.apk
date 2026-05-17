@@ -1,0 +1,41 @@
+# Build FluffyChat APK
+FROM ghcr.io/cirruslabs/flutter:3.41.6
+
+# Install Rust toolchain for native crypto (Vodozemac)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && . "$HOME/.cargo/env" \
+    && rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Android SDK dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jdk-headless \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+
+WORKDIR /app
+
+# Copy dependency files first for caching
+COPY pubspec.yaml pubspec.lock ./
+COPY packages/ packages/
+RUN flutter pub get
+
+# Copy source
+COPY . .
+
+# Generate signing keystore
+RUN keytool -genkeypair -v -keystore android/app/dummy.keystore \
+    -alias dummyAlias -keyalg RSA -keysize 2048 -validity 10000 \
+    -storepass dummyStorePassword -keypass dummyPassword \
+    -storetype JKS \
+    -dname "CN=Dummy, OU=Dummy, O=Dummy, L=Dummy, ST=Dummy, C=US"
+
+# Build APK
+RUN flutter build apk --release 2>&1 | tee /tmp/build.log; \
+    if [ ! -f /app/build/app/outputs/flutter-apk/app-release.apk ]; then \
+      tail -50 /tmp/build.log; exit 1; \
+    fi
+
+# Output is at /app/build/app/outputs/flutter-apk/app-release.apk
