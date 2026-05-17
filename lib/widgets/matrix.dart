@@ -373,7 +373,6 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
 
   /// Detects bridge backfill notifications that should be suppressed.
   /// Suppresses when:
-  /// - Room has bridge puppet members
   /// - Room was created/joined AFTER the event's originServerTs
   ///   (message is older than the room join — it's backfill)
   /// - Event is NOT a highlight/mention
@@ -382,12 +381,6 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
 
     // Highlights always notify
     if (room.highlightCount > 0) return false;
-
-    // Check if room is bridged
-    final isBridged = room.getParticipants().any(
-      (u) => _isBridgeSender(u.id),
-    );
-    if (!isBridged) return false;
 
     // Core heuristic: room was created after the message was sent = backfill
     final createEvent = room.getState(EventTypes.RoomCreate);
