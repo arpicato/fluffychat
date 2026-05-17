@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../services/backend_session_service.dart';
+import '../../services/bridge_room_presentation.dart';
+import '../../services/messie_bridge_service.dart';
 import '../../services/messie_calendar_service.dart';
 import '../../services/messie_todo_service.dart';
 import '../../services/messie_workspace_refresh.dart';
