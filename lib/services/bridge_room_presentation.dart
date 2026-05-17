@@ -162,7 +162,22 @@ class BridgeRoomPresentation {
 
       if (remoteUsers.isEmpty) continue;
 
-      if (hasBridgeBot && remoteUsers.length == 1 && !hasNonBridgeOthers) {
+      // Only classify as a 1:1 "direct-like" chat if:
+      // - There's exactly one remote user in memory
+      // - No non-bridge others
+      // - The room doesn't have an explicit name set (groups always have one)
+      // - The actual member count matches what we see (not a partially-loaded group)
+      final hasExplicitName = room.getState(EventTypes.RoomName)?.content
+              .tryGet<String>('name')
+              ?.isNotEmpty ==
+          true;
+      final actualMemberCount = room.summary.mJoinedMemberCount ?? 0;
+      final looksLikeGroup = hasExplicitName || actualMemberCount > 3;
+
+      if (hasBridgeBot &&
+          remoteUsers.length == 1 &&
+          !hasNonBridgeOthers &&
+          !looksLikeGroup) {
         final remoteUser = remoteUsers.single;
         return BridgeRoomPresentation(
           provider: provider,
