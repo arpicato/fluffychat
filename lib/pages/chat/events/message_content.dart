@@ -260,6 +260,14 @@ class MessageContent extends StatelessWidget {
               html = '* $html';
             }
 
+            // Detect and restyle forwarded message notice
+            if (html.contains('data-mx-forwarded-notice')) {
+              html = html.replaceAll(
+                RegExp(r'<p[^>]*data-mx-forwarded-notice[^>]*>.*?</p>'),
+                '<em><font color="#888888">↷ Forwarded</font></em><br/>',
+              );
+            }
+
             final bigEmotes =
                 !event.isRichMessage && bigEmojis.contains(event.body);
 
