@@ -2,6 +2,7 @@ import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
 import 'package:fluffychat/pages/chat_list/start_chat_fab.dart';
+import 'package:fluffychat/utils/keyboard/intents.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/widgets/avatar.dart';
 import 'package:fluffychat/widgets/navigation_rail.dart';
@@ -23,7 +24,28 @@ class ChatListView extends StatelessWidget {
     final showRail =
         FluffyThemes.isColumnMode(context) ||
         AppSettings.displayNavigationRail.value;
-    return PopScope(
+    return Actions(
+      actions: <Type, Action<Intent>>{
+        SearchIntent: CallbackAction<SearchIntent>(
+          onInvoke: (_) {
+            controller.startSearch();
+            return null;
+          },
+        ),
+        NewChatIntent: CallbackAction<NewChatIntent>(
+          onInvoke: (_) {
+            context.go('/rooms/newprivatechat');
+            return null;
+          },
+        ),
+        SettingsIntent: CallbackAction<SettingsIntent>(
+          onInvoke: (_) {
+            context.go('/rooms/settings');
+            return null;
+          },
+        ),
+      },
+      child: PopScope(
       canPop: !controller.isSearchMode && controller.activeSpaceId == null,
       onPopInvokedWithResult: (pop, _) {
         if (pop) return;
@@ -71,10 +93,10 @@ class ChatListView extends StatelessWidget {
           ),
         ],
       ),
+      ),
     );
   }
 }
-
 // ignore: unused_element
 class _MobileWorkspaceDrawer extends StatelessWidget {
   const _MobileWorkspaceDrawer({required this.controller});
