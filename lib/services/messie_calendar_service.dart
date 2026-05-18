@@ -6,7 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:messie_api/messie_api.dart' as api;
 
 String _normalizeMessieCalendarApiBaseUrl(String value) =>
-    value.endsWith('/') ? value : '$value/';
+    value.endsWith('/') ? value.substring(0, value.length - 1) : value;
 
 String _normalizeMessieCalendarCategory(String? value) {
   final trimmed = value?.trim();

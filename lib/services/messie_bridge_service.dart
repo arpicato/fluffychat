@@ -7,7 +7,7 @@ import 'package:messie_api/messie_api.dart' as api;
 import 'package:shared_preferences/shared_preferences.dart';
 
 String _normalizeMessieBridgeApiBaseUrl(String value) =>
-    value.endsWith('/') ? value : '$value/';
+    value.endsWith('/') ? value.substring(0, value.length - 1) : value;
 
 class MessieBridgeState {
   MessieBridgeState({
