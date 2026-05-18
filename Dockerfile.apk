@@ -1,10 +1,10 @@
-# Build FluffyChat APK
+# Build FluffyChat APK (arm64 only for fast builds)
 FROM ghcr.io/cirruslabs/flutter:3.41.6
 
-# Install Rust toolchain for native crypto (Vodozemac)
+# Install Rust toolchain for native crypto (Vodozemac) — arm64 only
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && . "$HOME/.cargo/env" \
-    && rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+    && rustup target add aarch64-linux-android
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 
@@ -32,8 +32,8 @@ RUN keytool -genkeypair -v -keystore android/app/dummy.keystore \
     -storetype JKS \
     -dname "CN=Dummy, OU=Dummy, O=Dummy, L=Dummy, ST=Dummy, C=US"
 
-# Build APK
-RUN flutter build apk --release 2>&1 | tee /tmp/build.log; \
+# Build APK — arm64 only (--target-platform)
+RUN flutter build apk --release --target-platform android-arm64 2>&1 | tee /tmp/build.log; \
     if [ ! -f /app/build/app/outputs/flutter-apk/app-release.apk ]; then \
       tail -50 /tmp/build.log; exit 1; \
     fi
