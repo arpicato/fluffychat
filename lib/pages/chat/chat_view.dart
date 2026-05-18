@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:badges/badges.dart';
+import 'package:collection/collection.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/config/themes.dart';
@@ -14,7 +15,10 @@ import 'package:fluffychat/pages/chat/jitsi_popup_button.dart';
 import 'package:fluffychat/pages/chat/pinned_events.dart';
 import 'package:fluffychat/pages/chat/reply_display.dart';
 import 'package:fluffychat/utils/account_config.dart';
+import 'package:fluffychat/utils/keyboard/intents.dart';
+import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
+import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
 import 'package:fluffychat/widgets/chat_settings_popup_menu.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:fluffychat/widgets/matrix.dart';
@@ -304,7 +308,9 @@ class ChatView extends StatelessWidget {
                       ),
                     )
                   : null,
-              body: DropTarget(
+              body: _ChatKeyboardActions(
+                controller: controller,
+                child: DropTarget(
                 onDragDone: controller.onDragDone,
                 onDragEntered: controller.onDragEntered,
                 onDragExited: controller.onDragExited,
@@ -416,10 +422,114 @@ class ChatView extends StatelessWidget {
                   ],
                 ),
               ),
+              ),
             );
           },
         ),
       ),
+    );
+  }
+}
+
+/// Keyboard Actions wrapper for the chat message area.
+/// Handles Up/Down navigation, R for reply, E for edit.
+class _ChatKeyboardActions extends StatelessWidget {
+  const _ChatKeyboardActions({
+    required this.controller,
+    required this.child,
+  });
+
+  final ChatController controller;
+  final Widget child;
+
+  List<Event> get _visibleEvents {
+    final timeline = controller.timeline;
+    if (timeline == null) return [];
+    return timeline.events.filterByVisibleInGui(
+      threadId: controller.activeThreadId,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+
+    return Actions(
+      actions: <Type, Action<Intent>>{
+        MessageFocusUpIntent: CallbackAction<MessageFocusUpIntent>(
+          onInvoke: (_) {
+            if (keyboardNav == null) return null;
+            if (keyboardNav.focusArea == KeyboardFocusArea.chatList) {
+              return null;
+            }
+            final events = _visibleEvents;
+            if (events.isEmpty) return null;
+            keyboardNav.setMessageListLength(events.length);
+            keyboardNav.messageFocusUp();
+            return null;
+          },
+        ),
+        MessageFocusDownIntent: CallbackAction<MessageFocusDownIntent>(
+          onInvoke: (_) {
+            if (keyboardNav == null) return null;
+            if (keyboardNav.focusArea == KeyboardFocusArea.chatList) {
+              return null;
+            }
+            final events = _visibleEvents;
+            if (events.isEmpty) return null;
+            keyboardNav.setMessageListLength(events.length);
+            keyboardNav.messageFocusDown();
+            return null;
+          },
+        ),
+        MessageReplyIntent: CallbackAction<MessageReplyIntent>(
+          onInvoke: (_) {
+            if (keyboardNav == null) return null;
+            if (keyboardNav.focusArea != KeyboardFocusArea.messageList) {
+              return null;
+            }
+            final events = _visibleEvents;
+            final idx = keyboardNav.messageFocusIndex;
+            if (idx >= 0 && idx < events.length) {
+              controller.replyAction(replyTo: events[idx]);
+            } else if (events.isNotEmpty) {
+              controller.replyAction(replyTo: events.first);
+            }
+            keyboardNav.resetMessageFocus();
+            return null;
+          },
+        ),
+        MessageEditIntent: CallbackAction<MessageEditIntent>(
+          onInvoke: (_) {
+            if (keyboardNav == null) return null;
+            if (keyboardNav.focusArea != KeyboardFocusArea.messageList) {
+              return null;
+            }
+            final events = _visibleEvents;
+            final ownUserId = controller.room.client.userID;
+            final idx = keyboardNav.messageFocusIndex;
+
+            Event? targetEvent;
+            if (idx >= 0 && idx < events.length) {
+              targetEvent = events[idx];
+            } else {
+              // Default: last own message
+              targetEvent =
+                  events.firstWhereOrNull((e) => e.senderId == ownUserId);
+            }
+            if (targetEvent == null || targetEvent.senderId != ownUserId) {
+              return null;
+            }
+            controller.selectedEvents
+              ..clear()
+              ..add(targetEvent);
+            controller.editSelectedEventAction();
+            keyboardNav.resetMessageFocus();
+            return null;
+          },
+        ),
+      },
+      child: child,
     );
   }
 }

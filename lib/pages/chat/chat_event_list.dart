@@ -6,8 +6,10 @@ import 'package:fluffychat/pages/chat/events/message.dart';
 import 'package:fluffychat/pages/chat/seen_by_row.dart';
 import 'package:fluffychat/pages/chat/typing_indicators.dart';
 import 'package:fluffychat/utils/account_config.dart';
+import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
+import 'package:fluffychat/widgets/focus_highlight.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -136,7 +138,15 @@ class ChatEventList extends StatelessWidget {
               key: ValueKey(event.transactionId ?? event.eventId),
               index: i,
               controller: controller.scrollController,
-              child: Message(
+              child: Builder(
+                builder: (context) {
+                  final keyboardNav = KeyboardNavigation.maybeOf(context);
+                  final isFocused = keyboardNav != null &&
+                      keyboardNav.hasMessageFocus &&
+                      keyboardNav.messageFocusIndex == i;
+                  return FocusHighlight(
+                    isFocused: isFocused,
+                    child: Message(
                 event,
                 bigEmojis: controller.bigEmojis,
                 animateIn: animateIn,
@@ -174,6 +184,9 @@ class ChatEventList extends StatelessWidget {
                         !controller.expandedEventIds.contains(event.eventId),
                       )
                     : null,
+              ),
+                  );
+                },
               ),
             );
           },
