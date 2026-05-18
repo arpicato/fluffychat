@@ -260,12 +260,48 @@ class MessageContent extends StatelessWidget {
               html = '* $html';
             }
 
+            // Detect forwarded message from the HTML content
+            final isForwarded = html.contains('data-mx-forwarded-notice');
+            if (isForwarded) {
+              html = html.replaceAll(
+                RegExp(r'<p[^>]*data-mx-forwarded-notice[^>]*>.*?</p>'),
+                '',
+              );
+            }
+
             final bigEmotes =
                 !event.isRichMessage && bigEmojis.contains(event.body);
 
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: HtmlMessage(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isForwarded)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.shortcut,
+                            size: 14,
+                            color: textColor.withOpacity(0.6),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Forwarded',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: textColor.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  HtmlMessage(
                 html: html,
                 textColor: textColor,
                 room: event.room,
@@ -288,6 +324,8 @@ class MessageContent extends StatelessWidget {
                   timeline,
                   EventCheckboxRoomExtension.relationshipType,
                 ),
+              ),
+                ],
               ),
             );
         }
