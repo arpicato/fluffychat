@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:messie_api/messie_api.dart' as api;
+import 'package:one_of/one_of.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 String _normalizeMessieBridgeApiBaseUrl(String value) =>
@@ -244,15 +245,43 @@ class MessieBridgeService {
   }) async {
     final apiClient = await _createApiClient(client);
     try {
-      final requestBody = BuiltMap<String, JsonObject>(
-        body.map((key, value) => MapEntry(key, JsonObject(value))),
-      );
+      final requestBody = api.BridgeSubmitLoginStepRequest((b) {
+        if (action == 'user_input') {
+          final value = BuiltMap<String, String>(
+            body.map(
+              (key, value) => MapEntry(key, (value ?? '').toString()),
+            ),
+          );
+          b.oneOf = OneOfDynamic(
+            typeIndex: 1,
+            types: const [JsonObject, BuiltMap<String, String>, BuiltMap<String, JsonObject?>],
+            value: value,
+          );
+          return;
+        }
+        if (action == 'cookies') {
+          b.oneOf = OneOfDynamic(
+            typeIndex: 0,
+            types: const [JsonObject, BuiltMap<String, String>, BuiltMap<String, JsonObject?>],
+            value: JsonObject(body),
+          );
+          return;
+        }
+        final value = BuiltMap<String, JsonObject?>(
+          body.map((key, value) => MapEntry(key, JsonObject(value))),
+        );
+        b.oneOf = OneOfDynamic(
+          typeIndex: 2,
+          types: const [JsonObject, BuiltMap<String, String>, BuiltMap<String, JsonObject?>],
+          value: value,
+        );
+      });
       final response = await apiClient.defaultApi.bridgeSubmitLoginStep(
         processId: processId,
         stepId: stepId,
         action: action,
         provider: provider,
-        requestBody: requestBody,
+        bridgeSubmitLoginStepRequest: requestBody,
       );
       final step = response.data;
       if (step == null) {

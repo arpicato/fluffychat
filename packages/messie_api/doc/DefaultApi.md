@@ -218,7 +218,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **bridgeSubmitLoginStep**
-> BridgeLoginStep bridgeSubmitLoginStep(processId, stepId, action, provider, requestBody)
+> BridgeLoginStep bridgeSubmitLoginStep(processId, stepId, action, provider, bridgeSubmitLoginStepRequest)
 
 Submit a login step
 
@@ -231,10 +231,10 @@ final String processId = processId_example; // String |
 final String stepId = stepId_example; // String | 
 final String action = action_example; // String | 
 final String provider = whatsapp; // String | 
-final BuiltMap<String, JsonObject> requestBody = Object; // BuiltMap<String, JsonObject> | 
+final BridgeSubmitLoginStepRequest bridgeSubmitLoginStepRequest = ; // BridgeSubmitLoginStepRequest | 
 
 try {
-    final response = api.bridgeSubmitLoginStep(processId, stepId, action, provider, requestBody);
+    final response = api.bridgeSubmitLoginStep(processId, stepId, action, provider, bridgeSubmitLoginStepRequest);
     print(response);
 } catch on DioException (e) {
     print('Exception when calling DefaultApi->bridgeSubmitLoginStep: $e\n');
@@ -249,7 +249,7 @@ Name | Type | Description  | Notes
  **stepId** | **String**|  | 
  **action** | **String**|  | 
  **provider** | **String**|  | 
- **requestBody** | [**BuiltMap&lt;String, JsonObject&gt;**](JsonObject.md)|  | [optional] 
+ **bridgeSubmitLoginStepRequest** | [**BridgeSubmitLoginStepRequest**](BridgeSubmitLoginStepRequest.md)|  | [optional] 
 
 ### Return type
 

@@ -50,6 +50,23 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - Generator config: `openapitools.json`
 - Regeneration: `bash /workspace/fluffychat/scripts/generate_messie_api.sh`
 
+### Dockerized Build & Deploy (Web Prod)
+
+- This agent runs on the NixOS host, NOT inside the /workspace VM. Flutter is not available directly here.
+- Web prod builds use `Dockerfile.web` which has Flutter + Rust toolchain baked in.
+- Build: `cd /home/arpin/code/fluffychat && docker build -f Dockerfile.web -t fluffychat-web:prod .`
+- The build takes ~15-25 min first time (Rust/WASM compile), but Docker layer caching makes subsequent builds fast if only Dart code changed.
+- Deploy target: `arpin-hp.local` (Windows host running Docker Desktop)
+- Cannot pull images there; must `docker save | gzip | ssh arpin-hp.local "docker load"`
+- Deploy sequence:
+  ```
+  docker save fluffychat-web:prod | gzip | ssh arpin-hp.local "docker load"
+  ssh arpin-hp.local "docker stop fluffychat-web && docker rm fluffychat-web && docker run -d --name fluffychat-web --network messie-messenger_default -p 3000:80 fluffychat-web:prod"
+  ```
+- APK builds use `Dockerfile.apk` (arm64 only, ~20 min)
+- Linux desktop build: `Dockerfile.linux` + `run-linux.sh` (X11 forwarding)
+- Build logs go to `/tmp/opencode/` for post-mortem
+
 ### Git
 
 - Branch: `main`

@@ -9,12 +9,12 @@ import 'package:built_value/serializer.dart';
 import 'package:dio/dio.dart';
 
 import 'package:built_collection/built_collection.dart';
-import 'package:built_value/json_object.dart';
 import 'package:messie_api/src/api_util.dart';
 import 'package:messie_api/src/model/bridge_connection.dart';
 import 'package:messie_api/src/model/bridge_login_flows_response.dart';
 import 'package:messie_api/src/model/bridge_login_step.dart';
 import 'package:messie_api/src/model/bridge_room_mapping.dart';
+import 'package:messie_api/src/model/bridge_submit_login_step_request.dart';
 import 'package:messie_api/src/model/bridge_whoami_response.dart';
 import 'package:messie_api/src/model/calendar_event.dart';
 import 'package:messie_api/src/model/calendar_import_response.dart';
@@ -363,7 +363,7 @@ class DefaultApi {
   /// * [stepId] 
   /// * [action] 
   /// * [provider] 
-  /// * [requestBody] 
+  /// * [bridgeSubmitLoginStepRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -378,7 +378,7 @@ class DefaultApi {
     required String stepId,
     required String action,
     required String provider,
-    BuiltMap<String, JsonObject>? requestBody,
+    BridgeSubmitLoginStepRequest? bridgeSubmitLoginStepRequest,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -413,8 +413,8 @@ class DefaultApi {
     dynamic _bodyData;
 
     try {
-      const _type = FullType(BuiltMap, [FullType(String), FullType(JsonObject)]);
-      _bodyData = requestBody == null ? null : _serializers.serialize(requestBody, specifiedType: _type);
+      const _type = FullType(BridgeSubmitLoginStepRequest);
+      _bodyData = bridgeSubmitLoginStepRequest == null ? null : _serializers.serialize(bridgeSubmitLoginStepRequest, specifiedType: _type);
 
     } catch(error, stackTrace) {
       throw DioException(

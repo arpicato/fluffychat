@@ -22,6 +22,7 @@ import 'package:messie_api/src/model/bridge_login_step.dart';
 import 'package:messie_api/src/model/bridge_name.dart';
 import 'package:messie_api/src/model/bridge_room_mapping.dart';
 import 'package:messie_api/src/model/bridge_state.dart';
+import 'package:messie_api/src/model/bridge_submit_login_step_request.dart';
 import 'package:messie_api/src/model/bridge_whoami_login.dart';
 import 'package:messie_api/src/model/bridge_whoami_login_profile.dart';
 import 'package:messie_api/src/model/bridge_whoami_response.dart';
@@ -73,6 +74,7 @@ part 'serializers.g.dart';
   BridgeName,
   BridgeRoomMapping,
   BridgeState,
+  BridgeSubmitLoginStepRequest,
   BridgeWhoamiLogin,
   BridgeWhoamiLoginProfile,
   BridgeWhoamiResponse,
@@ -135,16 +137,16 @@ Serializers serializers = (_$serializers.toBuilder()
         () => ListBuilder<TodoList>(),
       )
       ..addBuilderFactory(
-        const FullType(BuiltMap, [FullType(String), FullType.nullable(JsonObject)]),
-        () => MapBuilder<String, JsonObject>(),
-      )
-      ..addBuilderFactory(
         const FullType(BuiltList, [FullType(CollaboratorDetail)]),
         () => ListBuilder<CollaboratorDetail>(),
       )
       ..addBuilderFactory(
         const FullType(BuiltList, [FullType(BridgeConnection)]),
         () => ListBuilder<BridgeConnection>(),
+      )
+      ..addBuilderFactory(
+        const FullType(BuiltMap, [FullType(String), FullType(String)]),
+        () => MapBuilder<String, String>(),
       )
       ..add(EmailLoginRequest.serializer)
       ..add(const OneOfSerializer())

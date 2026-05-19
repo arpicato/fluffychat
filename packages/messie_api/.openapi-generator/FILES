@@ -9,6 +9,7 @@ doc/BridgeLoginStep.md
 doc/BridgeName.md
 doc/BridgeRoomMapping.md
 doc/BridgeState.md
+doc/BridgeSubmitLoginStepRequest.md
 doc/BridgeWhoamiLogin.md
 doc/BridgeWhoamiLoginProfile.md
 doc/BridgeWhoamiResponse.md
@@ -67,6 +68,7 @@ lib/src/model/bridge_login_step.dart
 lib/src/model/bridge_name.dart
 lib/src/model/bridge_room_mapping.dart
 lib/src/model/bridge_state.dart
+lib/src/model/bridge_submit_login_step_request.dart
 lib/src/model/bridge_whoami_login.dart
 lib/src/model/bridge_whoami_login_profile.dart
 lib/src/model/bridge_whoami_response.dart
@@ -109,3 +111,4 @@ lib/src/model/wa_status_response.dart
 lib/src/model/wa_status_response_account.dart
 lib/src/serializers.dart
 pubspec.yaml
+test/bridge_submit_login_step_request_test.dart
