@@ -88,7 +88,9 @@ class BridgeRoomPresentation {
     this.avatarUrl,
     this.loginId,
     this.loginName,
+    this.loginNumber,
     this.showAccountLabel = false,
+    this.showLoginNumberBadge = false,
   });
 
   final BridgeProviderDefinition? provider;
@@ -99,15 +101,18 @@ class BridgeRoomPresentation {
   final Uri? avatarUrl;
   final String? loginId;
   final String? loginName;
+  final int? loginNumber;
   final bool showAccountLabel;
+  final bool showLoginNumberBadge;
 
   bool get hasBridgeBadge => provider != null;
 
   factory BridgeRoomPresentation.fromRoom(
     Room room,
     BridgeProviderCatalog catalog, {
-    MessieBridgeRoomMapping? roomMapping,
+    MessieBridgeLoginInfo? roomMapping,
     int loginCountForProvider = 0,
+    bool showLoginNumberBadge = false,
   }
   ) {
     final directChatMatrixId = room.directChatMatrixID;
@@ -125,7 +130,9 @@ class BridgeRoomPresentation {
         avatarUrl: directUser.avatarUrl,
         loginId: roomMapping?.loginId,
         loginName: roomMapping?.loginName,
+        loginNumber: roomMapping?.loginNumber,
         showAccountLabel: provider != null && loginCountForProvider > 1,
+        showLoginNumberBadge: provider != null && showLoginNumberBadge,
       );
     }
 
@@ -188,7 +195,9 @@ class BridgeRoomPresentation {
           avatarUrl: remoteUser.avatarUrl,
           loginId: roomMapping?.loginId,
           loginName: roomMapping?.loginName,
+          loginNumber: roomMapping?.loginNumber,
           showAccountLabel: loginCountForProvider > 1,
+          showLoginNumberBadge: showLoginNumberBadge,
         );
       }
 
@@ -198,7 +207,9 @@ class BridgeRoomPresentation {
         shouldHideSenderPrefixes: false,
         loginId: roomMapping?.loginId,
         loginName: roomMapping?.loginName,
+        loginNumber: roomMapping?.loginNumber,
         showAccountLabel: loginCountForProvider > 1,
+        showLoginNumberBadge: showLoginNumberBadge,
       );
     }
 

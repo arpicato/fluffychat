@@ -15,13 +15,20 @@ class _$BridgeWhoamiLogin extends BridgeWhoamiLogin {
   final String? state;
   @override
   final BridgeWhoamiLoginProfile? profile;
+  @override
+  final String? spaceRoom;
 
   factory _$BridgeWhoamiLogin(
           [void Function(BridgeWhoamiLoginBuilder)? updates]) =>
       (BridgeWhoamiLoginBuilder()..update(updates))._build();
 
-  _$BridgeWhoamiLogin._(
-      {required this.id, required this.name, this.state, this.profile})
+  _$BridgeWhoamiLogin._({
+    required this.id,
+    required this.name,
+    this.state,
+    this.profile,
+    this.spaceRoom,
+  })
       : super._();
   @override
   BridgeWhoamiLogin rebuild(void Function(BridgeWhoamiLoginBuilder) updates) =>
@@ -38,7 +45,8 @@ class _$BridgeWhoamiLogin extends BridgeWhoamiLogin {
         id == other.id &&
         name == other.name &&
         state == other.state &&
-        profile == other.profile;
+        profile == other.profile &&
+        spaceRoom == other.spaceRoom;
   }
 
   @override
@@ -48,6 +56,7 @@ class _$BridgeWhoamiLogin extends BridgeWhoamiLogin {
     _$hash = $jc(_$hash, name.hashCode);
     _$hash = $jc(_$hash, state.hashCode);
     _$hash = $jc(_$hash, profile.hashCode);
+    _$hash = $jc(_$hash, spaceRoom.hashCode);
     _$hash = $jf(_$hash);
     return _$hash;
   }
@@ -58,7 +67,8 @@ class _$BridgeWhoamiLogin extends BridgeWhoamiLogin {
           ..add('id', id)
           ..add('name', name)
           ..add('state', state)
-          ..add('profile', profile))
+          ..add('profile', profile)
+          ..add('spaceRoom', spaceRoom))
         .toString();
   }
 }
@@ -85,6 +95,10 @@ class BridgeWhoamiLoginBuilder
   set profile(BridgeWhoamiLoginProfileBuilder? profile) =>
       _$this._profile = profile;
 
+  String? _spaceRoom;
+  String? get spaceRoom => _$this._spaceRoom;
+  set spaceRoom(String? spaceRoom) => _$this._spaceRoom = spaceRoom;
+
   BridgeWhoamiLoginBuilder() {
     BridgeWhoamiLogin._defaults(this);
   }
@@ -96,6 +110,7 @@ class BridgeWhoamiLoginBuilder
       _name = $v.name;
       _state = $v.state;
       _profile = $v.profile?.toBuilder();
+      _spaceRoom = $v.spaceRoom;
       _$v = null;
     }
     return this;
@@ -125,6 +140,7 @@ class BridgeWhoamiLoginBuilder
                 name, r'BridgeWhoamiLogin', 'name'),
             state: state,
             profile: _profile?.build(),
+            spaceRoom: spaceRoom,
           );
     } catch (_) {
       late String _$failedField;

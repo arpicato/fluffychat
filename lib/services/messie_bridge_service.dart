@@ -32,32 +32,32 @@ class MessieBridgeState {
   List<api.BridgeWhoamiLogin> get logins => whoami?.logins?.toList() ?? const [];
 }
 
-class MessieBridgeRoomMapping {
-  const MessieBridgeRoomMapping({
+class MessieBridgeLoginInfo {
+  const MessieBridgeLoginInfo({
     required this.provider,
-    required this.roomId,
     required this.loginId,
-    this.loginName,
+    required this.loginName,
+    required this.loginNumber,
     this.spaceRoom,
-    this.preferred = false,
   });
 
   final String provider;
-  final String roomId;
   final String loginId;
-  final String? loginName;
+  final String loginName;
+  final int loginNumber;
   final String? spaceRoom;
-  final bool preferred;
 
-  factory MessieBridgeRoomMapping.fromApi(api.BridgeRoomMapping mapping) =>
-      MessieBridgeRoomMapping(
-        provider: mapping.provider,
-        roomId: mapping.roomId,
-        loginId: mapping.loginId,
-        loginName: mapping.loginName,
-        spaceRoom: mapping.spaceRoom,
-        preferred: mapping.preferred ?? false,
-      );
+  factory MessieBridgeLoginInfo.fromWhoamiLogin(
+    String provider,
+    api.BridgeWhoamiLogin login,
+    int loginNumber,
+  ) => MessieBridgeLoginInfo(
+    provider: provider,
+    loginId: login.id,
+    loginName: login.name,
+    loginNumber: loginNumber,
+    spaceRoom: login.spaceRoom,
+  );
 }
 
 class MessieBridgeInputField {
@@ -275,24 +275,6 @@ class MessieBridgeService {
         loginId: loginId,
         provider: provider,
       );
-    } finally {
-      apiClient.dispose();
-    }
-  }
-
-  Future<List<MessieBridgeRoomMapping>> getBridgeRoomMappings(
-    Client client, {
-    String provider = 'whatsapp',
-  }) async {
-    final apiClient = await _createApiClient(client);
-    try {
-      final response = await apiClient.defaultApi.getBridgeRoomMappings(
-        provider: provider,
-      );
-      return response.data
-              ?.map(MessieBridgeRoomMapping.fromApi)
-              .toList(growable: false) ??
-          const [];
     } finally {
       apiClient.dispose();
     }

@@ -14,7 +14,7 @@ class _$CalendarSource extends CalendarSource {
   @override
   final String kind;
   @override
-  final String? displayName;
+  final String displayName;
   @override
   final String category;
   @override
@@ -47,7 +47,7 @@ class _$CalendarSource extends CalendarSource {
       {required this.id,
       required this.userId,
       required this.kind,
-      this.displayName,
+      required this.displayName,
       required this.category,
       required this.importMode,
       this.sourceUrl,
@@ -261,7 +261,8 @@ class CalendarSourceBuilder
               kind, r'CalendarSource', 'kind'),
           category: BuiltValueNullFieldError.checkNotNull(
               category, r'CalendarSource', 'category'),
-          displayName: displayName,
+          displayName: BuiltValueNullFieldError.checkNotNull(
+              displayName, r'CalendarSource', 'displayName'),
           importMode: BuiltValueNullFieldError.checkNotNull(
               importMode, r'CalendarSource', 'importMode'),
           sourceUrl: sourceUrl,

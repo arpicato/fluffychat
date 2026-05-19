@@ -1730,6 +1730,9 @@ components:
               type: string
             externalId:
               type: string
+        space_room:
+          type: string
+          description: Optional personal filtering space room ID for this login
     BridgeWhoamiResponse:
       type: object
       description: Provider metadata and current user logins

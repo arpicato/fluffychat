@@ -16,6 +16,7 @@ part 'bridge_whoami_login.g.dart';
 /// * [name] - Human-friendly name of the login
 /// * [state] - Optional state label for the login
 /// * [profile] 
+/// * [spaceRoom] - Optional personal filtering space room ID for this login
 @BuiltValue()
 abstract class BridgeWhoamiLogin implements Built<BridgeWhoamiLogin, BridgeWhoamiLoginBuilder> {
   /// Unique login ID defined by the bridge
@@ -32,6 +33,10 @@ abstract class BridgeWhoamiLogin implements Built<BridgeWhoamiLogin, BridgeWhoam
 
   @BuiltValueField(wireName: r'profile')
   BridgeWhoamiLoginProfile? get profile;
+
+  /// Optional personal filtering space room ID for this login
+  @BuiltValueField(wireName: r'space_room')
+  String? get spaceRoom;
 
   BridgeWhoamiLogin._();
 
@@ -78,6 +83,13 @@ class _$BridgeWhoamiLoginSerializer implements PrimitiveSerializer<BridgeWhoamiL
       yield serializers.serialize(
         object.profile,
         specifiedType: const FullType.nullable(BridgeWhoamiLoginProfile),
+      );
+    }
+    if (object.spaceRoom != null) {
+      yield r'space_room';
+      yield serializers.serialize(
+        object.spaceRoom,
+        specifiedType: const FullType(String),
       );
     }
   }
@@ -131,6 +143,13 @@ class _$BridgeWhoamiLoginSerializer implements PrimitiveSerializer<BridgeWhoamiL
           ) as BridgeWhoamiLoginProfile?;
           if (valueDes == null) continue;
           result.profile.replace(valueDes);
+          break;
+        case r'space_room':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(String),
+          ) as String;
+          result.spaceRoom = valueDes;
           break;
         default:
           unhandled.add(key);

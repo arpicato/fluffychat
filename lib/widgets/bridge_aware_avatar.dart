@@ -8,6 +8,8 @@ class BridgeAwareAvatar extends StatelessWidget {
     required this.mxContent,
     required this.size,
     this.provider,
+    this.loginNumber,
+    this.showLoginNumberBadge = false,
     this.onTap,
     this.presenceUserId,
     this.presenceBackgroundColor,
@@ -20,6 +22,8 @@ class BridgeAwareAvatar extends StatelessWidget {
   final Uri? mxContent;
   final double size;
   final BridgeProviderDefinition? provider;
+  final int? loginNumber;
+  final bool showLoginNumberBadge;
   final VoidCallback? onTap;
   final String? presenceUserId;
   final Color? presenceBackgroundColor;
@@ -52,18 +56,38 @@ class BridgeAwareAvatar extends StatelessWidget {
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: provider!.badgeColor,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(999),
                   border: Border.all(
                     color: presenceBackgroundColor ?? theme.colorScheme.surface,
                     width: 1.5,
                   ),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(3),
-                  child: Icon(
-                    provider!.badgeIcon,
-                    size: 10,
-                    color: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: showLoginNumberBadge && loginNumber != null ? 5 : 3,
+                    vertical: 3,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        provider!.badgeIcon,
+                        size: 10,
+                        color: Colors.white,
+                      ),
+                      if (showLoginNumberBadge && loginNumber != null) ...[
+                        const SizedBox(width: 3),
+                        Text(
+                          '$loginNumber',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            height: 1,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
