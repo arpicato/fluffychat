@@ -27,6 +27,10 @@ import '../../widgets/matrix.dart';
 import 'chat_list_header.dart';
 
 class ChatListViewBody extends StatelessWidget {
+  static final FocusNode _keyboardFocusNode = FocusNode(
+    debugLabel: 'ChatListKeyboardScope',
+  );
+
   final ChatListController controller;
   final VoidCallback? openDrawer;
 
@@ -158,23 +162,32 @@ class ChatListViewBody extends StatelessWidget {
             keyboardNav.setChatListLength(roomEntryCount);
           });
         }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (FocusManager.instance.primaryFocus != null) return;
+          if (_keyboardFocusNode.hasFocus) return;
+          debugPrint('[kb/focus] requesting ChatListKeyboardScope');
+          _keyboardFocusNode.requestFocus();
+        });
 
         return Actions(
           actions: <Type, Action<Intent>>{
             ChatListFocusUpIntent: CallbackAction<ChatListFocusUpIntent>(
               onInvoke: (_) {
+                debugPrint('[kb/action] ChatListFocusUpIntent');
                 keyboardNav?.chatListFocusUp();
                 return null;
               },
             ),
             ChatListFocusDownIntent: CallbackAction<ChatListFocusDownIntent>(
               onInvoke: (_) {
+                debugPrint('[kb/action] ChatListFocusDownIntent');
                 keyboardNav?.chatListFocusDown();
                 return null;
               },
             ),
             ChatListOpenFocusedIntent: CallbackAction<ChatListOpenFocusedIntent>(
               onInvoke: (_) {
+                debugPrint('[kb/action] ChatListOpenFocusedIntent');
                 if (keyboardNav == null || !keyboardNav.hasChatListFocus) {
                   return null;
                 }
@@ -189,8 +202,14 @@ class ChatListViewBody extends StatelessWidget {
               },
             ),
           },
-          child: SafeArea(
-          child: CustomScrollView(
+          child: Focus(
+            autofocus: true,
+            focusNode: _keyboardFocusNode,
+            onFocusChange: (focused) => debugPrint(
+              '[kb/focus] ChatListKeyboardScope focused=$focused',
+            ),
+            child: SafeArea(
+            child: CustomScrollView(
             controller: controller.scrollController,
             slivers: [
               ChatListHeader(controller: controller, openDrawer: openDrawer),
@@ -435,7 +454,8 @@ class ChatListViewBody extends StatelessWidget {
                 ),
             ],
           ),
-        ),
+          ),
+          ),
         );
       },
     );

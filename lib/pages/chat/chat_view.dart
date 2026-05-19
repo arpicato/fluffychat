@@ -434,6 +434,10 @@ class ChatView extends StatelessWidget {
 /// Keyboard Actions wrapper for the chat message area.
 /// Handles Up/Down navigation, R for reply, E for edit.
 class _ChatKeyboardActions extends StatelessWidget {
+  static final FocusNode _keyboardFocusNode = FocusNode(
+    debugLabel: 'ChatKeyboardScope',
+  );
+
   const _ChatKeyboardActions({
     required this.controller,
     required this.child,
@@ -453,15 +457,19 @@ class _ChatKeyboardActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final keyboardNav = KeyboardNavigation.maybeOf(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (FocusManager.instance.primaryFocus != null) return;
+      if (_keyboardFocusNode.hasFocus) return;
+      debugPrint('[kb/focus] requesting ChatKeyboardScope');
+      _keyboardFocusNode.requestFocus();
+    });
 
     return Actions(
       actions: <Type, Action<Intent>>{
         MessageFocusUpIntent: CallbackAction<MessageFocusUpIntent>(
           onInvoke: (_) {
+            debugPrint('[kb/action] MessageFocusUpIntent');
             if (keyboardNav == null) return null;
-            if (keyboardNav.focusArea == KeyboardFocusArea.chatList) {
-              return null;
-            }
             final events = _visibleEvents;
             if (events.isEmpty) return null;
             keyboardNav.setMessageListLength(events.length);
@@ -471,10 +479,8 @@ class _ChatKeyboardActions extends StatelessWidget {
         ),
         MessageFocusDownIntent: CallbackAction<MessageFocusDownIntent>(
           onInvoke: (_) {
+            debugPrint('[kb/action] MessageFocusDownIntent');
             if (keyboardNav == null) return null;
-            if (keyboardNav.focusArea == KeyboardFocusArea.chatList) {
-              return null;
-            }
             final events = _visibleEvents;
             if (events.isEmpty) return null;
             keyboardNav.setMessageListLength(events.length);
@@ -484,6 +490,7 @@ class _ChatKeyboardActions extends StatelessWidget {
         ),
         MessageReplyIntent: CallbackAction<MessageReplyIntent>(
           onInvoke: (_) {
+            debugPrint('[kb/action] MessageReplyIntent');
             if (keyboardNav == null) return null;
             if (keyboardNav.focusArea != KeyboardFocusArea.messageList) {
               return null;
@@ -501,6 +508,7 @@ class _ChatKeyboardActions extends StatelessWidget {
         ),
         MessageEditIntent: CallbackAction<MessageEditIntent>(
           onInvoke: (_) {
+            debugPrint('[kb/action] MessageEditIntent');
             if (keyboardNav == null) return null;
             if (keyboardNav.focusArea != KeyboardFocusArea.messageList) {
               return null;
@@ -529,7 +537,14 @@ class _ChatKeyboardActions extends StatelessWidget {
           },
         ),
       },
-      child: child,
+      child: Focus(
+        autofocus: true,
+        focusNode: _keyboardFocusNode,
+        onFocusChange: (focused) => debugPrint(
+          '[kb/focus] ChatKeyboardScope focused=$focused',
+        ),
+        child: child,
+      ),
     );
   }
 }

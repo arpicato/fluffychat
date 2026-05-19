@@ -10,7 +10,7 @@ import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
 ///
 /// Actions are handled by the nearest Actions widget in the tree that
 /// registers handlers for these intents — typically in ChatList and Chat pages.
-class AppShortcuts extends StatelessWidget {
+class AppShortcuts extends StatefulWidget {
   const AppShortcuts({super.key, required this.child});
 
   final Widget child;
@@ -22,6 +22,17 @@ class AppShortcuts extends StatelessWidget {
         key,
         meta: _isMac,
         control: !_isMac,
+      );
+
+  @override
+  State<AppShortcuts> createState() => _AppShortcutsState();
+}
+
+class _AppShortcutsState extends State<AppShortcuts> {
+  SingleActivator _ctrl(LogicalKeyboardKey key) => SingleActivator(
+        key,
+        meta: AppShortcuts._isMac,
+        control: !AppShortcuts._isMac,
       );
 
   @override
@@ -56,7 +67,23 @@ class AppShortcuts extends StatelessWidget {
         const SingleActivator(LogicalKeyboardKey.keyE, alt: true):
             const MessageEditIntent(),
       },
-      child: _GoBackActionHandler(child: child),
+      child: Focus(
+        canRequestFocus: false,
+        onKeyEvent: (context, event) {
+          if (event is! KeyDownEvent) return KeyEventResult.ignored;
+          debugPrint(
+            '[kb/raw] key=${event.logicalKey.keyLabel} '
+            'logical=${event.logicalKey.debugName} '
+            'ctrl=${HardwareKeyboard.instance.isControlPressed} '
+            'meta=${HardwareKeyboard.instance.isMetaPressed} '
+            'alt=${HardwareKeyboard.instance.isAltPressed} '
+            'shift=${HardwareKeyboard.instance.isShiftPressed} '
+            'focus=${FocusManager.instance.primaryFocus?.debugLabel}',
+          );
+          return KeyEventResult.ignored;
+        },
+        child: _GoBackActionHandler(child: widget.child),
+      ),
     );
   }
 }
@@ -74,6 +101,7 @@ class _GoBackActionHandler extends StatelessWidget {
       actions: <Type, Action<Intent>>{
         GoBackIntent: CallbackAction<GoBackIntent>(
           onInvoke: (_) {
+            debugPrint('[kb/action] GoBackIntent');
             final keyboardNav = KeyboardNavigation.maybeOf(context);
             if (keyboardNav != null) {
               if (keyboardNav.focusArea == KeyboardFocusArea.messageList) {
