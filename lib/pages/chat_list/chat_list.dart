@@ -299,17 +299,13 @@ class ChatListController extends State<ChatList>
   final MessieBridgeService _messieBridgeService = MessieBridgeService();
   BridgeProviderCatalog _bridgeProviderCatalog =
       const BridgeProviderCatalog.empty();
-  List<MessieBridgeRoomMapping> _bridgeRoomMappings = const [];
+  List<MessieBridgeLoginInfo> _bridgeLogins = const [];
 
   BridgeProviderCatalog get bridgeProviderCatalog => _bridgeProviderCatalog;
 
-  Map<String, MessieBridgeRoomMapping> get _bridgeRoomMappingsByRoomId => {
-    for (final mapping in _bridgeRoomMappings) mapping.roomId: mapping,
-  };
-
   Map<String, int> get _bridgeLoginCountByProvider {
     final counts = <String, Set<String>>{};
-    for (final mapping in _bridgeRoomMappings) {
+    for (final mapping in _bridgeLogins) {
       counts
           .putIfAbsent(mapping.provider, () => <String>{})
           .add(mapping.loginId);
@@ -317,16 +313,42 @@ class ChatListController extends State<ChatList>
     return counts.map((provider, ids) => MapEntry(provider, ids.length));
   }
 
+  bool get _forceShowLoginNumberBadge => false;
+
+  bool _showLoginNumberBadgeForProvider(String provider) =>
+      _forceShowLoginNumberBadge ||
+      (_bridgeLoginCountByProvider[provider] ?? 0) > 1;
+
+  MessieBridgeLoginInfo? _bridgeLoginForRoom(Room room) {
+    final parentIds = {
+      ...room.spaceParents.map((parent) => parent.roomId).whereType<String>(),
+      ...room.client.rooms
+          .where(
+            (space) =>
+                space.isSpace &&
+                space.spaceChildren.any((child) => child.roomId == room.id),
+          )
+          .map((space) => space.id),
+    };
+    if (parentIds.isEmpty) return null;
+    for (final login in _bridgeLogins) {
+      final spaceRoom = login.spaceRoom;
+      if (spaceRoom != null && parentIds.contains(spaceRoom)) return login;
+    }
+    return null;
+  }
+
   BridgeRoomPresentation bridgePresentationForRoom(Room room) =>
       BridgeRoomPresentation.fromRoom(
         room,
         _bridgeProviderCatalog,
-        roomMapping: _bridgeRoomMappingsByRoomId[room.id],
+        roomMapping: _bridgeLoginForRoom(room),
         loginCountForProvider:
-            _bridgeLoginCountByProvider[_bridgeRoomMappingsByRoomId[room.id]
-                    ?.provider ??
-                ''] ??
+            _bridgeLoginCountByProvider[_bridgeLoginForRoom(room)?.provider ?? ''] ??
             0,
+        showLoginNumberBadge: _showLoginNumberBadgeForProvider(
+          _bridgeLoginForRoom(room)?.provider ?? '',
+        ),
       );
 
   Stream<Client> get clientStream => _clientStream.stream;
@@ -414,40 +436,33 @@ class ChatListController extends State<ChatList>
         ),
       );
       if (!mounted) return;
+      final loginNumbersByProvider = <String, Map<String, int>>{};
+      for (final state in states) {
+        final numbers = <String, int>{};
+        for (var i = 0; i < state.logins.length; i++) {
+          numbers[state.logins[i].id] = i + 1;
+        }
+        loginNumbersByProvider[state.provider] = numbers;
+      }
       setState(() {
         _bridgeProviderCatalog = BridgeProviderCatalog.fromStates(states);
+        _bridgeLogins = [
+          for (final state in states)
+            ...state.logins.map(
+              (login) => MessieBridgeLoginInfo.fromWhoamiLogin(
+                state.provider,
+                login,
+                loginNumbersByProvider[state.provider]?[login.id] ?? 1,
+              ),
+            ),
+        ];
       });
     } catch (error, stackTrace) {
       Logs().w('Unable to load bridge provider catalog', error, stackTrace);
       if (!mounted) return;
       setState(() {
         _bridgeProviderCatalog = const BridgeProviderCatalog.empty();
-      });
-    }
-  }
-
-  Future<void> refreshBridgeRoomMappings() async {
-    if (!mounted) return;
-
-    try {
-      final matrix = Matrix.of(context);
-      final allMappings = <MessieBridgeRoomMapping>[];
-      for (final provider in BridgeProviderCatalog.supportedProviders.keys) {
-        final mappings = await _messieBridgeService.getBridgeRoomMappings(
-          matrix.client,
-          provider: provider,
-        );
-        allMappings.addAll(mappings);
-      }
-      if (!mounted) return;
-      setState(() {
-        _bridgeRoomMappings = allMappings;
-      });
-    } catch (error, stackTrace) {
-      Logs().w('Unable to load bridge room mappings', error, stackTrace);
-      if (!mounted) return;
-      setState(() {
-        _bridgeRoomMappings = const [];
+        _bridgeLogins = const [];
       });
     }
   }
@@ -505,7 +520,6 @@ class ChatListController extends State<ChatList>
     initWorkspace();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       refreshBridgeProviderCatalog();
-      refreshBridgeRoomMappings();
     });
   }
 

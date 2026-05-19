@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **name** | **String** | Human-friendly name of the login | 
 **state** | **String** | Optional state label for the login | [optional] 
 **profile** | [**BridgeWhoamiLoginProfile**](BridgeWhoamiLoginProfile.md) |  | [optional] 
+**spaceRoom** | **String** | Optional personal filtering space room ID for this login | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -92,69 +92,33 @@ class ChatListItem extends StatelessWidget {
                     height: Avatar.defaultSize,
                     child: Stack(
                       children: [
-                        if (space != null)
-                          Positioned(
-                            top: 0,
-                            left: 0,
-                            child: BridgeAwareAvatar(
-                              shapeBorder: RoundedSuperellipseBorder(
-                                side: BorderSide(
-                                  width: 2,
-                                  color:
-                                      backgroundColor ??
-                                      theme.colorScheme.surface,
-                                ),
-                                borderRadius: BorderRadius.circular(
-                                  AppConfig.spaceBorderRadius * 0.75,
-                                ),
-                              ),
-                              borderRadius: BorderRadius.circular(
-                                AppConfig.spaceBorderRadius * 0.75,
-                              ),
-                              mxContent: space.avatar,
-                              size: Avatar.defaultSize * 0.75,
-                              name: space.getLocalizedDisplayname(),
-                              onTap: () => onLongPress?.call(context),
-                            ),
-                          ),
                         Positioned(
                           bottom: 0,
                           right: 0,
                           child: BridgeAwareAvatar(
-                            shapeBorder: space == null
-                                ? room.isSpace
-                                      ? RoundedSuperellipseBorder(
-                                          side: BorderSide(
-                                            width: 1,
-                                            color: theme.dividerColor,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            AppConfig.spaceBorderRadius,
-                                          ),
-                                        )
-                                      : null
-                                : RoundedRectangleBorder(
+                            shapeBorder: room.isSpace
+                                ? RoundedSuperellipseBorder(
                                     side: BorderSide(
-                                      width: 2,
-                                      color:
-                                          backgroundColor ??
-                                          theme.colorScheme.surface,
+                                      width: 1,
+                                      color: theme.dividerColor,
                                     ),
                                     borderRadius: BorderRadius.circular(
-                                      Avatar.defaultSize,
+                                      AppConfig.spaceBorderRadius,
                                     ),
-                                  ),
+                                  )
+                                : null,
                             borderRadius: room.isSpace
                                 ? BorderRadius.circular(
                                     AppConfig.spaceBorderRadius,
                                   )
                                 : null,
                             mxContent: avatarUrl,
-                            size: space != null
-                                ? Avatar.defaultSize * 0.75
-                                : Avatar.defaultSize,
+                            size: Avatar.defaultSize,
                             name: displayname,
                             provider: presentation.provider,
+                            loginNumber: presentation.loginNumber,
+                            showLoginNumberBadge:
+                                presentation.showLoginNumberBadge,
                             presenceUserId:
                                 presentation.provider == null
                                     ? directChatMatrixId

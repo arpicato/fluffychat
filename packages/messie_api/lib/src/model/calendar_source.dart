@@ -39,7 +39,7 @@ abstract class CalendarSource implements Built<CalendarSource, CalendarSourceBui
   String get kind;
 
   @BuiltValueField(wireName: r'display_name')
-  String? get displayName;
+  String get displayName;
 
   @BuiltValueField(wireName: r'category')
   String get category;
