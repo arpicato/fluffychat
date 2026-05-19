@@ -5,6 +5,8 @@ import 'package:cross_file/cross_file.dart';
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_view.dart';
+import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
+import 'package:fluffychat/utils/keyboard/shortcut_dispatcher.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
@@ -72,7 +74,8 @@ class ChatList extends StatefulWidget {
 }
 
 class ChatListController extends State<ChatList>
-    with TickerProviderStateMixin, RouteAware, ChatListWorkspaceMixin {
+    with TickerProviderStateMixin, RouteAware, ChatListWorkspaceMixin
+    implements KeyboardChatListHandler {
   StreamSubscription? _intentDataStreamSubscription;
 
   StreamSubscription? _intentFileStreamSubscription;
@@ -469,6 +472,7 @@ class ChatListController extends State<ChatList>
 
   @override
   void initState() {
+    ShortcutDispatcher.instance.registerChatListHandler(this);
     _initReceiveSharingIntent();
     _activeSpaceId = widget.activeSpace;
 
@@ -525,12 +529,61 @@ class ChatListController extends State<ChatList>
 
   @override
   void dispose() {
+    ShortcutDispatcher.instance.unregisterChatListHandler(this);
     _intentDataStreamSubscription?.cancel();
     _intentFileStreamSubscription?.cancel();
     _onRoomTagUpdate?.cancel();
     disposeWorkspace();
     scrollController.removeListener(_onScroll);
     super.dispose();
+  }
+
+  @override
+  bool triggerSearch() {
+    if (!mounted) return false;
+    startSearch();
+    return true;
+  }
+
+  @override
+  bool focusUp() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav == null) return false;
+    keyboardNav.chatListFocusUp();
+    return true;
+  }
+
+  @override
+  bool focusDown() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav == null) return false;
+    keyboardNav.chatListFocusDown();
+    return true;
+  }
+
+  @override
+  bool openFocused() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav == null || !keyboardNav.hasChatListFocus) return false;
+    final rooms = filteredRooms;
+    final idx = keyboardNav.chatListFocusIndex;
+    if (idx < 0 || idx >= rooms.length) return false;
+    onChatTap(rooms[idx]);
+    return true;
+  }
+
+  @override
+  bool handleEscape() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav?.hasChatListFocus == true) {
+      keyboardNav!.resetChatListFocus();
+      return true;
+    }
+    if (isSearchMode) {
+      cancelSearch();
+      return true;
+    }
+    return false;
   }
 
   Future<void> chatContextAction(

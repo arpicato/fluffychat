@@ -16,6 +16,8 @@ import 'package:fluffychat/pages/chat_details/chat_details.dart';
 import 'package:fluffychat/utils/adaptive_bottom_sheet.dart';
 import 'package:fluffychat/utils/error_reporter.dart';
 import 'package:fluffychat/utils/file_selector.dart';
+import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
+import 'package:fluffychat/utils/keyboard/shortcut_dispatcher.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/event_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
@@ -95,7 +97,8 @@ class ChatPageWithRoom extends StatefulWidget {
 }
 
 class ChatController extends State<ChatPageWithRoom>
-    with WidgetsBindingObserver {
+    with WidgetsBindingObserver
+    implements KeyboardChatHandler {
   Room get room => sendingClient.getRoomById(roomId) ?? widget.room;
 
   late Client sendingClient;
@@ -351,6 +354,7 @@ class ChatController extends State<ChatPageWithRoom>
 
   @override
   void initState() {
+    ShortcutDispatcher.instance.registerChatHandler(this);
     inputFocus = FocusNode(onKeyEvent: _customEnterKeyHandling);
 
     scrollController.addListener(_updateScrollController);
@@ -558,6 +562,7 @@ class ChatController extends State<ChatPageWithRoom>
 
   @override
   void dispose() {
+    ShortcutDispatcher.instance.unregisterChatHandler(this);
     timeline?.cancelSubscriptions();
     timeline = null;
     inputFocus.removeListener(_inputFocusListener);
@@ -566,6 +571,122 @@ class ChatController extends State<ChatPageWithRoom>
   }
 
   TextEditingController sendController = TextEditingController();
+
+  @override
+  bool get inputHasFocus => inputFocus.hasFocus;
+
+  @override
+  bool get composerCursorOnFirstLine {
+    final selection = sendController.selection;
+    if (!selection.isValid) return true;
+    final offset = selection.baseOffset.clamp(0, sendController.text.length);
+    final prefix = sendController.text.substring(0, offset);
+    return !prefix.contains('\n');
+  }
+
+  @override
+  bool get messageFocusActive =>
+      KeyboardNavigation.maybeOf(context)?.focusArea ==
+      KeyboardFocusArea.messageList;
+
+  List<Event> get _visibleKeyboardEvents =>
+      timeline?.events.filterByVisibleInGui(threadId: activeThreadId).toList() ??
+      const [];
+
+  @override
+  bool messageFocusUp() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav == null) return false;
+    final events = _visibleKeyboardEvents;
+    if (events.isEmpty) return false;
+    keyboardNav.setMessageListLength(events.length);
+    keyboardNav.messageFocusDown();
+    return true;
+  }
+
+  @override
+  bool messageFocusDown() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav == null) return false;
+    final events = _visibleKeyboardEvents;
+    if (events.isEmpty) return false;
+    keyboardNav.setMessageListLength(events.length);
+    if (keyboardNav.focusArea == KeyboardFocusArea.messageList &&
+        keyboardNav.messageFocusIndex <= 0) {
+      keyboardNav.resetMessageFocus();
+      inputFocus.requestFocus();
+      return true;
+    }
+    keyboardNav.messageFocusUp();
+    return true;
+  }
+
+  @override
+  bool replyFocusedMessage() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav == null) return false;
+    final events = _visibleKeyboardEvents;
+    if (events.isEmpty) return false;
+    if (keyboardNav.focusArea != KeyboardFocusArea.messageList) return false;
+    final idx = keyboardNav.messageFocusIndex;
+    final target = idx >= 0 && idx < events.length ? events[idx] : events.first;
+    replyAction(replyTo: target);
+    keyboardNav.resetMessageFocus();
+    return true;
+  }
+
+  @override
+  bool editFocusedMessage() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav == null) return false;
+    final events = _visibleKeyboardEvents;
+    if (events.isEmpty) return false;
+    if (keyboardNav.focusArea != KeyboardFocusArea.messageList) return false;
+    final ownUserId = room.client.userID;
+    final idx = keyboardNav.messageFocusIndex;
+    final target = idx >= 0 && idx < events.length
+        ? events[idx]
+        : events.firstWhereOrNull((e) => e.senderId == ownUserId);
+    if (target == null || target.senderId != ownUserId) return false;
+    selectedEvents
+      ..clear()
+      ..add(target);
+    editSelectedEventAction();
+    keyboardNav.resetMessageFocus();
+    return true;
+  }
+
+  @override
+  bool exitMessageFocusToInput() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav?.focusArea != KeyboardFocusArea.messageList) return false;
+    keyboardNav!.resetMessageFocus();
+    inputFocus.requestFocus();
+    return true;
+  }
+
+  @override
+  bool handleEscape() {
+    final keyboardNav = KeyboardNavigation.maybeOf(context);
+    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
+      keyboardNav!.resetMessageFocus();
+      inputFocus.requestFocus();
+      return true;
+    }
+    if (selectedEvents.isNotEmpty) {
+      clearSelectedEvents();
+      return true;
+    }
+    if (activeThreadId != null) {
+      closeThread();
+      return true;
+    }
+    if (GoRouter.of(context).canPop()) {
+      GoRouter.of(context).pop();
+      return true;
+    }
+    return false;
+  }
 
   void setSendingClient(Client c) {
     // first cancel typing with the old sending client
