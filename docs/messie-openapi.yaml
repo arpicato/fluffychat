@@ -1040,8 +1040,10 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              additionalProperties: true
+              oneOf:
+                - $ref: "#/components/schemas/BridgeSubmitLoginStepDisplayAndWaitRequest"
+                - $ref: "#/components/schemas/BridgeSubmitLoginStepUserInputRequest"
+                - $ref: "#/components/schemas/BridgeSubmitLoginStepCookiesRequest"
       responses:
         "200":
           description: Next login step
@@ -1753,6 +1755,19 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/BridgeWhoamiLogin"
+    BridgeSubmitLoginStepDisplayAndWaitRequest:
+      type: object
+      additionalProperties: false
+      description: Empty payload for display_and_wait polling steps.
+    BridgeSubmitLoginStepUserInputRequest:
+      type: object
+      description: Dynamic user input fields keyed by field id.
+      additionalProperties:
+        type: string
+    BridgeSubmitLoginStepCookiesRequest:
+      type: object
+      description: Free-form cookie payload forwarded to the bridge.
+      additionalProperties: true
     BridgeRoomMapping:
       type: object
       required:

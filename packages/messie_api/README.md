@@ -115,6 +115,7 @@ Class | Method | HTTP request | Description
  - [BridgeName](doc/BridgeName.md)
  - [BridgeRoomMapping](doc/BridgeRoomMapping.md)
  - [BridgeState](doc/BridgeState.md)
+ - [BridgeSubmitLoginStepRequest](doc/BridgeSubmitLoginStepRequest.md)
  - [BridgeWhoamiLogin](doc/BridgeWhoamiLogin.md)
  - [BridgeWhoamiLoginProfile](doc/BridgeWhoamiLoginProfile.md)
  - [BridgeWhoamiResponse](doc/BridgeWhoamiResponse.md)

@@ -20,6 +20,7 @@ export 'package:messie_api/src/model/bridge_login_step.dart';
 export 'package:messie_api/src/model/bridge_name.dart';
 export 'package:messie_api/src/model/bridge_room_mapping.dart';
 export 'package:messie_api/src/model/bridge_state.dart';
+export 'package:messie_api/src/model/bridge_submit_login_step_request.dart';
 export 'package:messie_api/src/model/bridge_whoami_login.dart';
 export 'package:messie_api/src/model/bridge_whoami_login_profile.dart';
 export 'package:messie_api/src/model/bridge_whoami_response.dart';

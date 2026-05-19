@@ -22,13 +22,12 @@ class _$BridgeWhoamiLogin extends BridgeWhoamiLogin {
           [void Function(BridgeWhoamiLoginBuilder)? updates]) =>
       (BridgeWhoamiLoginBuilder()..update(updates))._build();
 
-  _$BridgeWhoamiLogin._({
-    required this.id,
-    required this.name,
-    this.state,
-    this.profile,
-    this.spaceRoom,
-  })
+  _$BridgeWhoamiLogin._(
+      {required this.id,
+      required this.name,
+      this.state,
+      this.profile,
+      this.spaceRoom})
       : super._();
   @override
   BridgeWhoamiLogin rebuild(void Function(BridgeWhoamiLoginBuilder) updates) =>
