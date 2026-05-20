@@ -15,6 +15,7 @@ abstract class KeyboardChatHandler {
   bool messageFocusUp();
   bool messageFocusDown();
   bool toggleFocusedMessageSelection();
+  bool forwardFocusedMessage();
   bool replyFocusedMessage();
   bool editFocusedMessage();
   bool exitMessageFocusToInput();

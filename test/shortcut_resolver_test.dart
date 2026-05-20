@@ -83,6 +83,24 @@ void main() {
       expect(chat.toggleFocusedMessageSelectionCalls, 1);
     });
 
+    test('Alt+F forwards highlighted message', () {
+      final chat = _FakeChatHandler(forwardFocusedMessageResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.keyF,
+          primaryPressed: false,
+          altPressed: true,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(hasOpenChat: true),
+        chat: chat,
+      );
+
+      expect(handled, isTrue);
+      expect(chat.forwardFocusedMessageCalls, 1);
+    });
+
     test('Down moves through messages when message focus is active', () {
       final chat = _FakeChatHandler(
         messageFocusActive: true,
@@ -185,6 +203,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
     this.composerCursorOnFirstLine = false,
     this.messageFocusActive = false,
     this.toggleFocusedMessageSelectionResult = false,
+    this.forwardFocusedMessageResult = false,
     this.messageFocusUpResult = false,
     this.messageFocusDownResult = false,
     this.replyFocusedMessageResult = false,
@@ -203,6 +222,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
   final bool messageFocusActive;
 
   final bool toggleFocusedMessageSelectionResult;
+  final bool forwardFocusedMessageResult;
   final bool messageFocusUpResult;
   final bool messageFocusDownResult;
   final bool replyFocusedMessageResult;
@@ -213,6 +233,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
   int messageFocusUpCalls = 0;
   int messageFocusDownCalls = 0;
   int toggleFocusedMessageSelectionCalls = 0;
+  int forwardFocusedMessageCalls = 0;
   int replyFocusedMessageCalls = 0;
   int editFocusedMessageCalls = 0;
   int exitMessageFocusToInputCalls = 0;
@@ -252,6 +273,12 @@ class _FakeChatHandler implements KeyboardChatHandler {
   bool toggleFocusedMessageSelection() {
     toggleFocusedMessageSelectionCalls++;
     return toggleFocusedMessageSelectionResult;
+  }
+
+  @override
+  bool forwardFocusedMessage() {
+    forwardFocusedMessageCalls++;
+    return forwardFocusedMessageResult;
   }
 
   @override

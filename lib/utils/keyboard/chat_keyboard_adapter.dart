@@ -39,6 +39,25 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
           .toList() ??
       const [];
 
+  Event? _focusedEventOrSingleSelected({bool ownMessageOnly = false}) {
+    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
+    final events = _visibleKeyboardEvents;
+    final ownUserId = controller.room.client.userID;
+
+    Event? candidate;
+    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList &&
+        events.isNotEmpty) {
+      final idx = keyboardNav!.messageFocusIndex;
+      candidate = idx >= 0 && idx < events.length ? events[idx] : events.first;
+    } else if (controller.selectedEvents.length == 1) {
+      candidate = controller.selectedEvents.single;
+    }
+
+    if (candidate == null) return null;
+    if (ownMessageOnly && candidate.senderId != ownUserId) return null;
+    return candidate;
+  }
+
   @override
   bool messageFocusUp() {
     final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
@@ -81,37 +100,44 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   }
 
   @override
+  bool forwardFocusedMessage() {
+    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
+    final target = _focusedEventOrSingleSelected();
+    if (target == null) return false;
+    controller.selectedEvents
+      ..clear()
+      ..add(target);
+    controller.forwardEventsAction();
+    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
+      keyboardNav!.resetMessageFocus();
+    }
+    return true;
+  }
+
+  @override
   bool replyFocusedMessage() {
     final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav == null) return false;
-    final events = _visibleKeyboardEvents;
-    if (events.isEmpty) return false;
-    if (keyboardNav.focusArea != KeyboardFocusArea.messageList) return false;
-    final idx = keyboardNav.messageFocusIndex;
-    final target = idx >= 0 && idx < events.length ? events[idx] : events.first;
+    final target = _focusedEventOrSingleSelected();
+    if (target == null) return false;
     controller.replyAction(replyTo: target);
-    keyboardNav.resetMessageFocus();
+    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
+      keyboardNav!.resetMessageFocus();
+    }
     return true;
   }
 
   @override
   bool editFocusedMessage() {
     final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav == null) return false;
-    final events = _visibleKeyboardEvents;
-    if (events.isEmpty) return false;
-    if (keyboardNav.focusArea != KeyboardFocusArea.messageList) return false;
-    final ownUserId = controller.room.client.userID;
-    final idx = keyboardNav.messageFocusIndex;
-    final target = idx >= 0 && idx < events.length
-        ? events[idx]
-        : events.firstWhereOrNull((e) => e.senderId == ownUserId);
-    if (target == null || target.senderId != ownUserId) return false;
+    final target = _focusedEventOrSingleSelected(ownMessageOnly: true);
+    if (target == null) return false;
     controller.selectedEvents
       ..clear()
       ..add(target);
     controller.editSelectedEventAction();
-    keyboardNav.resetMessageFocus();
+    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
+      keyboardNav!.resetMessageFocus();
+    }
     return true;
   }
 

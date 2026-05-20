@@ -6,6 +6,7 @@ enum ShortcutCommand {
   escape,
   openFocusedChat,
   toggleFocusedMessageSelection,
+  forwardFocusedMessage,
   replyFocusedMessage,
   editFocusedMessage,
   messageFocusUpModified,
@@ -103,6 +104,17 @@ class AppShortcutRegistry {
       scope: ShortcutScope.chat,
       label: 'Toggle highlighted message selection',
       bindings: [ShortcutBinding(key: LogicalKeyboardKey.space)],
+    ),
+    const ShortcutDefinition(
+      command: ShortcutCommand.forwardFocusedMessage,
+      scope: ShortcutScope.chat,
+      label: 'Forward highlighted message',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.keyF,
+          modifiers: {ShortcutModifier.alt},
+        ),
+      ],
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.replyFocusedMessage,
