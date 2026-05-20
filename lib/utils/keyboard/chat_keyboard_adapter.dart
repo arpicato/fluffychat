@@ -66,6 +66,10 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
     if (events.isEmpty) return false;
     keyboardNav.setMessageListLength(events.length);
     keyboardNav.messageFocusDown();
+    final idx = keyboardNav.messageFocusIndex;
+    if (idx >= 0 && idx < events.length) {
+      controller.scrollToKeyboardFocusIndex(idx);
+    }
     return true;
   }
 
@@ -83,6 +87,10 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
       return true;
     }
     keyboardNav.messageFocusUp();
+    final idx = keyboardNav.messageFocusIndex;
+    if (idx >= 0 && idx < events.length) {
+      controller.scrollToKeyboardFocusIndex(idx);
+    }
     return true;
   }
 
@@ -153,6 +161,9 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   @override
   bool handleEscape() {
     final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
+    if (controller.shareDialogOpen) {
+      return false;
+    }
     if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
       keyboardNav!.resetMessageFocus();
       controller.inputFocus.requestFocus();
