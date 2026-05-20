@@ -362,6 +362,10 @@ class ChatController extends State<ChatPageWithRoom>
 
     _loadDraft();
     WidgetsBinding.instance.addPostFrameCallback(_shareItems);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      inputFocus.requestFocus();
+    });
     super.initState();
     _displayChatDetailsColumn = ValueNotifier(
       AppSettings.displayChatDetailsColumn.value,
@@ -670,6 +674,11 @@ class ChatController extends State<ChatPageWithRoom>
     final keyboardNav = KeyboardNavigation.maybeOf(context);
     if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
       keyboardNav!.resetMessageFocus();
+      inputFocus.requestFocus();
+      return true;
+    }
+    if (replyEvent != null || editEvent != null) {
+      cancelReplyEventAction();
       inputFocus.requestFocus();
       return true;
     }
