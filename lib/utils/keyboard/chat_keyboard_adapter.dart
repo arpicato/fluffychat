@@ -68,6 +68,19 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   }
 
   @override
+  bool toggleFocusedMessageSelection() {
+    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
+    if (keyboardNav == null) return false;
+    final events = _visibleKeyboardEvents;
+    if (events.isEmpty) return false;
+    if (keyboardNav.focusArea != KeyboardFocusArea.messageList) return false;
+    final idx = keyboardNav.messageFocusIndex;
+    final target = idx >= 0 && idx < events.length ? events[idx] : events.first;
+    controller.onSelectMessage(target);
+    return true;
+  }
+
+  @override
   bool replyFocusedMessage() {
     final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
     if (keyboardNav == null) return false;

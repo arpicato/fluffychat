@@ -165,6 +165,7 @@ class ChatEventList extends StatelessWidget {
                 singleSelected:
                     controller.selectedEvents.singleOrNull?.eventId ==
                     event.eventId,
+                showSelectionControls: controller.selectedEvents.isNotEmpty,
                 onEdit: controller.editSelectedEventAction,
                 timeline: timeline,
                 displayReadMarker:

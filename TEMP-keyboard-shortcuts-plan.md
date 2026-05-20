@@ -24,10 +24,12 @@ Delete this file after the keyboard shortcut architecture and UX changes are imp
   - owns command IDs
   - owns default bindings
   - provides human-readable labels for help UI
+  - status: implemented in `lib/utils/keyboard/shortcut_registry.dart`
 - `ShortcutResolver`
   - receives raw key events globally
   - checks route, focus, and page context
   - dispatches command IDs to active handlers
+  - status: implemented in `lib/utils/keyboard/shortcut_resolver.dart`; `app_shortcuts.dart` is now a thin Flutter event adapter
 - `ShortcutContext`
   - current route
   - whether a chat is open
@@ -36,12 +38,15 @@ Delete this file after the keyboard shortcut architecture and UX changes are imp
   - whether a message is highlighted
   - whether one or more messages are toggled selected
   - whether search/settings/modal state is active
+  - status: partial; current resolver context covers open-chat state and delegates finer state to active handlers
 - `ShortcutHandlers`
   - thin interfaces/adapters implemented by chat list and chat page
+  - status: implemented via `shortcut_dispatcher.dart`, `chat_keyboard_adapter.dart`, and `chat_list_keyboard_adapter.dart`
 - `ShortcutSettings`
   - future storage for user-customizable bindings
 - `ShortcutHelpModel`
   - registry-backed source for shortcut hint popup content
+  - status: not implemented yet
 
 ## Message Focus vs Selection
 
@@ -105,6 +110,24 @@ Delete this file after the keyboard shortcut architecture and UX changes are imp
 - Reply/edit shortcut should not require toggled selection first.
 - Selected/highlighted message should auto-scroll into view during keyboard navigation.
 
+## Current Status
+
+- Done:
+  - global focus-aware shortcut dispatch no longer depends on page-local Flutter `Actions` scopes for core behavior
+  - central shortcut registry exists and is the source of command IDs, labels, scopes, and bindings
+  - chat list and chat pages register thin keyboard adapters instead of owning most shortcut policy inline
+  - opening a chat from keyboard focuses composer
+  - reply/edit operate on highlighted message without requiring toggled selection first
+  - plain `Up/Down`, modified message navigation, search, open, and escape flows are wired through the registry/resolver path
+- Still open:
+  - registry-backed shortcut help model and popup button
+  - highlighted-message integration with existing toggled-selection model
+  - `Space` toggle behavior
+  - `Shift+Arrow` range selection with anchor semantics
+  - hide checkbox circles until real toggled selection exists
+  - auto-scroll highlighted message into view
+  - future configurable shortcut storage/UI
+
 ## Shortcut Help Popup
 
 - Add a keyboard shortcuts hint popup button.
@@ -128,8 +151,8 @@ Delete this file after the keyboard shortcut architecture and UX changes are imp
 
 ## Immediate Next Steps
 
-- Introduce a true shortcut registry instead of growing ad hoc resolver branches.
 - Use registry data for both runtime dispatch and future help popup.
+- Add a small registry-backed shortcut help model, then build the popup/button from it.
 - Integrate highlighted-message navigation with existing selection model.
 - Add scroll-to-highlight behavior.
 - Add settings shortcut through the registry.

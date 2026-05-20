@@ -65,6 +65,7 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
   ```
 - APK builds use `Dockerfile.apk` (arm64 only, ~20 min)
 - Linux desktop build: `Dockerfile.linux` + `run-linux.sh` (X11 forwarding)
+- `run-linux.sh` launches `FLUFFYCHAT_LINUX_IMAGE` if set, otherwise `fluffychat-linux:latest`; when rebuilding Linux images for testing, retag or set the image explicitly so desktop runs do not silently use a stale image
 - Build logs go to `/tmp/opencode/` for post-mortem
 
 ### Git
@@ -75,3 +76,8 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - Do not commit directly to `main`
 - Squash merge completed feature branches into `main` when user approves
 - Prefer targeted `flutter test --no-pub` and `dart analyze`/`flutter analyze --no-pub` over broad full-project verification
+
+### Keyboard Shortcuts
+
+- To minimize upstream merge conflicts, keep keyboard shortcut architecture concentrated under `lib/utils/keyboard/` whenever possible
+- Prefer central resolver/registry files plus thin page-level adapter registration over embedding large amounts of keyboard behavior directly in `chat.dart`, `chat_list.dart`, or other upstream-heavy controller/view files

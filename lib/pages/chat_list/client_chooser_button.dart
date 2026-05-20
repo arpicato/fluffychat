@@ -1,5 +1,6 @@
 import 'package:async/async.dart';
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/utils/keyboard/shortcut_help_dialog.dart';
 import 'package:fluffychat/widgets/avatar.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
@@ -73,6 +74,16 @@ class ClientChooserButton extends StatelessWidget {
             const Icon(Icons.settings_outlined),
             const SizedBox(width: 18),
             Text(L10n.of(context).settings),
+          ],
+        ),
+      ),
+      PopupMenuItem(
+        value: SettingsAction.keyboardShortcuts,
+        child: Row(
+          children: [
+            const Icon(Icons.keyboard_command_key_outlined),
+            const SizedBox(width: 18),
+            const Text('Keyboard shortcuts'),
           ],
         ),
       ),
@@ -216,6 +227,9 @@ class ClientChooserButton extends StatelessWidget {
         case SettingsAction.settings:
           context.go('/rooms/settings');
           break;
+        case SettingsAction.keyboardShortcuts:
+          await showShortcutHelpDialog(context);
+          break;
         case SettingsAction.archive:
           context.go('/rooms/archive');
           break;
@@ -234,5 +248,6 @@ enum SettingsAction {
   invite,
   support,
   settings,
+  keyboardShortcuts,
   archive,
 }

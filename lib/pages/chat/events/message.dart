@@ -39,6 +39,7 @@ class Message extends StatelessWidget {
   final bool longPressSelect;
   final bool selected;
   final bool singleSelected;
+  final bool showSelectionControls;
   final Timeline timeline;
   final bool highlightMarker;
   final bool animateIn;
@@ -63,6 +64,7 @@ class Message extends StatelessWidget {
     this.selected = false,
     required this.onEdit,
     required this.singleSelected,
+    this.showSelectionControls = false,
     required this.timeline,
     this.highlightMarker = false,
     this.animateIn = false,
@@ -293,7 +295,7 @@ class Message extends StatelessWidget {
                       crossAxisAlignment: .start,
                       mainAxisAlignment: rowMainAxisAlignment,
                       children: [
-                        if (longPressSelect && !event.redacted)
+                        if (showSelectionControls && !event.redacted)
                           SizedBox(
                             height: 32,
                             width: Avatar.defaultSize,
