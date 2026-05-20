@@ -1,17 +1,22 @@
 # syntax=docker/dockerfile:1.7
 
 # Stage 1: Build FluffyChat web
-FROM ghcr.io/cirruslabs/flutter:3.41.6 AS builder
+# Pin by digest so BuildKit never re-resolves the tag from the network.
+# To upgrade: update both the tag comment and the digest.
+# flutter:3.41.6 linux/amd64
+FROM ghcr.io/cirruslabs/flutter@sha256:7efb4cd5ef95687924a02cb932dcc27f08450cca92b34a36850dec5292b029d5 AS builder
 
-# Install Rust toolchain and wasm-pack
+# Install Rust toolchain and wasm-pack (cached across builds)
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=cache,id=cargo-install,target=/root/.cargo/install-cache \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && . "$HOME/.cargo/env" \
     && rustup target add wasm32-unknown-unknown \
     && rustup toolchain install nightly \
     && rustup component add rust-src --toolchain nightly \
-    && cargo install wasm-pack
+    && CARGO_TARGET_DIR=/root/.cargo/install-cache cargo install wasm-pack \
+    && cp /root/.cargo/install-cache/release/wasm-pack /root/.cargo/bin/
 
 # Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -32,15 +37,20 @@ RUN --mount=type=cache,target=/root/.pub-cache \
 COPY . .
 
 # Prepare web (compile Vodozemac WASM, native_imaging)
-# Run prepare-web.sh but allow dart compile js to fail (web worker optional in matrix 7.x)
+# Cache mounts for Cargo registry/git/target make incremental Rust builds fast.
+# flutter_rust_bridge_codegen install is also cached via CARGO_TARGET_DIR.
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=cache,id=cargo-install,target=/root/.cargo/install-cache \
+    --mount=type=cache,id=vodozemac-target,target=/tmp/vodozemac-target \
     --mount=type=cache,target=/root/.pub-cache \
     set -e; \
+    CARGO_TARGET_DIR=/root/.cargo/install-cache cargo install flutter_rust_bridge_codegen \
+    && cp /root/.cargo/install-cache/release/flutter_rust_bridge_codegen /root/.cargo/bin/; \
     version=$(yq ".dependencies.flutter_vodozemac" < pubspec.yaml | tr -d '"^'); \
     git clone https://github.com/famedly/dart-vodozemac.git -b ${version} .vodozemac; \
     cd .vodozemac; \
-    cargo install flutter_rust_bridge_codegen; \
+    export CARGO_TARGET_DIR=/tmp/vodozemac-target; \
     flutter_rust_bridge_codegen build-web --dart-root dart --rust-root $(readlink -f rust) --release; \
     cd ..; \
     rm -f ./assets/vodozemac/vodozemac_bindings_dart*; \

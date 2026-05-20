@@ -30,6 +30,22 @@ class _AppShortcutsState extends State<AppShortcuts> {
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
+    // If Esc and a dialog/modal is showing (focus is inside a route overlay
+    // that is not a page route), skip our handler entirely so the dialog
+    // can close itself.
+    if (event.logicalKey == LogicalKeyboardKey.escape) {
+      final primaryFocus = FocusManager.instance.primaryFocus;
+      if (primaryFocus != null) {
+        final focusContext = primaryFocus.context;
+        if (focusContext != null) {
+          final route = ModalRoute.of(focusContext);
+          if (route != null && route is! PageRoute) {
+            return KeyEventResult.ignored;
+          }
+        }
+      }
+    }
+
     final dispatcher = ShortcutDispatcher.instance;
     final chat = dispatcher.chatHandler;
     final chatList = dispatcher.chatListHandler;

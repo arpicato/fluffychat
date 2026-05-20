@@ -175,8 +175,6 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   bool showEmojiPicker = false;
 
-  bool shareDialogOpen = false;
-
   String? get threadLastEventId {
     final threadId = activeThreadId;
     if (threadId == null) return null;
@@ -982,9 +980,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
       selectedEvents,
     ).map((event) => event.getDisplayEvent(timeline)).toList();
 
-    setState(() {
-      shareDialogOpen = true;
-    });
+    setState(() => selectedEvents.clear());
     await showScaffoldDialog(
       context: context,
       builder: (context) => ShareScaffoldDialog(
@@ -994,10 +990,6 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
       ),
     );
     if (!mounted) return;
-    setState(() {
-      shareDialogOpen = false;
-      selectedEvents.clear();
-    });
   }
 
   void sendAgainAction() {
@@ -1069,13 +1061,8 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     _updateScrollController();
   }
 
-  Future<void> scrollToKeyboardFocusIndex(int eventIndex) async {
-    await scrollController.scrollToIndex(
-      eventIndex + 1,
-      duration: FluffyThemes.animationDuration,
-      preferPosition: AutoScrollPosition.middle,
-    );
-    _updateScrollController();
+  void scrollToKeyboardFocusIndex(int eventIndex) {
+    // TODO: implement scroll-to-highlight properly
   }
 
   Future<void> scrollDown() async {

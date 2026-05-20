@@ -1,6 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:fluffychat/pages/chat/chat.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
+import 'package:fluffychat/utils/show_scaffold_dialog.dart';
+import 'package:fluffychat/widgets/share_scaffold_dialog.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
@@ -112,14 +114,24 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
     final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
     final target = _focusedEventOrSingleSelected();
     if (target == null) return false;
-    controller.selectedEvents
-      ..clear()
-      ..add(target);
-    controller.forwardEventsAction();
-    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
-      keyboardNav!.resetMessageFocus();
-    }
+    // Capture the event for forwarding without clearing selection yet.
+    final timeline = controller.timeline;
+    if (timeline == null) return false;
+    final displayEvent = target.getDisplayEvent(timeline);
+    // Show the share dialog directly; clear selection only after it closes.
+    _showForwardDialog(displayEvent);
     return true;
+  }
+
+  Future<void> _showForwardDialog(Event displayEvent) async {
+    await showScaffoldDialog(
+      context: controller.context,
+      builder: (context) => ShareScaffoldDialog(
+        items: [ContentShareItem(displayEvent.content)],
+      ),
+    );
+    // Don't clear selection here. If the forward succeeded, the app already
+    // navigated away. If the user cancelled (Esc/back), keep selection intact.
   }
 
   @override
@@ -161,14 +173,6 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   @override
   bool handleEscape() {
     final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (controller.shareDialogOpen) {
-      return false;
-    }
-    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
-      keyboardNav!.resetMessageFocus();
-      controller.inputFocus.requestFocus();
-      return true;
-    }
     if (controller.replyEvent != null || controller.editEvent != null) {
       controller.cancelReplyEventAction();
       controller.inputFocus.requestFocus();
@@ -176,6 +180,11 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
     }
     if (controller.selectedEvents.isNotEmpty) {
       controller.clearSelectedEvents();
+      return true;
+    }
+    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
+      keyboardNav!.resetMessageFocus();
+      controller.inputFocus.requestFocus();
       return true;
     }
     if (controller.activeThreadId != null) {

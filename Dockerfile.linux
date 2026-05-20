@@ -1,7 +1,10 @@
 # syntax=docker/dockerfile:1.7
 
 # Build FluffyChat Linux desktop bundle
-FROM ghcr.io/cirruslabs/flutter:3.41.6
+# Pin by digest so BuildKit never re-resolves the tag from the network.
+# To upgrade: update both the tag comment and the digest.
+# flutter:3.41.6 linux/amd64
+FROM ghcr.io/cirruslabs/flutter@sha256:7efb4cd5ef95687924a02cb932dcc27f08450cca92b34a36850dec5292b029d5
 
 # Install Linux desktop build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -14,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install Rust toolchain for Vodozemac
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=cache,id=cargo-install,target=/root/.cargo/install-cache \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
