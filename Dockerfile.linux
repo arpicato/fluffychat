@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 # Build FluffyChat Linux desktop bundle
 FROM ghcr.io/cirruslabs/flutter:3.41.6
 
@@ -10,21 +12,25 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust toolchain for Vodozemac
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
 # Copy dependency files first for caching
 COPY pubspec.yaml pubspec.lock ./
-COPY packages/ packages/
-RUN flutter pub get
+COPY packages/messie_api/pubspec.yaml packages/messie_api/pubspec.yaml
+RUN --mount=type=cache,target=/root/.pub-cache \
+    flutter pub get
 
 # Copy source
 COPY . .
 
 # Build Linux release
-RUN flutter build linux --release 2>&1 | tee /tmp/build.log; \
+RUN --mount=type=cache,target=/root/.pub-cache \
+    flutter build linux --release 2>&1 | tee /tmp/build.log; \
     if [ ! -d /app/build/linux/x64/release/bundle ]; then \
       tail -50 /tmp/build.log; exit 1; \
     fi

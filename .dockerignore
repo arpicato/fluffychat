@@ -1,0 +1,21 @@
+.git
+.github
+.dart_tool
+build
+coverage
+.tmp_messie_api_gen
+package-lock.json
+node_modules
+flutter_*.log
+
+# Nested package outputs
+packages/**/.dart_tool
+packages/**/build
+
+# Editor / OS noise
+.idea
+.vscode
+*.swp
+*.tmp
+*.bak
+*.DS_Store

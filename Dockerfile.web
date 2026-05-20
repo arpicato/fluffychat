@@ -1,8 +1,12 @@
+# syntax=docker/dockerfile:1.7
+
 # Stage 1: Build FluffyChat web
 FROM ghcr.io/cirruslabs/flutter:3.41.6 AS builder
 
 # Install Rust toolchain and wasm-pack
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && . "$HOME/.cargo/env" \
     && rustup target add wasm32-unknown-unknown \
     && rustup toolchain install nightly \
@@ -17,11 +21,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
+
+# Copy dependency descriptors first so pub resolution stays cached across code changes.
+COPY pubspec.yaml pubspec.lock ./
+COPY packages/messie_api/pubspec.yaml packages/messie_api/pubspec.yaml
+RUN --mount=type=cache,target=/root/.pub-cache \
+    flutter pub get
+
+# Copy source after dependency setup.
 COPY . .
 
 # Prepare web (compile Vodozemac WASM, native_imaging)
 # Run prepare-web.sh but allow dart compile js to fail (web worker optional in matrix 7.x)
-RUN set -e; \
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=cache,target=/root/.pub-cache \
+    set -e; \
     version=$(yq ".dependencies.flutter_vodozemac" < pubspec.yaml | tr -d '"^'); \
     git clone https://github.com/famedly/dart-vodozemac.git -b ${version} .vodozemac; \
     cd .vodozemac; \
@@ -31,7 +46,6 @@ RUN set -e; \
     rm -f ./assets/vodozemac/vodozemac_bindings_dart*; \
     mv .vodozemac/dart/web/pkg/vodozemac_bindings_dart* ./assets/vodozemac/; \
     rm -rf .vodozemac; \
-    flutter pub get; \
     dart compile js ./web/native_executor.dart -o ./web/native_executor.js -m || true; \
     version=$(yq ".dependencies.native_imaging" < pubspec.yaml | tr -d '"^'); \
     curl -L "https://github.com/famedly/dart_native_imaging/releases/download/v${version}/native_imaging.zip" > native_imaging.zip; \
@@ -41,7 +55,8 @@ RUN set -e; \
     rm native_imaging.zip
 
 # Build Flutter web release
-RUN flutter build web --release --source-maps
+RUN --mount=type=cache,target=/root/.pub-cache \
+    flutter build web --release --source-maps
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
