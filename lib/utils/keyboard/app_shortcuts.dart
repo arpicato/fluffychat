@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:fluffychat/utils/keyboard/shortcut_dispatcher.dart';
+import 'package:fluffychat/widgets/fluffy_chat_app.dart';
 
 class AppShortcuts extends StatefulWidget {
   const AppShortcuts({super.key, required this.child});
@@ -35,6 +36,12 @@ class _AppShortcutsState extends State<AppShortcuts> {
     final chat = dispatcher.chatHandler;
     final chatList = dispatcher.chatListHandler;
     final key = event.logicalKey;
+    final path = FluffyChatApp.router.routeInformationProvider.value.uri.path;
+    final hasOpenChat =
+        path.startsWith('/rooms/') &&
+        !path.startsWith('/rooms/settings') &&
+        !path.startsWith('/rooms/archive/') &&
+        path.split('/').length >= 3;
 
     debugPrint(
       '[kb/raw] key=${event.logicalKey.keyLabel} '
@@ -125,6 +132,11 @@ class _AppShortcutsState extends State<AppShortcuts> {
     if (!HardwareKeyboard.instance.isAltPressed &&
         !HardwareKeyboard.instance.isShiftPressed &&
         key == LogicalKeyboardKey.arrowUp) {
+      if (!hasOpenChat) {
+        return (chatList?.focusUp() ?? false)
+            ? KeyEventResult.handled
+            : KeyEventResult.ignored;
+      }
       if (chat != null && (!chat.inputHasFocus || chat.composerCursorOnFirstLine)) {
         return chat.messageFocusUp()
             ? KeyEventResult.handled
@@ -135,6 +147,11 @@ class _AppShortcutsState extends State<AppShortcuts> {
     if (!HardwareKeyboard.instance.isAltPressed &&
         !HardwareKeyboard.instance.isShiftPressed &&
         key == LogicalKeyboardKey.arrowDown) {
+      if (!hasOpenChat) {
+        return (chatList?.focusDown() ?? false)
+            ? KeyEventResult.handled
+            : KeyEventResult.ignored;
+      }
       if (chat?.messageFocusActive == true) {
         return (chat?.messageFocusDown() ?? false)
             ? KeyEventResult.handled
