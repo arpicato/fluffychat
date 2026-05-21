@@ -31,6 +31,25 @@ enum ShortcutScope {
   chat,
 }
 
+/// Conditions that must be true for a shortcut to fire.
+/// Modeled after VS Code's `when` clause system.
+enum ShortcutWhen {
+  /// A chat room page is visible.
+  chatVisible,
+
+  /// The chat list is visible (no chat open in single-column, or left panel in column mode).
+  chatListVisible,
+
+  /// A message in the timeline has native focus.
+  messageFocused,
+
+  /// No text input field is currently focused.
+  textFieldNotFocused,
+
+  /// No modal/dialog/overlay is on top.
+  noModalOpen,
+}
+
 class ShortcutBinding {
   const ShortcutBinding({required this.key, this.modifiers = const {}});
 
@@ -56,12 +75,17 @@ class ShortcutDefinition {
     required this.scope,
     required this.label,
     required this.bindings,
+    this.when = const {},
   });
 
   final ShortcutCommand command;
   final ShortcutScope scope;
   final String label;
   final List<ShortcutBinding> bindings;
+
+  /// Conditions that must all be true for this shortcut to fire.
+  /// Empty means no conditions (always eligible if key matches).
+  final Set<ShortcutWhen> when;
 }
 
 class AppShortcutRegistry {
@@ -88,6 +112,7 @@ class AppShortcutRegistry {
       scope: ShortcutScope.global,
       label: 'Escape / Back',
       bindings: [ShortcutBinding(key: LogicalKeyboardKey.escape)],
+      when: {ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.openFocusedChat,
@@ -100,12 +125,14 @@ class AppShortcutRegistry {
           modifiers: {ShortcutModifier.alt},
         ),
       ],
+      when: {ShortcutWhen.textFieldNotFocused, ShortcutWhen.chatListVisible},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.toggleFocusedMessageSelection,
       scope: ShortcutScope.chat,
       label: 'Toggle highlighted message selection',
       bindings: [ShortcutBinding(key: LogicalKeyboardKey.space)],
+      when: {ShortcutWhen.messageFocused, ShortcutWhen.textFieldNotFocused},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.forwardFocusedMessage,
@@ -117,6 +144,7 @@ class AppShortcutRegistry {
           modifiers: {ShortcutModifier.alt},
         ),
       ],
+      when: {ShortcutWhen.chatVisible, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.replyFocusedMessage,
@@ -128,6 +156,7 @@ class AppShortcutRegistry {
           modifiers: {ShortcutModifier.alt},
         ),
       ],
+      when: {ShortcutWhen.chatVisible, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.editFocusedMessage,
@@ -139,6 +168,7 @@ class AppShortcutRegistry {
           modifiers: {ShortcutModifier.alt},
         ),
       ],
+      when: {ShortcutWhen.chatVisible, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.messageFocusUpModified,
@@ -150,6 +180,7 @@ class AppShortcutRegistry {
           modifiers: {ShortcutModifier.alt, ShortcutModifier.shift},
         ),
       ],
+      when: {ShortcutWhen.chatVisible, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.messageFocusDownModified,
@@ -161,6 +192,7 @@ class AppShortcutRegistry {
           modifiers: {ShortcutModifier.alt, ShortcutModifier.shift},
         ),
       ],
+      when: {ShortcutWhen.chatVisible, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.chatListFocusUpModified,
@@ -172,6 +204,7 @@ class AppShortcutRegistry {
           modifiers: {ShortcutModifier.alt},
         ),
       ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.chatListFocusDownModified,
@@ -183,30 +216,35 @@ class AppShortcutRegistry {
           modifiers: {ShortcutModifier.alt},
         ),
       ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.messagePageUp,
       scope: ShortcutScope.chat,
       label: 'Page up through messages',
       bindings: [ShortcutBinding(key: LogicalKeyboardKey.pageUp)],
+      when: {ShortcutWhen.chatVisible, ShortcutWhen.textFieldNotFocused, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.messagePageDown,
       scope: ShortcutScope.chat,
       label: 'Page down through messages',
       bindings: [ShortcutBinding(key: LogicalKeyboardKey.pageDown)],
+      when: {ShortcutWhen.chatVisible, ShortcutWhen.textFieldNotFocused, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.arrowUp,
       scope: ShortcutScope.chat,
       label: 'Navigate up',
       bindings: [ShortcutBinding(key: LogicalKeyboardKey.arrowUp)],
+      when: {ShortcutWhen.textFieldNotFocused, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.arrowDown,
       scope: ShortcutScope.chat,
       label: 'Navigate down',
       bindings: [ShortcutBinding(key: LogicalKeyboardKey.arrowDown)],
+      when: {ShortcutWhen.textFieldNotFocused, ShortcutWhen.noModalOpen},
     ),
   ];
 
