@@ -1,8 +1,8 @@
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_entries.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import 'keyboard_navigation.dart';
 import 'shortcut_dispatcher.dart';
 
 class ChatListKeyboardHandlerAdapter implements KeyboardChatListHandler {
@@ -19,28 +19,35 @@ class ChatListKeyboardHandlerAdapter implements KeyboardChatListHandler {
 
   @override
   bool focusUp() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav == null) return false;
-    keyboardNav.chatListFocusUp();
+    final entries = controller.navigableEntries;
+    if (entries.isEmpty) return false;
+    final currentIdx = controller.focusedChatListIndex;
+    final newIdx = currentIdx <= 0 ? 0 : currentIdx - 1;
+    final node = controller.chatListFocusNodes[newIdx];
+    if (node != null) {
+      node.requestFocus();
+    }
     return true;
   }
 
   @override
   bool focusDown() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav == null) return false;
-    keyboardNav.chatListFocusDown();
+    final entries = controller.navigableEntries;
+    if (entries.isEmpty) return false;
+    final currentIdx = controller.focusedChatListIndex;
+    final newIdx = currentIdx < 0 ? 0 : (currentIdx + 1).clamp(0, entries.length - 1);
+    final node = controller.chatListFocusNodes[newIdx];
+    debugPrint('[kb/chatlist] focusDown: currentIdx=$currentIdx newIdx=$newIdx node=${node != null} registered=${controller.chatListFocusNodes.keys.toList()}');
+    if (node != null) {
+      node.requestFocus();
+    }
     return true;
   }
 
   @override
   bool openFocused() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav == null || !keyboardNav.hasChatListFocus) return false;
-    final entries = controller.navigableEntries;
-    final idx = keyboardNav.chatListFocusIndex;
-    if (idx < 0 || idx >= entries.length) return false;
-    final entry = entries[idx];
+    final entry = controller.focusedChatListEntry;
+    if (entry == null) return false;
     switch (entry) {
       case RoomChatListEntry(:final room):
         controller.onChatTap(room);
@@ -75,9 +82,11 @@ class ChatListKeyboardHandlerAdapter implements KeyboardChatListHandler {
       controller.context.pop();
       return true;
     }
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav?.hasChatListFocus == true) {
-      keyboardNav!.resetChatListFocus();
+    // If a chat list item is focused, unfocus it.
+    if (controller.focusedChatListEntry != null) {
+      controller.focusedChatListEntry = null;
+      controller.focusedChatListIndex = -1;
+      FocusManager.instance.primaryFocus?.unfocus();
       return true;
     }
     if (controller.isSearchMode) {
