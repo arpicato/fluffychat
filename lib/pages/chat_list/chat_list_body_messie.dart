@@ -159,13 +159,14 @@ class ChatListViewBody extends StatelessWidget {
 
         // Update keyboard navigation state with current list length
         final keyboardNav = KeyboardNavigation.maybeOf(context);
+        // Navigable entries = everything except dividers
+        final navigableEntries = entries
+            .where((e) => e is! DividerChatListEntry)
+            .toList();
+        controller.navigableEntries = navigableEntries;
         if (keyboardNav != null) {
-          // Count only room entries for keyboard navigation
-          final roomEntryCount = entries
-              .whereType<RoomChatListEntry>()
-              .length;
           WidgetsBinding.instance.addPostFrameCallback((_) {
-            keyboardNav.setChatListLength(roomEntryCount);
+            keyboardNav.setChatListLength(navigableEntries.length);
           });
         }
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -197,12 +198,30 @@ class ChatListViewBody extends StatelessWidget {
                 if (keyboardNav == null || !keyboardNav.hasChatListFocus) {
                   return null;
                 }
-                final roomEntries = entries
-                    .whereType<RoomChatListEntry>()
-                    .toList();
                 final idx = keyboardNav.chatListFocusIndex;
-                if (idx >= 0 && idx < roomEntries.length) {
-                  controller.onChatTap(roomEntries[idx].room);
+                if (idx < 0 || idx >= navigableEntries.length) return null;
+                final entry = navigableEntries[idx];
+                switch (entry) {
+                  case RoomChatListEntry(:final room):
+                    controller.onChatTap(room);
+                  case TodoChatListEntry(:final todoList):
+                    context.push(
+                      '/rooms/todos/${todoList.id}',
+                      extra: <String, Object?>{
+                        'title': todoList.title,
+                        'description': todoList.description,
+                      },
+                    );
+                  case CalendarChatListEntry(:final event):
+                    context.push(
+                      '/rooms/calendar/events/${event.id}',
+                      extra: <String, Object?>{
+                        'title': event.title,
+                        'sourceDisplayName': event.sourceDisplayName,
+                      },
+                    );
+                  case DividerChatListEntry():
+                    break;
                 }
                 return null;
               },
@@ -381,40 +400,35 @@ class ChatListViewBody extends StatelessWidget {
                   itemCount: entries.length,
                   itemBuilder: (BuildContext context, int i) {
                     final entry = entries[i];
+                    // Calculate navigable index (skipping dividers)
+                    final navIndex = navigableEntries.indexOf(entry);
+                    final isFocused = keyboardNav != null &&
+                        keyboardNav.hasChatListFocus &&
+                        navIndex >= 0 &&
+                        keyboardNav.chatListFocusIndex == navIndex;
                     return switch (entry) {
-                      RoomChatListEntry(:final room) => Builder(
-                        builder: (context) {
-                          // Calculate room-only index for keyboard focus
-                          final roomIndex = entries
-                              .take(i + 1)
-                              .whereType<RoomChatListEntry>()
-                              .length - 1;
-                          final isFocused = keyboardNav != null &&
-                              keyboardNav.hasChatListFocus &&
-                              keyboardNav.chatListFocusIndex == roomIndex;
-                          return FocusHighlight(
-                            isFocused: isFocused,
-                            child: ChatListItem(
-                              room,
-                              presentation: controller.bridgePresentationForRoom(
-                                room,
-                              ),
-                              space: spaceDelegateCandidates[room.id],
-                              key: Key('chat_list_item_${room.id}'),
-                              filter: filter,
-                              onTap: () => controller.onChatTap(room),
-                              onLongPress: (context) => controller.chatContextAction(
-                                room,
-                                context,
-                                spaceDelegateCandidates[room.id],
-                              ),
-                              activeChat: controller.activeChat == room.id,
-                            ),
-                          );
-                        },
+                      RoomChatListEntry(:final room) => FocusHighlight(
+                        isFocused: isFocused,
+                        child: ChatListItem(
+                          room,
+                          presentation: controller.bridgePresentationForRoom(
+                            room,
+                          ),
+                          space: spaceDelegateCandidates[room.id],
+                          key: Key('chat_list_item_${room.id}'),
+                          filter: filter,
+                          onTap: () => controller.onChatTap(room),
+                          onLongPress: (context) => controller.chatContextAction(
+                            room,
+                            context,
+                            spaceDelegateCandidates[room.id],
+                          ),
+                          activeChat: controller.activeChat == room.id,
+                        ),
                       ),
-                      TodoChatListEntry(:final todoList) =>
-                        ChatListTodoItem(
+                      TodoChatListEntry(:final todoList) => FocusHighlight(
+                        isFocused: isFocused,
+                        child: ChatListTodoItem(
                           key: Key('chat_list_todo_${todoList.id}'),
                           todoList: todoList,
                           active:
@@ -430,8 +444,10 @@ class ChatListViewBody extends StatelessWidget {
                             },
                           ),
                         ),
-                      CalendarChatListEntry(:final event) =>
-                        ChatListCalendarItem(
+                      ),
+                      CalendarChatListEntry(:final event) => FocusHighlight(
+                        isFocused: isFocused,
+                        child: ChatListCalendarItem(
                           key: Key('chat_list_calendar_${event.id}'),
                           event: event,
                           active:
@@ -448,6 +464,7 @@ class ChatListViewBody extends StatelessWidget {
                             },
                           ),
                         ),
+                      ),
                       DividerChatListEntry() => Padding(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                         child: Divider(
