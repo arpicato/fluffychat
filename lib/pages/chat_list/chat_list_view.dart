@@ -18,7 +18,7 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/l10n.dart';
 import '../../widgets/matrix.dart';
 
-import 'chat_list_body.dart';
+import 'chat_list_body_messie.dart';
 
 class ChatListView extends StatelessWidget {
   final ChatListController controller;
@@ -28,7 +28,7 @@ class ChatListView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final oneColumnSpacesMode =
-        !FluffyThemes.isColumnMode(context) &&
+        FluffyThemes.isColumnMode(context) ||
         AppSettings.displayNavigationRail.value;
     return Actions(
       actions: <Type, Action<Intent>>{
@@ -110,97 +110,6 @@ class ChatListView extends StatelessWidget {
           ),
         ],
       ),
-      ),
-    );
-  }
-}
-// ignore: unused_element
-class _MobileWorkspaceDrawer extends StatelessWidget {
-  const _MobileWorkspaceDrawer({required this.controller});
-
-  final ChatListController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final client = Matrix.of(context).client;
-    final theme = Theme.of(context);
-    final activePath = GoRouterState.of(context).uri.path;
-    final spaces = client.rooms.where((room) => room.isSpace).toList();
-
-    void navigateTo(String path) {
-      Navigator.of(context).pop();
-      controller.clearActiveSpace();
-      context.go(path);
-    }
-
-    return Drawer(
-      child: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.forum_outlined),
-              title: Text(L10n.of(context).chats),
-              selected:
-                  controller.activeSpaceId == null &&
-                  !activePath.startsWith('/rooms/calendar') &&
-                  !activePath.startsWith('/rooms/settings'),
-              onTap: () => navigateTo('/rooms'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_month_outlined),
-              title: const Text('Calendar'),
-              selected: activePath.startsWith('/rooms/calendar'),
-              onTap: () => navigateTo('/rooms/calendar'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined),
-              title: Text(L10n.of(context).settings),
-              selected: activePath.startsWith('/rooms/settings'),
-              onTap: () => navigateTo('/rooms/settings'),
-            ),
-            const Divider(height: 24),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Text(
-                'Spaces',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-            ...spaces.map((space) {
-              final displayName = space.getLocalizedDisplayname(
-                MatrixLocals(L10n.of(context)),
-              );
-              return ListTile(
-                leading: Avatar(
-                  mxContent: space.avatar,
-                  name: displayName,
-                  size: 20,
-                ),
-                title: Text(
-                  displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                selected: controller.activeSpaceId == space.id,
-                onTap: () {
-                  Navigator.of(context).pop();
-                  controller.setActiveSpace(space.id);
-                },
-              );
-            }),
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: Text(L10n.of(context).createNewSpace),
-              onTap: () {
-                Navigator.of(context).pop();
-                context.go('/rooms/newspace');
-              },
-            ),
-          ],
-        ),
       ),
     );
   }

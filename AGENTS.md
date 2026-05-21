@@ -81,3 +81,19 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 
 - To minimize upstream merge conflicts, keep keyboard shortcut architecture concentrated under `lib/utils/keyboard/` whenever possible
 - Prefer central resolver/registry files plus thin page-level adapter registration over embedding large amounts of keyboard behavior directly in `chat.dart`, `chat_list.dart`, or other upstream-heavy controller/view files
+- Extracted widgets that reduce conflict surface:
+  - `lib/pages/chat/chat_keyboard_actions.dart` (was inline in `chat_view.dart`)
+  - `lib/pages/chat/message_focus_wrapper.dart` (was inline in `chat_event_list.dart`)
+  - `lib/pages/chat_list/chat_list_entries.dart` (was inline in `chat_list_body.dart`)
+- Still pending extraction (lower priority):
+  - keyboard Actions wrapper from `chat_list_body.dart` to own widget
+  - todo/calendar filtering logic from `chat_list_body.dart` to controller helper
+  - `fluffy_chat_app.dart` StatelessWidget restoration with extracted keyboard host
+
+### Upstream Merge Strategy
+
+- `chat_list_body.dart` is the highest-conflict file because it contains our todo/calendar interleaving, keyboard navigation wrappers, and bridge presentation alongside upstream's chat list rendering
+- When merging upstream, prefer taking their version of structural layout changes and re-adding our features on top, rather than trying to resolve inline conflicts
+- Upstream's `_customEnterKeyHandling` in `chat.dart` adds up-arrow-to-edit-last-message which conflicts with our message navigation; we remove that block and handle it through our resolver instead
+- Keep our additions at the end of files or in clearly separated sections where possible
+- Use public extracted classes (not private `_` prefixed) so they can live in separate files

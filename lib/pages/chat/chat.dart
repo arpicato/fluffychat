@@ -131,6 +131,9 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   /// when a message's Focus node gains focus.
   Event? focusedEvent;
 
+  /// Index of the currently focused message in the visible events list.
+  int focusedMessageIndex = -1;
+
   Timer? typingCoolDown;
   Timer? typingTimeout;
   bool currentlyTyping = false;
@@ -327,15 +330,8 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   }
 
   KeyEventResult _customEnterKeyHandling(FocusNode node, KeyEvent evt) {
-    if (evt is KeyDownEvent &&
-        evt.logicalKey == LogicalKeyboardKey.arrowUp &&
-        !PlatformInfos.isMobile &&
-        editEvent == null &&
-        replyEvent == null &&
-        sendController.text.isEmpty) {
-      _editLastSentMessage();
-      return KeyEventResult.handled;
-    }
+    // Note: Up-arrow from empty composer is handled by our global keyboard
+    // resolver (enters message focus navigation) instead of editing last message.
 
     if (evt is KeyDownEvent &&
         evt.logicalKey == LogicalKeyboardKey.escape &&

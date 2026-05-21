@@ -44,6 +44,22 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   bool messageFocusUp() {
     final scope = controller.messageFocusScope;
     if (scope == null) return false;
+    // If no message is currently focused (e.g. after Esc or first entry),
+    // focus the last traversable node (most recent message has highest order
+    // in our reversed list).
+    if (controller.focusedMessageIndex < 0) {
+      final context = scope.context;
+      if (context != null) {
+        final policy = FocusTraversalGroup.of(context);
+        final last = policy.findLastFocus(scope, ignoreCurrentFocus: true);
+        if (last != null) {
+          last.requestFocus();
+          return true;
+        }
+      }
+      scope.previousFocus();
+      return true;
+    }
     scope.previousFocus();
     return true;
   }
@@ -52,6 +68,13 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   bool messageFocusDown() {
     final scope = controller.messageFocusScope;
     if (scope == null) return false;
+    // If at the bottom-most message (index 0 in reversed list), return to composer.
+    if (controller.focusedMessageIndex == 0) {
+      controller.focusedEvent = null;
+      controller.focusedMessageIndex = -1;
+      controller.inputFocus.requestFocus();
+      return true;
+    }
     scope.nextFocus();
     return true;
   }
@@ -84,12 +107,25 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
       const [];
 
   /// Returns the target event for actions: focused message first,
-  /// then single selected message as fallback.
+  /// then single selected message, then intelligently picks the last
+  /// relevant message in the chat.
   Event? _actionTarget({bool ownMessageOnly = false}) {
     final ownUserId = controller.room.client.userID;
     Event? candidate = controller.focusedEvent;
     if (candidate == null && controller.selectedEvents.length == 1) {
       candidate = controller.selectedEvents.single;
+    }
+    // Fallback: pick the last relevant message in the visible timeline.
+    if (candidate == null) {
+      final events = _visibleEvents;
+      if (ownMessageOnly) {
+        candidate = events.cast<Event?>().firstWhere(
+          (e) => e!.senderId == ownUserId,
+          orElse: () => null,
+        );
+      } else {
+        candidate = events.isNotEmpty ? events.first : null;
+      }
     }
     if (candidate == null) return null;
     if (ownMessageOnly && candidate.senderId != ownUserId) return null;
@@ -160,8 +196,10 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
       controller.clearSelectedEvents();
       return true;
     }
-    // If focus is not on composer, return it there.
+    // If focus is not on composer, return it there and clear focused event.
     if (!controller.inputFocus.hasFocus) {
+      controller.focusedEvent = null;
+      controller.focusedMessageIndex = -1;
       controller.inputFocus.requestFocus();
       return true;
     }

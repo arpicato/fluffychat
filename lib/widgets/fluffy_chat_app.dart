@@ -9,8 +9,8 @@ import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/utils/keyboard/app_shortcuts.dart';
-import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
 import 'package:fluffychat/widgets/app_lock.dart';
+import 'package:fluffychat/widgets/keyboard_navigation_host.dart';
 import 'package:fluffychat/widgets/theme_builder.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -20,7 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/custom_scroll_behaviour.dart';
 import 'matrix.dart';
 
-class FluffyChatApp extends StatefulWidget {
+class FluffyChatApp extends StatelessWidget {
   final Widget? testWidget;
   final List<Client> clients;
   final String? pincode;
@@ -57,22 +57,8 @@ class FluffyChatApp extends StatefulWidget {
   );
 
   @override
-  State<FluffyChatApp> createState() => _FluffyChatAppState();
-}
-
-class _FluffyChatAppState extends State<FluffyChatApp> {
-  final _keyboardNavState = KeyboardNavigationState();
-
-  @override
-  void dispose() {
-    _keyboardNavState.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return KeyboardNavigation(
-      state: _keyboardNavState,
+    return KeyboardNavigationHost(
       child: ThemeBuilder(
         builder: (context, themeMode, primaryColor) => MaterialApp.router(
           title: AppSettings.applicationName.value,
@@ -90,14 +76,14 @@ class _FluffyChatAppState extends State<FluffyChatApp> {
           routerConfig: FluffyChatApp.router,
           builder: (context, child) => AppShortcuts(
             child: AppLockWidget(
-              pincode: widget.pincode,
-              clients: widget.clients,
+              pincode: pincode,
+              clients: clients,
               // Need a navigator above the Matrix widget for
               // displaying dialogs
               child: Matrix(
-                clients: widget.clients,
-                store: widget.store,
-                child: widget.testWidget ?? child,
+                clients: clients,
+                store: store,
+                child: testWidget ?? child,
               ),
             ),
           ),

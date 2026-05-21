@@ -8,6 +8,7 @@ import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/chat.dart';
 import 'package:fluffychat/pages/chat/events/message.dart';
+import 'package:fluffychat/pages/chat/message_focus_wrapper.dart';
 import 'package:fluffychat/pages/chat/seen_by_row.dart';
 import 'package:fluffychat/pages/chat/typing_indicators.dart';
 import 'package:fluffychat/utils/account_config.dart';
@@ -145,10 +146,13 @@ class ChatEventList extends StatelessWidget {
               key: ValueKey(event.transactionId ?? event.eventId),
               index: i,
               controller: controller.scrollController,
-              child: _MessageFocusWrapper(
+              child: MessageFocusWrapper(
                 order: events.length - i,
                 onSelect: () => controller.onSelectMessage(event),
-                onFocused: () => controller.focusedEvent = event,
+                onFocused: () {
+                  controller.focusedEvent = event;
+                  controller.focusedMessageIndex = i;
+                },
                 child: Message(
                 event,
                 bigEmojis: controller.bigEmojis,
@@ -198,74 +202,6 @@ class ChatEventList extends StatelessWidget {
         ),
       ),
       ),
-      ),
-    );
-  }
-}
-
-/// Wraps a message in a Focus node for keyboard traversal.
-/// Internal focusables (buttons, links) are isolated in their own
-/// FocusTraversalGroup so arrow-key traversal skips them.
-class _MessageFocusWrapper extends StatefulWidget {
-  const _MessageFocusWrapper({
-    required this.order,
-    required this.onSelect,
-    required this.onFocused,
-    required this.child,
-  });
-
-  final int order;
-  final VoidCallback onSelect;
-  final VoidCallback onFocused;
-  final Widget child;
-
-  @override
-  State<_MessageFocusWrapper> createState() => _MessageFocusWrapperState();
-}
-
-class _MessageFocusWrapperState extends State<_MessageFocusWrapper> {
-  final FocusNode _focusNode = FocusNode(skipTraversal: false);
-  bool _isFocused = false;
-
-  @override
-  void dispose() {
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return FocusTraversalOrder(
-      order: NumericFocusOrder(widget.order.toDouble()),
-      child: Focus(
-        focusNode: _focusNode,
-        onFocusChange: (focused) {
-          if (focused != _isFocused) {
-            setState(() => _isFocused = focused);
-            if (focused) {
-              widget.onFocused();
-            }
-          }
-        },
-        child: FocusTraversalGroup(
-          descendantsAreFocusable: true,
-          descendantsAreTraversable: false,
-          child: DecoratedBox(
-            decoration: _isFocused
-                ? BoxDecoration(
-                    border: Border(
-                      left: BorderSide(
-                        color: theme.colorScheme.primary,
-                        width: 3,
-                      ),
-                    ),
-                    color: theme.colorScheme.primary.withOpacity(0.06),
-                  )
-                : const BoxDecoration(),
-            child: widget.child,
-          ),
-        ),
       ),
     );
   }
