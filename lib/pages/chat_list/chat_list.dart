@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2019-Present Christian Kußowski
+// SPDX-FileCopyrightText: 2019-Present Contributors to FluffyChat
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import 'dart:async';
 
 import 'package:collection/collection.dart';
@@ -35,7 +40,7 @@ import '../../utils/url_launcher.dart';
 import '../../widgets/matrix.dart';
 import 'chat_list_workspace_mixin.dart';
 
-enum ActiveFilter { allChats, messages, groups, unread, spaces, tag }
+enum ActiveFilter { allChats, spaces, messages, groups, unread, tag }
 
 extension LocalizedActiveFilter on ActiveFilter {
   String toLocalizedString(BuildContext context) {

@@ -1,24 +1,21 @@
+// SPDX-FileCopyrightText: 2019-Present Christian Kußowski
+// SPDX-FileCopyrightText: 2019-Present Contributors to FluffyChat
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
-import 'package:fluffychat/pages/chat_list/chat_list_calendar_item.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_item.dart';
-import 'package:fluffychat/pages/chat_list/chat_list_todo_item.dart';
 import 'package:fluffychat/pages/chat_list/dummy_chat_list_item.dart';
 import 'package:fluffychat/pages/chat_list/search_title.dart';
 import 'package:fluffychat/pages/chat_list/space_view.dart';
 import 'package:fluffychat/pages/chat_list/status_msg_list.dart';
-import 'package:fluffychat/services/messie_calendar_service.dart';
-import 'package:fluffychat/services/messie_todo_service.dart';
-import 'package:fluffychat/utils/keyboard/intents.dart';
-import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
 import 'package:fluffychat/utils/stream_extension.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/public_room_dialog.dart';
 import 'package:fluffychat/widgets/avatar.dart';
-import 'package:fluffychat/widgets/focus_highlight.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../config/themes.dart';
@@ -27,19 +24,13 @@ import '../../widgets/matrix.dart';
 import 'chat_list_header.dart';
 
 class ChatListViewBody extends StatelessWidget {
-  static final FocusNode _keyboardFocusNode = FocusNode(
-    debugLabel: 'ChatListKeyboardScope',
-  );
-
   final ChatListController controller;
-  final VoidCallback? openDrawer;
 
-  const ChatListViewBody(this.controller, {this.openDrawer, super.key});
+  const ChatListViewBody(this.controller, {super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final activeRoute = GoRouterState.of(context).uri.path;
 
     final client = Matrix.of(context).client;
     final activeSpace = controller.activeSpaceId;
@@ -84,430 +75,189 @@ class ChatListViewBody extends StatelessWidget {
                   spaceDelegateCandidates[room.id] == null,
             )
             .toList();
-        final includeTodoLists =
-            !controller.isSearchMode &&
-            controller.activeFilter == ActiveFilter.allChats;
-        final visibleTodoLists = includeTodoLists
-            ? controller.todoLists.where((todoList) {
-                if (filter.isEmpty) return true;
-                final title = todoList.title.toLowerCase();
-                final description = todoList.description.toLowerCase();
-                return title.contains(filter) || description.contains(filter);
-              }).toList()
-            : const <MessieTodoList>[];
-        final visibleCalendarEvents = includeTodoLists
-            ? controller.upcomingCalendarEvents
-                  .where((event) {
-                    final now = DateTime.now().toUtc();
-                    final end = now.add(const Duration(days: 7));
-                    if (event.startsAt.isAfter(end) ||
-                        event.endsAt.isBefore(now)) {
-                      return false;
-                    }
-                    if (filter.isEmpty) return true;
-                    final title = event.title.toLowerCase();
-                    final description = event.description.toLowerCase();
-                    final location = event.location.toLowerCase();
-                    final source = event.sourceDisplayName.toLowerCase();
-                    return title.contains(filter) ||
-                        description.contains(filter) ||
-                        location.contains(filter) ||
-                        source.contains(filter);
-                  })
-                  .take(2)
-                  .toList()
-            : const <MessieCalendarEvent>[];
-        final timelineEntries = <_ChatListEntry>[
-          ...rooms.map(_ChatListEntry.room),
-          ...visibleTodoLists.map(_ChatListEntry.todo),
-        ]..sort((a, b) {
-          // Preserve SDK room ordering (respects pins, unread, low-priority)
-          // Only interleave todos by time among non-pinned rooms
-          final aIsRoom = a is _RoomChatListEntry;
-          final bIsRoom = b is _RoomChatListEntry;
-          final aPin = aIsRoom && (a as _RoomChatListEntry).room.isFavourite;
-          final bPin = bIsRoom && (b as _RoomChatListEntry).room.isFavourite;
 
-          // Pinned rooms always first
-          if (aPin && !bPin) return -1;
-          if (bPin && !aPin) return 1;
-
-          // Among pinned rooms, preserve SDK order (by room index in original list)
-          if (aPin && bPin) {
-            return rooms.indexOf((a as _RoomChatListEntry).room)
-                .compareTo(rooms.indexOf((b as _RoomChatListEntry).room));
-          }
-
-          // Non-pinned: sort by time
-          return b.sortTime.compareTo(a.sortTime);
-        });
-        final calendarEntries = <_ChatListEntry>[
-          ...visibleCalendarEvents.map(_ChatListEntry.calendar),
-        ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
-        final entries = <_ChatListEntry>[
-          ...calendarEntries,
-          if (calendarEntries.isNotEmpty && timelineEntries.isNotEmpty)
-            const _DividerChatListEntry(),
-          ...timelineEntries,
-        ];
-
-        // Update keyboard navigation state with current list length
-        final keyboardNav = KeyboardNavigation.maybeOf(context);
-        if (keyboardNav != null) {
-          // Count only room entries for keyboard navigation
-          final roomEntryCount = entries
-              .whereType<_RoomChatListEntry>()
-              .length;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            keyboardNav.setChatListLength(roomEntryCount);
-          });
-        }
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (FocusManager.instance.primaryFocus != null) return;
-          if (_keyboardFocusNode.hasFocus) return;
-          debugPrint('[kb/focus] requesting ChatListKeyboardScope');
-          _keyboardFocusNode.requestFocus();
-        });
-
-        return Actions(
-          actions: <Type, Action<Intent>>{
-            ChatListFocusUpIntent: CallbackAction<ChatListFocusUpIntent>(
-              onInvoke: (_) {
-                debugPrint('[kb/action] ChatListFocusUpIntent');
-                keyboardNav?.chatListFocusUp();
-                return null;
-              },
-            ),
-            ChatListFocusDownIntent: CallbackAction<ChatListFocusDownIntent>(
-              onInvoke: (_) {
-                debugPrint('[kb/action] ChatListFocusDownIntent');
-                keyboardNav?.chatListFocusDown();
-                return null;
-              },
-            ),
-            ChatListOpenFocusedIntent: CallbackAction<ChatListOpenFocusedIntent>(
-              onInvoke: (_) {
-                debugPrint('[kb/action] ChatListOpenFocusedIntent');
-                if (keyboardNav == null || !keyboardNav.hasChatListFocus) {
-                  return null;
-                }
-                final roomEntries = entries
-                    .whereType<_RoomChatListEntry>()
-                    .toList();
-                final idx = keyboardNav.chatListFocusIndex;
-                if (idx >= 0 && idx < roomEntries.length) {
-                  controller.onChatTap(roomEntries[idx].room);
-                }
-                return null;
-              },
-            ),
-          },
-          child: Focus(
-            autofocus: true,
-            focusNode: _keyboardFocusNode,
-            onFocusChange: (focused) => debugPrint(
-              '[kb/focus] ChatListKeyboardScope focused=$focused',
-            ),
-            child: SafeArea(
-            child: CustomScrollView(
-            controller: controller.scrollController,
-            slivers: [
-              ChatListHeader(controller: controller, openDrawer: openDrawer),
-              SliverList(
-                delegate: SliverChildListDelegate([
-                  if (controller.isSearchMode) ...[
-                    SearchTitle(
-                      title: L10n.of(context).publicRooms,
-                      icon: const Icon(Icons.explore_outlined),
-                    ),
-                    PublicRoomsHorizontalList(publicRooms: publicRooms),
-                    SearchTitle(
-                      title: L10n.of(context).publicSpaces,
-                      icon: const Icon(Icons.workspaces_outlined),
-                    ),
-                    PublicRoomsHorizontalList(publicRooms: publicSpaces),
-                    SearchTitle(
-                      title: L10n.of(context).users,
-                      icon: const Icon(Icons.group_outlined),
-                    ),
-                    AnimatedContainer(
-                      clipBehavior: Clip.hardEdge,
-                      decoration: const BoxDecoration(),
-                      height:
-                          userSearchResult == null ||
-                              userSearchResult.results.isEmpty
-                          ? 0
-                          : 106,
-                      duration: FluffyThemes.animationDuration,
-                      curve: FluffyThemes.animationCurve,
-                      child: userSearchResult == null
-                          ? null
-                          : ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: userSearchResult.results.length,
-                              itemBuilder: (context, i) => _SearchItem(
-                                title:
-                                    userSearchResult.results[i].displayName ??
-                                    userSearchResult
-                                        .results[i]
-                                        .userId
-                                        .localpart ??
-                                    L10n.of(context).unknownDevice,
-                                avatar: userSearchResult.results[i].avatarUrl,
-                                onPressed: () => UserDialog.show(
-                                  context: context,
-                                  profile: userSearchResult.results[i],
-                                ),
-                              ),
-                            ),
-                    ),
-                  ],
-                  if (!controller.isSearchMode &&
-                      AppSettings.showPresences.value)
-                    GestureDetector(
-                      onLongPress: controller.dismissStatusList,
-                      child: StatusMessageList(
-                        onStatusEdit: controller.setStatus,
-                      ),
-                    ),
-                  if (client.rooms.isNotEmpty && !controller.isSearchMode)
-                    SizedBox(
-                      height: 64,
-                      child: ListView(
-                        padding: const EdgeInsets.all(12.0),
-                        shrinkWrap: true,
-                        scrollDirection: Axis.horizontal,
-                        children: [
-                          ...ActiveFilter.values
-                              .where((filter) => filter != ActiveFilter.tag)
-                              .map(
-                                (filter) => Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4.0,
-                                  ),
-                                  child: FilterChip(
-                                    selected: filter == controller.activeFilter,
-                                    onSelected: (_) => controller
-                                        .setActiveFilter(filter, null),
-                                    label: Text(
-                                      filter.toLocalizedString(context),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ...controller.roomTags.entries.map(
-                            (entry) => Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4.0,
-                              ),
-                              child: FilterChip(
-                                selected: entry.key == controller.activeTag,
-                                onSelected: (_) => controller.setActiveFilter(
-                                  ActiveFilter.tag,
-                                  entry.key,
-                                ),
-                                label: Text(entry.key.replaceFirst('u.', '')),
+        return CustomScrollView(
+          controller: controller.scrollController,
+          slivers: [
+            ChatListHeader(controller: controller),
+            SliverList(
+              delegate: SliverChildListDelegate([
+                if (controller.isSearchMode) ...[
+                  SearchTitle(
+                    title: L10n.of(context).publicRooms,
+                    icon: const Icon(Icons.explore_outlined),
+                  ),
+                  PublicRoomsHorizontalList(publicRooms: publicRooms),
+                  SearchTitle(
+                    title: L10n.of(context).publicSpaces,
+                    icon: const Icon(Icons.workspaces_outlined),
+                  ),
+                  PublicRoomsHorizontalList(publicRooms: publicSpaces),
+                  SearchTitle(
+                    title: L10n.of(context).users,
+                    icon: const Icon(Icons.group_outlined),
+                  ),
+                  AnimatedContainer(
+                    clipBehavior: Clip.hardEdge,
+                    decoration: const BoxDecoration(),
+                    height:
+                        userSearchResult == null ||
+                            userSearchResult.results.isEmpty
+                        ? 0
+                        : 106,
+                    duration: FluffyThemes.animationDuration,
+                    curve: FluffyThemes.animationCurve,
+                    child: userSearchResult == null
+                        ? null
+                        : ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: userSearchResult.results.length,
+                            itemBuilder: (context, i) => _SearchItem(
+                              title:
+                                  userSearchResult.results[i].displayName ??
+                                  userSearchResult
+                                      .results[i]
+                                      .userId
+                                      .localpart ??
+                                  L10n.of(context).unknownDevice,
+                              avatar: userSearchResult.results[i].avatarUrl,
+                              onPressed: () => UserDialog.show(
+                                context: context,
+                                profile: userSearchResult.results[i],
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                  ),
+                ],
+                if (!controller.isSearchMode && AppSettings.showPresences.value)
+                  GestureDetector(
+                    onLongPress: controller.dismissStatusList,
+                    child: StatusMessageList(
+                      onStatusEdit: controller.setStatus,
                     ),
-                  if (controller.isSearchMode)
-                    SearchTitle(
-                      title: L10n.of(context).chats,
-                      icon: const Icon(Icons.forum_outlined),
-                    ),
-                  if (client.prevBatch != null &&
-                      entries.isEmpty &&
-                      !controller.isSearchMode &&
-                      !controller.isLoadingTodoLists) ...[
-                    Column(
-                      mainAxisAlignment: .center,
+                  ),
+                if (client.rooms.isNotEmpty && !controller.isSearchMode)
+                  SizedBox(
+                    height: 64,
+                    child: ListView(
+                      padding: const EdgeInsets.all(12.0),
+                      shrinkWrap: true,
+                      scrollDirection: Axis.horizontal,
                       children: [
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Column(
-                              mainAxisSize: .min,
-                              children: [
-                                DummyChatListItem(opacity: 0.5, animate: false),
-                                DummyChatListItem(opacity: 0.3, animate: false),
-                              ],
+                        ...ActiveFilter.values
+                            .where((filter) => filter != ActiveFilter.tag)
+                            .map(
+                              (filter) => Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4.0,
+                                ),
+                                child: FilterChip(
+                                  selected: filter == controller.activeFilter,
+                                  onSelected: (_) =>
+                                      controller.setActiveFilter(filter, null),
+                                  label: Text(
+                                    filter.toLocalizedString(context),
+                                  ),
+                                ),
+                              ),
                             ),
-                            Icon(
-                              CupertinoIcons.chat_bubble_text_fill,
-                              size: 128,
-                              color: theme.colorScheme.secondary,
+                        ...controller.roomTags.entries.map(
+                          (entry) => Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4.0,
                             ),
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Text(
-                            client.rooms.isEmpty && controller.todoLists.isEmpty
-                                ? L10n.of(context).noChatsFoundHere
-                                : L10n.of(context).noMoreChatsFound,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: theme.colorScheme.secondary,
+                            child: FilterChip(
+                              selected: entry.key == controller.activeTag,
+                              onSelected: (_) => controller.setActiveFilter(
+                                ActiveFilter.tag,
+                                entry.key,
+                              ),
+                              label: Text(entry.key.replaceFirst('u.', '')),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ]),
-              ),
-              if (client.prevBatch == null)
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, i) => DummyChatListItem(
-                      opacity: (dummyChatCount - i) / dummyChatCount,
-                      animate: true,
-                    ),
-                    childCount: dummyChatCount,
                   ),
-                ),
-              if (client.prevBatch != null)
-                SliverList.builder(
-                  itemCount: entries.length,
-                  itemBuilder: (BuildContext context, int i) {
-                    final entry = entries[i];
-                    return switch (entry) {
-                      _RoomChatListEntry(:final room) => Builder(
-                        builder: (context) {
-                          // Calculate room-only index for keyboard focus
-                          final roomIndex = entries
-                              .take(i + 1)
-                              .whereType<_RoomChatListEntry>()
-                              .length - 1;
-                          final isFocused = keyboardNav != null &&
-                              keyboardNav.hasChatListFocus &&
-                              keyboardNav.chatListFocusIndex == roomIndex;
-                          return FocusHighlight(
-                            isFocused: isFocused,
-                            child: ChatListItem(
-                              room,
-                              presentation: controller.bridgePresentationForRoom(
-                                room,
-                              ),
-                              space: spaceDelegateCandidates[room.id],
-                              key: Key('chat_list_item_${room.id}'),
-                              filter: filter,
-                              onTap: () => controller.onChatTap(room),
-                              onLongPress: (context) => controller.chatContextAction(
-                                room,
-                                context,
-                                spaceDelegateCandidates[room.id],
-                              ),
-                              activeChat: controller.activeChat == room.id,
-                            ),
-                          );
-                        },
+                if (controller.isSearchMode)
+                  SearchTitle(
+                    title: L10n.of(context).chats,
+                    icon: const Icon(Icons.forum_outlined),
+                  ),
+                if (client.prevBatch != null &&
+                    rooms.isEmpty &&
+                    !controller.isSearchMode) ...[
+                  Column(
+                    mainAxisAlignment: .center,
+                    children: [
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Column(
+                            mainAxisSize: .min,
+                            children: [
+                              DummyChatListItem(opacity: 0.5, animate: false),
+                              DummyChatListItem(opacity: 0.3, animate: false),
+                            ],
+                          ),
+                          Icon(
+                            CupertinoIcons.chat_bubble_text_fill,
+                            size: 128,
+                            color: theme.colorScheme.secondary,
+                          ),
+                        ],
                       ),
-                      _TodoChatListEntry(:final todoList) =>
-                        ChatListTodoItem(
-                          key: Key('chat_list_todo_${todoList.id}'),
-                          todoList: todoList,
-                          active:
-                              activeRoute == '/rooms/todos/${todoList.id}' ||
-                              activeRoute.startsWith(
-                                '/rooms/todos/${todoList.id}/',
-                              ),
-                          onTap: () => context.push(
-                            '/rooms/todos/${todoList.id}',
-                            extra: <String, Object?>{
-                              'title': todoList.title,
-                              'description': todoList.description,
-                            },
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text(
+                          client.rooms.isEmpty
+                              ? L10n.of(context).noChatsFoundHere
+                              : L10n.of(context).noMoreChatsFound,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: theme.colorScheme.secondary,
                           ),
                         ),
-                      _CalendarChatListEntry(:final event) =>
-                        ChatListCalendarItem(
-                          key: Key('chat_list_calendar_${event.id}'),
-                          event: event,
-                          active:
-                              activeRoute ==
-                                  '/rooms/calendar/events/${event.id}' ||
-                              activeRoute.startsWith(
-                                '/rooms/calendar/events/${event.id}/',
-                              ),
-                          onTap: () => context.push(
-                            '/rooms/calendar/events/${event.id}',
-                            extra: <String, Object?>{
-                              'title': event.title,
-                              'sourceDisplayName': event.sourceDisplayName,
-                            },
-                          ),
-                        ),
-                      _DividerChatListEntry() => Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                        child: Divider(
-                          color: theme.colorScheme.outlineVariant,
-                          height: 1,
-                        ),
                       ),
-                    };
-                  },
+                    ],
+                  ),
+                ],
+              ]),
+            ),
+            if (client.prevBatch == null)
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, i) => DummyChatListItem(
+                    opacity: (dummyChatCount - i) / dummyChatCount,
+                    animate: true,
+                  ),
+                  childCount: dummyChatCount,
                 ),
-            ],
-          ),
-          ),
-          ),
+              ),
+            if (client.prevBatch != null)
+              SliverList.builder(
+                itemCount: rooms.length,
+                itemBuilder: (BuildContext context, int i) {
+                  final room = rooms[i];
+                  final space = spaceDelegateCandidates[room.id];
+                  return ChatListItem(
+                    room,
+                    space: space,
+                    key: Key('chat_list_item_${room.id}'),
+                    filter: filter,
+                    onTap: () => controller.onChatTap(room),
+                    onLongPress: (context) =>
+                        controller.chatContextAction(room, context, space),
+                    activeChat: controller.activeChat == room.id,
+                  );
+                },
+              ),
+          ],
         );
       },
     );
   }
-}
-
-sealed class _ChatListEntry {
-  const _ChatListEntry();
-
-  factory _ChatListEntry.room(Room room) = _RoomChatListEntry;
-  factory _ChatListEntry.todo(MessieTodoList todoList) = _TodoChatListEntry;
-  factory _ChatListEntry.calendar(MessieCalendarEvent event) =
-      _CalendarChatListEntry;
-
-  DateTime get sortTime;
-}
-
-class _RoomChatListEntry extends _ChatListEntry {
-  const _RoomChatListEntry(this.room);
-
-  final Room room;
-
-  @override
-  DateTime get sortTime => room.latestEventReceivedTime;
-}
-
-class _TodoChatListEntry extends _ChatListEntry {
-  const _TodoChatListEntry(this.todoList);
-
-  final MessieTodoList todoList;
-
-  @override
-  DateTime get sortTime =>
-      todoList.updatedAt ??
-      todoList.createdAt ??
-      DateTime.fromMillisecondsSinceEpoch(0);
-}
-
-class _CalendarChatListEntry extends _ChatListEntry {
-  const _CalendarChatListEntry(this.event);
-
-  final MessieCalendarEvent event;
-
-  @override
-  DateTime get sortTime => event.startsAt;
-}
-
-class _DividerChatListEntry extends _ChatListEntry {
-  const _DividerChatListEntry();
-
-  @override
-  DateTime get sortTime => DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 class PublicRoomsHorizontalList extends StatelessWidget {

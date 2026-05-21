@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2019-Present Christian Kußowski
+// SPDX-FileCopyrightText: 2019-Present Contributors to FluffyChat
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
 import 'dart:async';
 import 'dart:io';
 
@@ -12,6 +17,7 @@ import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/chat_view.dart';
 import 'package:fluffychat/pages/chat/event_info_dialog.dart';
 import 'package:fluffychat/pages/chat/start_poll_bottom_sheet.dart';
+import 'package:fluffychat/pages/chat/utils/web_file_to_x_file.dart';
 import 'package:fluffychat/pages/chat_details/chat_details.dart';
 import 'package:fluffychat/utils/adaptive_bottom_sheet.dart';
 import 'package:fluffychat/utils/error_reporter.dart';
@@ -37,7 +43,9 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mime/mime.dart';
+import 'package:pasteboard/pasteboard.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
+import 'package:universal_html/universal_html.dart' as web;
 
 import '../../utils/account_bundles.dart';
 import '../../utils/localized_exception_extension.dart';
@@ -319,6 +327,23 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   }
 
   KeyEventResult _customEnterKeyHandling(FocusNode node, KeyEvent evt) {
+    if (evt is KeyDownEvent &&
+        evt.logicalKey == LogicalKeyboardKey.arrowUp &&
+        !PlatformInfos.isMobile &&
+        editEvent == null &&
+        replyEvent == null &&
+        sendController.text.isEmpty) {
+      _editLastSentMessage();
+      return KeyEventResult.handled;
+    }
+
+    if (evt is KeyDownEvent &&
+        evt.logicalKey == LogicalKeyboardKey.escape &&
+        editEvent != null) {
+      _cancelEditWithConfirmation();
+      return KeyEventResult.handled;
+    }
+
     if (!HardwareKeyboard.instance.isShiftPressed &&
         evt.logicalKey.keyLabel == 'Enter' &&
         AppSettings.sendOnEnter.value) {
@@ -374,6 +399,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
       if (!mounted) return;
       inputFocus.requestFocus();
     });
+    web.window.addEventListener('paste', _handleClipboardFilePasteWeb);
     super.initState();
     _displayChatDetailsColumn = ValueNotifier(
       AppSettings.displayChatDetailsColumn.value,
@@ -578,6 +604,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     timeline?.cancelSubscriptions();
     timeline = null;
     inputFocus.removeListener(_inputFocusListener);
+    web.window.removeEventListener('paste', _handleClipboardFilePasteWeb);
     if (currentlyTyping) room.setTyping(false);
     super.dispose();
   }
@@ -701,6 +728,90 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
         threadLastEventId: threadLastEventId,
       ),
     );
+  }
+
+  Future<void> _handleClipboardFilePasteWeb(web.Event event) async {
+    if (event is! web.ClipboardEvent) return;
+
+    final clipboardFiles = event.clipboardData?.files;
+    final length = clipboardFiles?.length ?? 0;
+    if (clipboardFiles == null || length < 1) return;
+
+    // Browser will clear clipboardData when we await!
+    // We MUST extract the files synchronously first.
+    final localFiles = clipboardFiles.toList();
+
+    if (localFiles.isEmpty) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    final xFilesResult = await showFutureLoadingDialog(
+      context: context,
+      future: () async {
+        // Convert one after another seems to be more stable
+        final xFiles = <XFile>[];
+        for (final file in localFiles) {
+          xFiles.add(await webToXFile(file));
+        }
+        return xFiles;
+      },
+    );
+    final xFiles = xFilesResult.result;
+    if (xFiles == null || xFiles.isEmpty) return;
+
+    if (!mounted) return;
+    showAdaptiveDialog(
+      context: context,
+      builder: (c) => SendFileDialog(
+        files: xFiles,
+        room: room,
+        outerContext: context,
+        threadRootEventId: activeThreadId,
+        threadLastEventId: threadLastEventId,
+      ),
+    );
+  }
+
+  Future<void> _handleClipboardImagePaste() async {
+    final files = await Pasteboard.files();
+    if (files.isNotEmpty) {
+      if (!mounted) return;
+      await showAdaptiveDialog(
+        context: context,
+        builder: (c) => SendFileDialog(
+          files: files.map(XFile.new).toList(),
+          room: room,
+          outerContext: context,
+          threadRootEventId: activeThreadId,
+          threadLastEventId: threadLastEventId,
+        ),
+      );
+      return;
+    }
+    final image = await Pasteboard.image;
+    if (image != null) {
+      await sendImageFromClipBoard(image);
+      return;
+    }
+    // No image in clipboard — fall back to pasting text
+    final textData = await Clipboard.getData('text/plain');
+    if (textData?.text != null) {
+      final selection = sendController.selection;
+      final text = sendController.text;
+      final newText = text.replaceRange(
+        selection.start,
+        selection.end,
+        textData!.text!,
+      );
+      sendController.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(
+          offset: selection.start + textData.text!.length,
+        ),
+      );
+      onInputBarChanged(sendController.text);
+    }
   }
 
   Future<void> openVideoCameraAction() async {
@@ -1126,28 +1237,56 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     }
   }
 
-  void editSelectedEventAction() {
+  void _startEditingEvent(Event event, {bool clearSelection = false}) {
+    final timeline = this.timeline;
+    if (timeline == null) return;
+
     final client = currentRoomBundle.firstWhere(
-      (cl) => selectedEvents.first.senderId == cl!.userID,
+      (c) => c?.userID == event.senderId,
       orElse: () => null,
     );
-    if (client == null) {
-      return;
-    }
+    if (client == null) return;
+
     setSendingClient(client);
     setState(() {
       pendingText = sendController.text;
-      editEvent = selectedEvents.first;
-      sendController.text = editEvent!
-          .getDisplayEvent(timeline!)
+      editEvent = event;
+      sendController.text = event
+          .getDisplayEvent(timeline)
           .calcLocalizedBodyFallback(
             MatrixLocals(L10n.of(context)),
             withSenderNamePrefix: false,
             hideReply: true,
           );
-      selectedEvents.clear();
+      if (clearSelection) selectedEvents.clear();
     });
     inputFocus.requestFocus();
+  }
+
+  void editSelectedEventAction() {
+    _startEditingEvent(selectedEvents.first, clearSelection: true);
+  }
+
+  void _editLastSentMessage() {
+    final timeline = this.timeline;
+    if (timeline == null) return;
+
+    final events = timeline.events.filterByVisibleInGui(
+      threadId: activeThreadId,
+    );
+
+    final lastOwnMessage = events.firstWhereOrNull(
+      (e) =>
+          e.type == EventTypes.Message &&
+          e.messageType == MessageTypes.Text &&
+          e.status.isSent &&
+          !e.redacted &&
+          currentRoomBundle.any((c) => c?.userID == e.senderId),
+    );
+
+    if (lastOwnMessage == null) return;
+
+    _startEditingEvent(lastOwnMessage);
   }
 
   Future<void> goToNewRoomAction() async {
@@ -1401,6 +1540,29 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     editEvent = null;
   });
 
+  Future<void> _cancelEditWithConfirmation() async {
+    final originalText = editEvent!
+        .getDisplayEvent(timeline!)
+        .calcLocalizedBodyFallback(
+          MatrixLocals(L10n.of(context)),
+          withSenderNamePrefix: false,
+          hideReply: true,
+        );
+
+    if (sendController.text != originalText) {
+      final result = await showOkCancelAlertDialog(
+        context: context,
+        title: L10n.of(context).areYouSure,
+        message: L10n.of(context).discardEdits,
+        okLabel: L10n.of(context).ok,
+        cancelLabel: L10n.of(context).cancel,
+      );
+      if (result == OkCancelResult.cancel) return;
+    }
+
+    cancelReplyEventAction();
+  }
+
   late final ValueNotifier<bool> _displayChatDetailsColumn;
 
   Future<void> toggleDisplayChatDetailsColumn() async {
@@ -1413,34 +1575,44 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Row(
-      children: [
-        Expanded(child: ChatView(this)),
-        ValueListenableBuilder(
-          valueListenable: _displayChatDetailsColumn,
-          builder: (context, displayChatDetailsColumn, _) =>
-              !FluffyThemes.isThreeColumnMode(context) ||
-                  room.membership != Membership.join ||
-                  !displayChatDetailsColumn
-              ? const SizedBox(height: double.infinity, width: 0)
-              : Container(
-                  width: FluffyThemes.columnWidth,
-                  clipBehavior: Clip.hardEdge,
-                  decoration: BoxDecoration(
-                    border: Border(
-                      left: BorderSide(width: 1, color: theme.dividerColor),
+    return Actions(
+      actions: kIsWeb
+          ? {}
+          : <Type, Action<Intent>>{
+              PasteTextIntent: CallbackAction<PasteTextIntent>(
+                onInvoke: (PasteTextIntent intent) =>
+                    _handleClipboardImagePaste(),
+              ),
+            },
+      child: Row(
+        children: [
+          Expanded(child: ChatView(this)),
+          ValueListenableBuilder(
+            valueListenable: _displayChatDetailsColumn,
+            builder: (context, displayChatDetailsColumn, _) =>
+                !FluffyThemes.isThreeColumnMode(context) ||
+                    room.membership != Membership.join ||
+                    !displayChatDetailsColumn
+                ? const SizedBox(height: double.infinity, width: 0)
+                : Container(
+                    width: FluffyThemes.columnWidth,
+                    clipBehavior: Clip.hardEdge,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(width: 1, color: theme.dividerColor),
+                      ),
+                    ),
+                    child: ChatDetails(
+                      roomId: roomId,
+                      embeddedCloseButton: IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: toggleDisplayChatDetailsColumn,
+                      ),
                     ),
                   ),
-                  child: ChatDetails(
-                    roomId: roomId,
-                    embeddedCloseButton: IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: toggleDisplayChatDetailsColumn,
-                    ),
-                  ),
-                ),
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 }

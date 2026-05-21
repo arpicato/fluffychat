@@ -1,3 +1,9 @@
+// SPDX-FileCopyrightText: 2019-Present Christian Kußowski
+// SPDX-FileCopyrightText: 2019-Present Contributors to FluffyChat
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
@@ -21,8 +27,8 @@ class ChatListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showRail =
-        FluffyThemes.isColumnMode(context) ||
+    final oneColumnSpacesMode =
+        !FluffyThemes.isColumnMode(context) &&
         AppSettings.displayNavigationRail.value;
     return Actions(
       actions: <Type, Action<Intent>>{
@@ -60,7 +66,7 @@ class ChatListView extends StatelessWidget {
       },
       child: Row(
         children: [
-          if (showRail) ...[
+          if (oneColumnSpacesMode) ...[
             SpacesNavigationRail(
               activeSpaceId: controller.activeSpaceId,
               onGoToChats: () {
@@ -73,7 +79,8 @@ class ChatListView extends StatelessWidget {
               },
               onGoToSpaceId: controller.setActiveSpace,
             ),
-            Container(color: Theme.of(context).dividerColor, width: 1),
+            if (FluffyThemes.isColumnMode(context))
+              Container(width: 1, color: Theme.of(context).dividerColor),
           ],
           Expanded(
             child: GestureDetector(
@@ -81,7 +88,17 @@ class ChatListView extends StatelessWidget {
               excludeFromSemantics: true,
               behavior: HitTestBehavior.translucent,
               child: Scaffold(
-                body: ChatListViewBody(controller),
+                backgroundColor: oneColumnSpacesMode
+                    ? Theme.of(context).colorScheme.surfaceContainer
+                    : null,
+                body: SafeArea(
+                  child: Material(
+                    clipBehavior: Clip.hardEdge,
+                    borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+                    color: Theme.of(context).colorScheme.surface,
+                    child: ChatListViewBody(controller),
+                  ),
+                ),
                 floatingActionButton:
                     !controller.isSearchMode &&
                         controller.activeSpaceId == null &&

@@ -1,21 +1,9 @@
-/*
- *   Famedly
- *   Copyright (C) 2020, 2021 Famedly GmbH
- *   Copyright (C) 2021 Fluffychat
- *
- *   This program is free software: you can redistribute it and/or modify
- *   it under the terms of the GNU Affero General Public License as
- *   published by the Free Software Foundation, either version 3 of the
- *   License, or (at your option) any later version.
- *
- *   This program is distributed in the hope that it will be useful,
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- *   GNU Affero General Public License for more details.
- *
- *   You should have received a copy of the GNU Affero General Public License
- *   along with this program.  If not, see <https://www.gnu.org/licenses/>.
- */
+// SPDX-FileCopyrightText: 2019-Present Christian Kußowski
+// SPDX-FileCopyrightText: 2019-Present Contributors to FluffyChat
+// Copyright (C) 2020, 2021 Famedly GmbH
+// Copyright (C) 2021 Fluffychat
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
 
 import 'dart:async';
 import 'dart:convert';
@@ -226,29 +214,30 @@ class BackgroundPush {
       return;
     }
 
-    final currentPusher = pushers.singleOrNull;
-
-    if (currentPusher != null &&
-        currentPusher.pushkey == token &&
-        currentPusher.data.additionalProperties['client_name'] ==
-            client.clientName &&
-        currentPusher.kind == 'http' &&
-        currentPusher.appId == thisAppId &&
-        currentPusher.appDisplayName == appDisplayName &&
-        currentPusher.deviceDisplayName == client.deviceName &&
-        currentPusher.lang == 'en' &&
-        currentPusher.data.url.toString() == gatewayUrl &&
-        currentPusher.data.format ==
-            AppSettings.pushNotificationsPusherFormat.value &&
-        currentPusher.data.additionalProperties['data_message'] ==
-            pusherDataMessageFormat) {
+    if (pushers.any(
+      (currentPusher) =>
+          currentPusher.pushkey == token &&
+          currentPusher.data.additionalProperties['client_name'] ==
+              client.clientName &&
+          currentPusher.kind == 'http' &&
+          currentPusher.appId == thisAppId &&
+          currentPusher.appDisplayName == appDisplayName &&
+          currentPusher.deviceDisplayName == client.deviceName &&
+          currentPusher.lang == 'en' &&
+          currentPusher.data.url.toString() == gatewayUrl &&
+          currentPusher.data.format ==
+              AppSettings.pushNotificationsPusherFormat.value &&
+          currentPusher.data.additionalProperties['data_message'] ==
+              pusherDataMessageFormat,
+    )) {
       Logs().i('[Push] Pusher already set for ${client.clientName}');
       return;
     }
 
     if (!client.isLogged()) return;
 
-    for (final pusher in pushers) {
+    final legacyPushers = pushers.where((pusher) => pusher.pushkey == token);
+    for (final pusher in legacyPushers) {
       try {
         await client.deletePusher(pusher);
         Logs().i('[Push] Removed legacy pusher for ${client.clientName}');

@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2019-Present Christian Kußowski
+SPDX-FileCopyrightText: 2019-Present Contributors to FluffyChat
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
 ## v2.6.0
 - feat: Option to hide thumbnails of images and videos (Christian Kußowski)
 - feat(chat): make messagePreviewMaxLines configurable, with default 128 (Halil Kaskavalci)
@@ -6,6 +13,7 @@
 - feat: hide rooms in spaces add a setting to hide rooms that are in spaces from the main chat list (twoneis)
 - feat: Implement room tags (Christian Kußowski)
 - feat: Persist chat filters (Christian Kußowski)
+- feat: Paste files in chat (ION606)
 - fix: add prepare-web.sh support for both python and go yq versions (Vitalii)
 - fix: Chat view crashes if events list empty (Christian Kußowski)
 - fix: DMs in spaces are displayed as empty chats (Christian Kußowski)
