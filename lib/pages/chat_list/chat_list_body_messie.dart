@@ -16,12 +16,9 @@ import 'package:fluffychat/pages/chat_list/space_view.dart';
 import 'package:fluffychat/pages/chat_list/status_msg_list.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
-import 'package:fluffychat/utils/keyboard/intents.dart';
-import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
 import 'package:fluffychat/utils/stream_extension.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/public_room_dialog.dart';
 import 'package:fluffychat/widgets/avatar.dart';
-import 'package:fluffychat/widgets/focus_highlight.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -33,10 +30,6 @@ import '../../widgets/matrix.dart';
 import 'chat_list_header.dart';
 
 class ChatListViewBody extends StatelessWidget {
-  static final FocusNode _keyboardFocusNode = FocusNode(
-    debugLabel: 'ChatListKeyboardScope',
-  );
-
   final ChatListController controller;
   final VoidCallback? openDrawer;
 
@@ -157,83 +150,13 @@ class ChatListViewBody extends StatelessWidget {
           ...timelineEntries,
         ];
 
-        // Update keyboard navigation state with current list length
-        final keyboardNav = KeyboardNavigation.maybeOf(context);
         // Navigable entries = everything except dividers
         final navigableEntries = entries
             .where((e) => e is! DividerChatListEntry)
             .toList();
         controller.navigableEntries = navigableEntries;
-        if (keyboardNav != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            keyboardNav.setChatListLength(navigableEntries.length);
-          });
-        }
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (FocusManager.instance.primaryFocus != null) return;
-          if (_keyboardFocusNode.hasFocus) return;
-          debugPrint('[kb/focus] requesting ChatListKeyboardScope');
-          _keyboardFocusNode.requestFocus();
-        });
 
-        return Actions(
-          actions: <Type, Action<Intent>>{
-            ChatListFocusUpIntent: CallbackAction<ChatListFocusUpIntent>(
-              onInvoke: (_) {
-                debugPrint('[kb/action] ChatListFocusUpIntent');
-                keyboardNav?.chatListFocusUp();
-                return null;
-              },
-            ),
-            ChatListFocusDownIntent: CallbackAction<ChatListFocusDownIntent>(
-              onInvoke: (_) {
-                debugPrint('[kb/action] ChatListFocusDownIntent');
-                keyboardNav?.chatListFocusDown();
-                return null;
-              },
-            ),
-            ChatListOpenFocusedIntent: CallbackAction<ChatListOpenFocusedIntent>(
-              onInvoke: (_) {
-                debugPrint('[kb/action] ChatListOpenFocusedIntent');
-                if (keyboardNav == null || !keyboardNav.hasChatListFocus) {
-                  return null;
-                }
-                final idx = keyboardNav.chatListFocusIndex;
-                if (idx < 0 || idx >= navigableEntries.length) return null;
-                final entry = navigableEntries[idx];
-                switch (entry) {
-                  case RoomChatListEntry(:final room):
-                    controller.onChatTap(room);
-                  case TodoChatListEntry(:final todoList):
-                    context.push(
-                      '/rooms/todos/${todoList.id}',
-                      extra: <String, Object?>{
-                        'title': todoList.title,
-                        'description': todoList.description,
-                      },
-                    );
-                  case CalendarChatListEntry(:final event):
-                    context.push(
-                      '/rooms/calendar/events/${event.id}',
-                      extra: <String, Object?>{
-                        'title': event.title,
-                        'sourceDisplayName': event.sourceDisplayName,
-                      },
-                    );
-                  case DividerChatListEntry():
-                    break;
-                }
-                return null;
-              },
-            ),
-          },
-          child: Focus(
-            autofocus: true,
-            focusNode: _keyboardFocusNode,
-            onFocusChange: (focused) => debugPrint(
-              '[kb/focus] ChatListKeyboardScope focused=$focused',
-            ),
-            child: SafeArea(
+        return SafeArea(
             child: CustomScrollView(
             controller: controller.scrollController,
             slivers: [
@@ -400,20 +323,32 @@ class ChatListViewBody extends StatelessWidget {
                   itemCount: entries.length,
                   itemBuilder: (BuildContext context, int i) {
                     final entry = entries[i];
-                    // Calculate navigable index (skipping dividers)
-                    final navIndex = navigableEntries.indexOf(entry);
-                    final isFocused = keyboardNav != null &&
-                        keyboardNav.hasChatListFocus &&
-                        navIndex >= 0 &&
-                        keyboardNav.chatListFocusIndex == navIndex;
-                    return switch (entry) {
-                      RoomChatListEntry(:final room) => FocusHighlight(
-                        isFocused: isFocused,
-                        child: ChatListItem(
+                    if (entry is DividerChatListEntry) {
+                      return Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Divider(
+                          color: theme.colorScheme.outlineVariant,
+                          height: 1,
+                        ),
+                      );
+                    }
+                    // Count navigable items before this one to get the correct index.
+                    int navIndex = 0;
+                    for (int j = 0; j < i; j++) {
+                      if (entries[j] is! DividerChatListEntry) navIndex++;
+                    }
+                    debugPrint('[kb/chatlist] item i=$i navIndex=$navIndex entry=${entry.runtimeType}');
+                    return _ChatListFocusItem(
+                      order: navIndex,
+                      controller: controller,
+                      onFocused: () {
+                        controller.focusedChatListEntry = entry;
+                        controller.focusedChatListIndex = navIndex;
+                      },
+                      child: switch (entry) {
+                        RoomChatListEntry(:final room) => ChatListItem(
                           room,
-                          presentation: controller.bridgePresentationForRoom(
-                            room,
-                          ),
+                          presentation: controller.bridgePresentationForRoom(room),
                           space: spaceDelegateCandidates[room.id],
                           key: Key('chat_list_item_${room.id}'),
                           filter: filter,
@@ -425,62 +360,102 @@ class ChatListViewBody extends StatelessWidget {
                           ),
                           activeChat: controller.activeChat == room.id,
                         ),
-                      ),
-                      TodoChatListEntry(:final todoList) => FocusHighlight(
-                        isFocused: isFocused,
-                        child: ChatListTodoItem(
+                        TodoChatListEntry(:final todoList) => ChatListTodoItem(
                           key: Key('chat_list_todo_${todoList.id}'),
                           todoList: todoList,
                           active:
                               activeRoute == '/rooms/todos/${todoList.id}' ||
-                              activeRoute.startsWith(
-                                '/rooms/todos/${todoList.id}/',
-                              ),
+                              activeRoute.startsWith('/rooms/todos/${todoList.id}/'),
                           onTap: () => context.push(
                             '/rooms/todos/${todoList.id}',
-                            extra: <String, Object?>{
-                              'title': todoList.title,
-                              'description': todoList.description,
-                            },
+                            extra: <String, Object?>{'title': todoList.title, 'description': todoList.description},
                           ),
                         ),
-                      ),
-                      CalendarChatListEntry(:final event) => FocusHighlight(
-                        isFocused: isFocused,
-                        child: ChatListCalendarItem(
+                        CalendarChatListEntry(:final event) => ChatListCalendarItem(
                           key: Key('chat_list_calendar_${event.id}'),
                           event: event,
                           active:
-                              activeRoute ==
-                                  '/rooms/calendar/events/${event.id}' ||
-                              activeRoute.startsWith(
-                                '/rooms/calendar/events/${event.id}/',
-                              ),
+                              activeRoute == '/rooms/calendar/events/${event.id}' ||
+                              activeRoute.startsWith('/rooms/calendar/events/${event.id}/'),
                           onTap: () => context.push(
                             '/rooms/calendar/events/${event.id}',
-                            extra: <String, Object?>{
-                              'title': event.title,
-                              'sourceDisplayName': event.sourceDisplayName,
-                            },
+                            extra: <String, Object?>{'title': event.title, 'sourceDisplayName': event.sourceDisplayName},
                           ),
                         ),
-                      ),
-                      DividerChatListEntry() => Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                        child: Divider(
-                          color: theme.colorScheme.outlineVariant,
-                          height: 1,
-                        ),
-                      ),
-                    };
+                        DividerChatListEntry() => const SizedBox.shrink(),
+                      },
+                    );
                   },
                 ),
             ],
           ),
-          ),
-          ),
         );
       },
+    );
+  }
+}
+
+/// Focus wrapper for chat list items. Registers its FocusNode with the
+/// controller so the adapter can directly requestFocus by index.
+class _ChatListFocusItem extends StatefulWidget {
+  const _ChatListFocusItem({
+    required this.order,
+    required this.controller,
+    required this.onFocused,
+    required this.child,
+  });
+
+  final int order;
+  final ChatListController controller;
+  final VoidCallback onFocused;
+  final Widget child;
+
+  @override
+  State<_ChatListFocusItem> createState() => _ChatListFocusItemState();
+}
+
+class _ChatListFocusItemState extends State<_ChatListFocusItem> {
+  final FocusNode _focusNode = FocusNode(skipTraversal: true);
+  bool _isFocused = false;
+
+  @override
+  void dispose() {
+    widget.controller.chatListFocusNodes.remove(widget.order);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Register on every build so index stays correct after list rebuilds.
+    widget.controller.chatListFocusNodes[widget.order] = _focusNode;
+    final theme = Theme.of(context);
+    return Focus(
+      focusNode: _focusNode,
+      onFocusChange: (focused) {
+        if (focused != _isFocused) {
+          setState(() => _isFocused = focused);
+          if (focused) {
+            widget.onFocused();
+            Scrollable.ensureVisible(context, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd);
+            Scrollable.ensureVisible(context, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart);
+          }
+        }
+      },
+      child: DecoratedBox(
+        decoration: _isFocused
+            ? BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 3,
+                  ),
+                ),
+                color: theme.colorScheme.primary.withOpacity(0.06),
+              )
+            : const BoxDecoration(),
+        child: widget.child,
+      ),
     );
   }
 }

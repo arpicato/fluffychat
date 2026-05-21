@@ -92,6 +92,16 @@ class ChatListController extends State<ChatList>
   /// Used by the keyboard adapter to open the focused entry.
   List<ChatListEntry> navigableEntries = const [];
 
+  /// FocusNodes for chat list items, registered by _ChatListFocusItem widgets.
+  /// Indexed by navigable entry position.
+  final Map<int, FocusNode> chatListFocusNodes = {};
+
+  /// The currently focused chat list entry, set when an item gains focus.
+  ChatListEntry? focusedChatListEntry;
+
+  /// Index of the currently focused chat list item.
+  int focusedChatListIndex = -1;
+
   String? _activeSpaceId;
   String? get activeSpaceId => _activeSpaceId;
   late final ChatListKeyboardHandlerAdapter _keyboardHandler;
