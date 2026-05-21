@@ -9,6 +9,7 @@ import 'package:collection/collection.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/pages/chat_list/chat_list_entries.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_view.dart';
 import 'package:fluffychat/utils/keyboard/chat_list_keyboard_adapter.dart';
 import 'package:fluffychat/utils/keyboard/shortcut_dispatcher.dart';
@@ -86,6 +87,10 @@ class ChatListController extends State<ChatList>
 
   late ActiveFilter activeFilter;
   String? activeTag;
+
+  /// Current navigable entries in the chat list, set by the body widget.
+  /// Used by the keyboard adapter to open the focused entry.
+  List<ChatListEntry> navigableEntries = const [];
 
   String? _activeSpaceId;
   String? get activeSpaceId => _activeSpaceId;
