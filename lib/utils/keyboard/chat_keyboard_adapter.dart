@@ -1,12 +1,11 @@
-import 'package:collection/collection.dart';
 import 'package:fluffychat/pages/chat/chat.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
 import 'package:fluffychat/utils/show_scaffold_dialog.dart';
 import 'package:fluffychat/widgets/share_scaffold_dialog.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
-import 'keyboard_navigation.dart';
 import 'shortcut_dispatcher.dart';
 
 class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
@@ -30,95 +29,68 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   }
 
   @override
-  bool get messageFocusActive =>
-      KeyboardNavigation.maybeOf(controller.context)?.focusArea ==
-      KeyboardFocusArea.messageList;
+  bool get messageFocusActive {
+    // Message focus is active if the primary focus is NOT the composer
+    // and not null.
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    if (primaryFocus == null) return false;
+    if (primaryFocus == controller.inputFocus) return false;
+    // Only count as active if focus is actually inside the chat page
+    // (not in a dialog or other overlay).
+    return !controller.inputFocus.hasFocus;
+  }
 
-  List<Event> get _visibleKeyboardEvents =>
+  @override
+  bool messageFocusUp() {
+    final scope = controller.messageFocusScope;
+    if (scope == null) return false;
+    scope.previousFocus();
+    return true;
+  }
+
+  @override
+  bool messageFocusDown() {
+    final scope = controller.messageFocusScope;
+    if (scope == null) return false;
+    scope.nextFocus();
+    return true;
+  }
+
+  List<Event> get _visibleEvents =>
       controller.timeline
           ?.events
           .filterByVisibleInGui(threadId: controller.activeThreadId)
           .toList() ??
       const [];
 
-  Event? _focusedEventOrSingleSelected({bool ownMessageOnly = false}) {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    final events = _visibleKeyboardEvents;
+  /// Returns the target event for actions: focused message first,
+  /// then single selected message as fallback.
+  Event? _actionTarget({bool ownMessageOnly = false}) {
     final ownUserId = controller.room.client.userID;
-
-    Event? candidate;
-    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList &&
-        events.isNotEmpty) {
-      final idx = keyboardNav!.messageFocusIndex;
-      candidate = idx >= 0 && idx < events.length ? events[idx] : events.first;
-    } else if (controller.selectedEvents.length == 1) {
+    Event? candidate = controller.focusedEvent;
+    if (candidate == null && controller.selectedEvents.length == 1) {
       candidate = controller.selectedEvents.single;
     }
-
     if (candidate == null) return null;
     if (ownMessageOnly && candidate.senderId != ownUserId) return null;
     return candidate;
   }
 
   @override
-  bool messageFocusUp() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav == null) return false;
-    final events = _visibleKeyboardEvents;
-    if (events.isEmpty) return false;
-    keyboardNav.setMessageListLength(events.length);
-    keyboardNav.messageFocusDown();
-    final idx = keyboardNav.messageFocusIndex;
-    if (idx >= 0 && idx < events.length) {
-      controller.scrollToKeyboardFocusIndex(idx);
-    }
-    return true;
-  }
-
-  @override
-  bool messageFocusDown() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav == null) return false;
-    final events = _visibleKeyboardEvents;
-    if (events.isEmpty) return false;
-    keyboardNav.setMessageListLength(events.length);
-    if (keyboardNav.focusArea == KeyboardFocusArea.messageList &&
-        keyboardNav.messageFocusIndex <= 0) {
-      keyboardNav.resetMessageFocus();
-      controller.inputFocus.requestFocus();
-      return true;
-    }
-    keyboardNav.messageFocusUp();
-    final idx = keyboardNav.messageFocusIndex;
-    if (idx >= 0 && idx < events.length) {
-      controller.scrollToKeyboardFocusIndex(idx);
-    }
-    return true;
-  }
-
-  @override
   bool toggleFocusedMessageSelection() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav == null) return false;
-    final events = _visibleKeyboardEvents;
-    if (events.isEmpty) return false;
-    if (keyboardNav.focusArea != KeyboardFocusArea.messageList) return false;
-    final idx = keyboardNav.messageFocusIndex;
-    final target = idx >= 0 && idx < events.length ? events[idx] : events.first;
+    final target = controller.focusedEvent;
+    if (target == null) return false;
     controller.onSelectMessage(target);
     return true;
   }
 
   @override
   bool forwardFocusedMessage() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    final target = _focusedEventOrSingleSelected();
+    final target = _actionTarget();
     if (target == null) return false;
-    // Capture the event for forwarding without clearing selection yet.
     final timeline = controller.timeline;
     if (timeline == null) return false;
     final displayEvent = target.getDisplayEvent(timeline);
-    // Show the share dialog directly; clear selection only after it closes.
     _showForwardDialog(displayEvent);
     return true;
   }
@@ -130,49 +102,35 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
         items: [ContentShareItem(displayEvent.content)],
       ),
     );
-    // Don't clear selection here. If the forward succeeded, the app already
-    // navigated away. If the user cancelled (Esc/back), keep selection intact.
   }
 
   @override
   bool replyFocusedMessage() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    final target = _focusedEventOrSingleSelected();
+    final target = _actionTarget();
     if (target == null) return false;
     controller.replyAction(replyTo: target);
-    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
-      keyboardNav!.resetMessageFocus();
-    }
     return true;
   }
 
   @override
   bool editFocusedMessage() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    final target = _focusedEventOrSingleSelected(ownMessageOnly: true);
+    final target = _actionTarget(ownMessageOnly: true);
     if (target == null) return false;
     controller.selectedEvents
       ..clear()
       ..add(target);
     controller.editSelectedEventAction();
-    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
-      keyboardNav!.resetMessageFocus();
-    }
     return true;
   }
 
   @override
   bool exitMessageFocusToInput() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
-    if (keyboardNav?.focusArea != KeyboardFocusArea.messageList) return false;
-    keyboardNav!.resetMessageFocus();
     controller.inputFocus.requestFocus();
     return true;
   }
 
   @override
   bool handleEscape() {
-    final keyboardNav = KeyboardNavigation.maybeOf(controller.context);
     if (controller.replyEvent != null || controller.editEvent != null) {
       controller.cancelReplyEventAction();
       controller.inputFocus.requestFocus();
@@ -182,8 +140,8 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
       controller.clearSelectedEvents();
       return true;
     }
-    if (keyboardNav?.focusArea == KeyboardFocusArea.messageList) {
-      keyboardNav!.resetMessageFocus();
+    // If focus is not on composer, return it there.
+    if (!controller.inputFocus.hasFocus) {
       controller.inputFocus.requestFocus();
       return true;
     }

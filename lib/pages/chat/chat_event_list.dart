@@ -6,10 +6,8 @@ import 'package:fluffychat/pages/chat/events/message.dart';
 import 'package:fluffychat/pages/chat/seen_by_row.dart';
 import 'package:fluffychat/pages/chat/typing_indicators.dart';
 import 'package:fluffychat/utils/account_config.dart';
-import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
-import 'package:fluffychat/widgets/focus_highlight.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:scroll_to_index/scroll_to_index.dart';
@@ -47,19 +45,23 @@ class ChatEventList extends StatelessWidget {
         controller.room.client.applicationAccountConfig.wallpaperUrl != null;
 
     return SelectionArea(
-      child: ListView.custom(
-        padding: EdgeInsets.only(
-          top: 16,
-          bottom: 8,
-          left: horizontalPadding,
-          right: horizontalPadding,
-        ),
-        reverse: true,
-        controller: controller.scrollController,
-        keyboardDismissBehavior: PlatformInfos.isIOS
-            ? ScrollViewKeyboardDismissBehavior.onDrag
-            : ScrollViewKeyboardDismissBehavior.manual,
-        childrenDelegate: SliverChildBuilderDelegate(
+      child: FocusScope(
+        node: controller.messageFocusScope ??= FocusScopeNode(debugLabel: 'MessageList'),
+        child: FocusTraversalGroup(
+          policy: OrderedTraversalPolicy(),
+          child: ListView.custom(
+          padding: EdgeInsets.only(
+            top: 16,
+            bottom: 8,
+            left: horizontalPadding,
+            right: horizontalPadding,
+          ),
+          reverse: true,
+          controller: controller.scrollController,
+          keyboardDismissBehavior: PlatformInfos.isIOS
+              ? ScrollViewKeyboardDismissBehavior.onDrag
+              : ScrollViewKeyboardDismissBehavior.manual,
+          childrenDelegate: SliverChildBuilderDelegate(
           (BuildContext context, int i) {
             // Footer to display typing indicator and read receipts:
             if (i == 0) {
@@ -138,15 +140,11 @@ class ChatEventList extends StatelessWidget {
               key: ValueKey(event.transactionId ?? event.eventId),
               index: i,
               controller: controller.scrollController,
-              child: Builder(
-                builder: (context) {
-                  final keyboardNav = KeyboardNavigation.maybeOf(context);
-                  final isFocused = keyboardNav != null &&
-                      keyboardNav.hasMessageFocus &&
-                      keyboardNav.messageFocusIndex == i;
-                  return FocusHighlight(
-                    isFocused: isFocused,
-                    child: Message(
+              child: _MessageFocusWrapper(
+                order: events.length - i,
+                onSelect: () => controller.onSelectMessage(event),
+                onFocused: () => controller.focusedEvent = event,
+                child: Message(
                 event,
                 bigEmojis: controller.bigEmojis,
                 animateIn: animateIn,
@@ -186,14 +184,82 @@ class ChatEventList extends StatelessWidget {
                       )
                     : null,
               ),
-                  );
-                },
               ),
             );
           },
           childCount: events.length + 2,
           findChildIndexCallback: (key) =>
               controller.findChildIndexCallback(key, thisEventsKeyMap),
+        ),
+      ),
+      ),
+      ),
+    );
+  }
+}
+
+/// Wraps a message in a Focus node for keyboard traversal.
+/// Internal focusables (buttons, links) are isolated in their own
+/// FocusTraversalGroup so arrow-key traversal skips them.
+class _MessageFocusWrapper extends StatefulWidget {
+  const _MessageFocusWrapper({
+    required this.order,
+    required this.onSelect,
+    required this.onFocused,
+    required this.child,
+  });
+
+  final int order;
+  final VoidCallback onSelect;
+  final VoidCallback onFocused;
+  final Widget child;
+
+  @override
+  State<_MessageFocusWrapper> createState() => _MessageFocusWrapperState();
+}
+
+class _MessageFocusWrapperState extends State<_MessageFocusWrapper> {
+  final FocusNode _focusNode = FocusNode(skipTraversal: false);
+  bool _isFocused = false;
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return FocusTraversalOrder(
+      order: NumericFocusOrder(widget.order.toDouble()),
+      child: Focus(
+        focusNode: _focusNode,
+        onFocusChange: (focused) {
+          if (focused != _isFocused) {
+            setState(() => _isFocused = focused);
+            if (focused) {
+              widget.onFocused();
+            }
+          }
+        },
+        child: FocusTraversalGroup(
+          descendantsAreFocusable: true,
+          descendantsAreTraversable: false,
+          child: DecoratedBox(
+            decoration: _isFocused
+                ? BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: theme.colorScheme.primary,
+                        width: 3,
+                      ),
+                    ),
+                    color: theme.colorScheme.primary.withOpacity(0.06),
+                  )
+                : const BoxDecoration(),
+            child: widget.child,
+          ),
         ),
       ),
     );

@@ -115,6 +115,14 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   late final FocusNode inputFocus;
 
+  /// FocusScopeNode for the message list traversal group.
+  /// The keyboard adapter uses this to move focus within messages only.
+  FocusScopeNode? messageFocusScope;
+
+  /// The currently keyboard-focused message event, set by the message list
+  /// when a message's Focus node gains focus.
+  Event? focusedEvent;
+
   Timer? typingCoolDown;
   Timer? typingTimeout;
   bool currentlyTyping = false;
@@ -1059,10 +1067,6 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
       preferPosition: AutoScrollPosition.middle,
     );
     _updateScrollController();
-  }
-
-  void scrollToKeyboardFocusIndex(int eventIndex) {
-    // TODO: implement scroll-to-highlight properly
   }
 
   Future<void> scrollDown() async {
