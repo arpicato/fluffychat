@@ -56,6 +56,26 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
     return true;
   }
 
+  @override
+  bool messagePageUp() {
+    final scope = controller.messageFocusScope;
+    if (scope == null) return false;
+    for (var i = 0; i < 10; i++) {
+      scope.previousFocus();
+    }
+    return true;
+  }
+
+  @override
+  bool messagePageDown() {
+    final scope = controller.messageFocusScope;
+    if (scope == null) return false;
+    for (var i = 0; i < 10; i++) {
+      scope.nextFocus();
+    }
+    return true;
+  }
+
   List<Event> get _visibleEvents =>
       controller.timeline
           ?.events

@@ -81,6 +81,14 @@ class ShortcutResolver {
       return chatList?.focusDown() ?? false;
     }
 
+    if (_matches(ShortcutCommand.messagePageUp, keyState)) {
+      return chat?.messagePageUp() ?? false;
+    }
+
+    if (_matches(ShortcutCommand.messagePageDown, keyState)) {
+      return chat?.messagePageDown() ?? false;
+    }
+
     if (_matches(ShortcutCommand.arrowUp, keyState)) {
       if (!context.hasOpenChat) {
         return chatList?.focusUp() ?? false;

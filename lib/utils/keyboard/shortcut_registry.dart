@@ -11,6 +11,8 @@ enum ShortcutCommand {
   editFocusedMessage,
   messageFocusUpModified,
   messageFocusDownModified,
+  messagePageUp,
+  messagePageDown,
   chatListFocusUpModified,
   chatListFocusDownModified,
   arrowUp,
@@ -181,6 +183,18 @@ class AppShortcutRegistry {
           modifiers: {ShortcutModifier.alt},
         ),
       ],
+    ),
+    const ShortcutDefinition(
+      command: ShortcutCommand.messagePageUp,
+      scope: ShortcutScope.chat,
+      label: 'Page up through messages',
+      bindings: [ShortcutBinding(key: LogicalKeyboardKey.pageUp)],
+    ),
+    const ShortcutDefinition(
+      command: ShortcutCommand.messagePageDown,
+      scope: ShortcutScope.chat,
+      label: 'Page down through messages',
+      bindings: [ShortcutBinding(key: LogicalKeyboardKey.pageDown)],
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.arrowUp,

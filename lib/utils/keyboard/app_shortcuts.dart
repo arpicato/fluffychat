@@ -28,7 +28,9 @@ class _AppShortcutsState extends State<AppShortcuts> {
   static final ShortcutResolver _resolver = ShortcutResolver();
 
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
-    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
 
     // If Esc and a dialog/modal is showing (focus is inside a route overlay
     // that is not a page route), skip our handler entirely so the dialog
