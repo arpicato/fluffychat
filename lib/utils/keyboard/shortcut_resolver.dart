@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'shortcut_dispatcher.dart';
@@ -17,10 +18,27 @@ class ShortcutKeyState {
   final bool shiftPressed;
 }
 
+/// Runtime context evaluated once per key event.
+/// The resolver checks each command's `when` conditions against this.
 class ShortcutContext {
-  const ShortcutContext({required this.hasOpenChat});
+  const ShortcutContext({
+    required this.hasOpenChat,
+    required this.textFieldFocused,
+    required this.messageFocused,
+    required this.modalOpen,
+  });
 
+  /// A chat room page is the current route.
   final bool hasOpenChat;
+
+  /// Any text input field currently has focus (composer, search, todo title, etc).
+  final bool textFieldFocused;
+
+  /// A message in the timeline has native focus (via our focus traversal).
+  final bool messageFocused;
+
+  /// A modal/dialog route is on top (image viewer, share dialog, etc).
+  final bool modalOpen;
 }
 
 class ShortcutResolver {
@@ -35,93 +53,120 @@ class ShortcutResolver {
     KeyboardChatHandler? chat,
     KeyboardChatListHandler? chatList,
   }) {
-    if (_matches(ShortcutCommand.search, keyState)) {
-      return chatList?.triggerSearch() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.escape, keyState)) {
-      if (chat?.handleEscape() == true) return true;
-      if (chatList?.handleEscape() == true) return true;
+    // Skip all shortcuts when a modal is open (let the modal handle keys).
+    if (context.modalOpen &&
+        keyState.key == LogicalKeyboardKey.escape) {
       return false;
     }
 
-    if (_matches(ShortcutCommand.openFocusedChat, keyState)) {
-      return chatList?.openFocused() ?? false;
-    }
+    // Try each command definition in priority order.
+    for (final definition in registry.definitions) {
+      // Check if the key matches this command's bindings.
+      final matches = definition.bindings.any(
+        (binding) => binding.matches(
+          pressedKey: keyState.key,
+          primaryPressed: keyState.primaryPressed,
+          altPressed: keyState.altPressed,
+          shiftPressed: keyState.shiftPressed,
+        ),
+      );
+      if (!matches) continue;
 
-    if (_matches(ShortcutCommand.toggleFocusedMessageSelection, keyState)) {
-      if (chat != null && !chat.inputHasFocus && chat.messageFocusActive) {
-        return chat.toggleFocusedMessageSelection();
-      }
-      return false;
-    }
+      // Check if all conditions are satisfied.
+      if (!_conditionsMet(definition, context)) continue;
 
-    if (_matches(ShortcutCommand.forwardFocusedMessage, keyState)) {
-      return chat?.forwardFocusedMessage() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.replyFocusedMessage, keyState)) {
-      return chat?.replyFocusedMessage() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.editFocusedMessage, keyState)) {
-      return chat?.editFocusedMessage() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.messageFocusUpModified, keyState)) {
-      return chat?.messageFocusUp() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.messageFocusDownModified, keyState)) {
-      return chat?.messageFocusDown() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.chatListFocusUpModified, keyState)) {
-      return chatList?.focusUp() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.chatListFocusDownModified, keyState)) {
-      return chatList?.focusDown() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.messagePageUp, keyState)) {
-      return chat?.messagePageUp() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.messagePageDown, keyState)) {
-      return chat?.messagePageDown() ?? false;
-    }
-
-    if (_matches(ShortcutCommand.arrowUp, keyState)) {
-      if (!context.hasOpenChat) {
-        return chatList?.focusUp() ?? false;
-      }
-      if (chat != null && (!chat.inputHasFocus || chat.composerCursorOnFirstLine)) {
-        return chat.messageFocusUp();
-      }
-      return false;
-    }
-
-    if (_matches(ShortcutCommand.arrowDown, keyState)) {
-      if (!context.hasOpenChat) {
-        return chatList?.focusDown() ?? false;
-      }
-      if (chat?.messageFocusActive == true) {
-        return chat?.messageFocusDown() ?? false;
-      }
-      return false;
+      // Dispatch to the appropriate handler.
+      final handled = _dispatch(definition.command, context, chat, chatList);
+      if (handled) return true;
     }
 
     return false;
   }
 
-  bool _matches(ShortcutCommand command, ShortcutKeyState keyState) {
-    return registry.matches(
-      command,
-      pressedKey: keyState.key,
-      primaryPressed: keyState.primaryPressed,
-      altPressed: keyState.altPressed,
-      shiftPressed: keyState.shiftPressed,
-    );
+  bool _conditionsMet(ShortcutDefinition definition, ShortcutContext context) {
+    for (final condition in definition.when) {
+      switch (condition) {
+        case ShortcutWhen.chatVisible:
+          if (!context.hasOpenChat) return false;
+        case ShortcutWhen.chatListVisible:
+          if (context.hasOpenChat) return false;
+        case ShortcutWhen.messageFocused:
+          if (!context.messageFocused) return false;
+        case ShortcutWhen.textFieldNotFocused:
+          if (context.textFieldFocused) return false;
+        case ShortcutWhen.noModalOpen:
+          if (context.modalOpen) return false;
+      }
+    }
+    return true;
+  }
+
+  bool _dispatch(
+    ShortcutCommand command,
+    ShortcutContext context,
+    KeyboardChatHandler? chat,
+    KeyboardChatListHandler? chatList,
+  ) {
+    switch (command) {
+      case ShortcutCommand.search:
+        return chatList?.triggerSearch() ?? false;
+
+      case ShortcutCommand.escape:
+        if (chat?.handleEscape() == true) return true;
+        if (chatList?.handleEscape() == true) return true;
+        return false;
+
+      case ShortcutCommand.openFocusedChat:
+        return chatList?.openFocused() ?? false;
+
+      case ShortcutCommand.toggleFocusedMessageSelection:
+        return chat?.toggleFocusedMessageSelection() ?? false;
+
+      case ShortcutCommand.forwardFocusedMessage:
+        return chat?.forwardFocusedMessage() ?? false;
+
+      case ShortcutCommand.replyFocusedMessage:
+        return chat?.replyFocusedMessage() ?? false;
+
+      case ShortcutCommand.editFocusedMessage:
+        return chat?.editFocusedMessage() ?? false;
+
+      case ShortcutCommand.messageFocusUpModified:
+        return chat?.messageFocusUp() ?? false;
+
+      case ShortcutCommand.messageFocusDownModified:
+        return chat?.messageFocusDown() ?? false;
+
+      case ShortcutCommand.messagePageUp:
+        return chat?.messagePageUp() ?? false;
+
+      case ShortcutCommand.messagePageDown:
+        return chat?.messagePageDown() ?? false;
+
+      case ShortcutCommand.chatListFocusUpModified:
+        return chatList?.focusUp() ?? false;
+
+      case ShortcutCommand.chatListFocusDownModified:
+        return chatList?.focusDown() ?? false;
+
+      case ShortcutCommand.arrowUp:
+        if (!context.hasOpenChat) {
+          return chatList?.focusUp() ?? false;
+        }
+        if (chat != null &&
+            (!chat.inputHasFocus || chat.composerCursorOnFirstLine)) {
+          return chat.messageFocusUp();
+        }
+        return false;
+
+      case ShortcutCommand.arrowDown:
+        if (!context.hasOpenChat) {
+          return chatList?.focusDown() ?? false;
+        }
+        if (chat?.messageFocusActive == true) {
+          return chat?.messageFocusDown() ?? false;
+        }
+        return false;
+    }
   }
 }

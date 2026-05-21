@@ -13,13 +13,6 @@ class AppShortcuts extends StatefulWidget {
 
   static final bool _isMac = defaultTargetPlatform == TargetPlatform.macOS;
 
-  /// The modifier key for shortcuts (Cmd on macOS, Ctrl elsewhere).
-  static SingleActivator _ctrl(LogicalKeyboardKey key) => SingleActivator(
-        key,
-        meta: _isMac,
-        control: !_isMac,
-      );
-
   @override
   State<AppShortcuts> createState() => _AppShortcutsState();
 }
@@ -30,22 +23,6 @@ class _AppShortcutsState extends State<AppShortcuts> {
   KeyEventResult _handleKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
-    }
-
-    // If Esc and a dialog/modal is showing (focus is inside a route overlay
-    // that is not a page route), skip our handler entirely so the dialog
-    // can close itself.
-    if (event.logicalKey == LogicalKeyboardKey.escape) {
-      final primaryFocus = FocusManager.instance.primaryFocus;
-      if (primaryFocus != null) {
-        final focusContext = primaryFocus.context;
-        if (focusContext != null) {
-          final route = ModalRoute.of(focusContext);
-          if (route != null && route is! PageRoute) {
-            return KeyEventResult.ignored;
-          }
-        }
-      }
     }
 
     final dispatcher = ShortcutDispatcher.instance;
@@ -64,15 +41,28 @@ class _AppShortcutsState extends State<AppShortcuts> {
         !path.startsWith('/rooms/archive/') &&
         path.split('/').length >= 3;
 
-    debugPrint(
-      '[kb/raw] key=${event.logicalKey.keyLabel} '
-      'logical=${event.logicalKey.debugName} '
-      'ctrl=${HardwareKeyboard.instance.isControlPressed} '
-      'meta=${HardwareKeyboard.instance.isMetaPressed} '
-      'alt=${HardwareKeyboard.instance.isAltPressed} '
-      'shift=${HardwareKeyboard.instance.isShiftPressed} '
-      'focus=${FocusManager.instance.primaryFocus?.debugLabel}',
-    );
+    // Determine context for condition evaluation.
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    final focusContext = primaryFocus?.context;
+
+    // Check if a modal/dialog is on top by inspecting the focused widget's route.
+    bool modalOpen = false;
+    if (focusContext != null) {
+      final route = ModalRoute.of(focusContext);
+      if (route != null && route is! PageRoute) {
+        modalOpen = true;
+      }
+    }
+
+    // Check if a text field is focused.
+    final textFieldFocused = primaryFocus != null &&
+        primaryFocus.context != null &&
+        primaryFocus.context!.widget is EditableText;
+
+    // Check if a message has native focus (not composer, not text field).
+    final messageFocused = chat != null &&
+        !textFieldFocused &&
+        chat.messageFocusActive;
 
     final handled = _resolver.resolve(
       keyState: ShortcutKeyState(
@@ -81,7 +71,12 @@ class _AppShortcutsState extends State<AppShortcuts> {
         altPressed: altPressed,
         shiftPressed: shiftPressed,
       ),
-      context: ShortcutContext(hasOpenChat: hasOpenChat),
+      context: ShortcutContext(
+        hasOpenChat: hasOpenChat,
+        textFieldFocused: textFieldFocused,
+        messageFocused: messageFocused,
+        modalOpen: modalOpen,
+      ),
       chat: chat,
       chatList: chatList,
     );
