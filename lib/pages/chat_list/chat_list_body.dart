@@ -10,9 +10,12 @@ import 'package:fluffychat/pages/chat_list/space_view.dart';
 import 'package:fluffychat/pages/chat_list/status_msg_list.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
+import 'package:fluffychat/utils/keyboard/intents.dart';
+import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
 import 'package:fluffychat/utils/stream_extension.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/public_room_dialog.dart';
 import 'package:fluffychat/widgets/avatar.dart';
+import 'package:fluffychat/widgets/focus_highlight.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +27,10 @@ import '../../widgets/matrix.dart';
 import 'chat_list_header.dart';
 
 class ChatListViewBody extends StatelessWidget {
+  static final FocusNode _keyboardFocusNode = FocusNode(
+    debugLabel: 'ChatListKeyboardScope',
+  );
+
   final ChatListController controller;
   final VoidCallback? openDrawer;
 
@@ -144,8 +151,65 @@ class ChatListViewBody extends StatelessWidget {
           ...timelineEntries,
         ];
 
-        return SafeArea(
-          child: CustomScrollView(
+        // Update keyboard navigation state with current list length
+        final keyboardNav = KeyboardNavigation.maybeOf(context);
+        if (keyboardNav != null) {
+          // Count only room entries for keyboard navigation
+          final roomEntryCount = entries
+              .whereType<_RoomChatListEntry>()
+              .length;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            keyboardNav.setChatListLength(roomEntryCount);
+          });
+        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (FocusManager.instance.primaryFocus != null) return;
+          if (_keyboardFocusNode.hasFocus) return;
+          debugPrint('[kb/focus] requesting ChatListKeyboardScope');
+          _keyboardFocusNode.requestFocus();
+        });
+
+        return Actions(
+          actions: <Type, Action<Intent>>{
+            ChatListFocusUpIntent: CallbackAction<ChatListFocusUpIntent>(
+              onInvoke: (_) {
+                debugPrint('[kb/action] ChatListFocusUpIntent');
+                keyboardNav?.chatListFocusUp();
+                return null;
+              },
+            ),
+            ChatListFocusDownIntent: CallbackAction<ChatListFocusDownIntent>(
+              onInvoke: (_) {
+                debugPrint('[kb/action] ChatListFocusDownIntent');
+                keyboardNav?.chatListFocusDown();
+                return null;
+              },
+            ),
+            ChatListOpenFocusedIntent: CallbackAction<ChatListOpenFocusedIntent>(
+              onInvoke: (_) {
+                debugPrint('[kb/action] ChatListOpenFocusedIntent');
+                if (keyboardNav == null || !keyboardNav.hasChatListFocus) {
+                  return null;
+                }
+                final roomEntries = entries
+                    .whereType<_RoomChatListEntry>()
+                    .toList();
+                final idx = keyboardNav.chatListFocusIndex;
+                if (idx >= 0 && idx < roomEntries.length) {
+                  controller.onChatTap(roomEntries[idx].room);
+                }
+                return null;
+              },
+            ),
+          },
+          child: Focus(
+            autofocus: true,
+            focusNode: _keyboardFocusNode,
+            onFocusChange: (focused) => debugPrint(
+              '[kb/focus] ChatListKeyboardScope focused=$focused',
+            ),
+            child: SafeArea(
+            child: CustomScrollView(
             controller: controller.scrollController,
             slivers: [
               ChatListHeader(controller: controller, openDrawer: openDrawer),
@@ -312,21 +376,36 @@ class ChatListViewBody extends StatelessWidget {
                   itemBuilder: (BuildContext context, int i) {
                     final entry = entries[i];
                     return switch (entry) {
-                      _RoomChatListEntry(:final room) => ChatListItem(
-                        room,
-                        presentation: controller.bridgePresentationForRoom(
-                          room,
-                        ),
-                        space: spaceDelegateCandidates[room.id],
-                        key: Key('chat_list_item_${room.id}'),
-                        filter: filter,
-                        onTap: () => controller.onChatTap(room),
-                        onLongPress: (context) => controller.chatContextAction(
-                          room,
-                          context,
-                          spaceDelegateCandidates[room.id],
-                        ),
-                        activeChat: controller.activeChat == room.id,
+                      _RoomChatListEntry(:final room) => Builder(
+                        builder: (context) {
+                          // Calculate room-only index for keyboard focus
+                          final roomIndex = entries
+                              .take(i + 1)
+                              .whereType<_RoomChatListEntry>()
+                              .length - 1;
+                          final isFocused = keyboardNav != null &&
+                              keyboardNav.hasChatListFocus &&
+                              keyboardNav.chatListFocusIndex == roomIndex;
+                          return FocusHighlight(
+                            isFocused: isFocused,
+                            child: ChatListItem(
+                              room,
+                              presentation: controller.bridgePresentationForRoom(
+                                room,
+                              ),
+                              space: spaceDelegateCandidates[room.id],
+                              key: Key('chat_list_item_${room.id}'),
+                              filter: filter,
+                              onTap: () => controller.onChatTap(room),
+                              onLongPress: (context) => controller.chatContextAction(
+                                room,
+                                context,
+                                spaceDelegateCandidates[room.id],
+                              ),
+                              activeChat: controller.activeChat == room.id,
+                            ),
+                          );
+                        },
                       ),
                       _TodoChatListEntry(:final todoList) =>
                         ChatListTodoItem(
@@ -374,6 +453,8 @@ class ChatListViewBody extends StatelessWidget {
                   },
                 ),
             ],
+          ),
+          ),
           ),
         );
       },

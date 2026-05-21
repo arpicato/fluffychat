@@ -16,6 +16,8 @@ import 'package:fluffychat/pages/chat_details/chat_details.dart';
 import 'package:fluffychat/utils/adaptive_bottom_sheet.dart';
 import 'package:fluffychat/utils/error_reporter.dart';
 import 'package:fluffychat/utils/file_selector.dart';
+import 'package:fluffychat/utils/keyboard/chat_keyboard_adapter.dart';
+import 'package:fluffychat/utils/keyboard/shortcut_dispatcher.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/event_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
@@ -94,8 +96,7 @@ class ChatPageWithRoom extends StatefulWidget {
   ChatController createState() => ChatController();
 }
 
-class ChatController extends State<ChatPageWithRoom>
-    with WidgetsBindingObserver {
+class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver {
   Room get room => sendingClient.getRoomById(roomId) ?? widget.room;
 
   late Client sendingClient;
@@ -114,10 +115,19 @@ class ChatController extends State<ChatPageWithRoom>
 
   late final FocusNode inputFocus;
 
+  /// FocusScopeNode for the message list traversal group.
+  /// The keyboard adapter uses this to move focus within messages only.
+  FocusScopeNode? messageFocusScope;
+
+  /// The currently keyboard-focused message event, set by the message list
+  /// when a message's Focus node gains focus.
+  Event? focusedEvent;
+
   Timer? typingCoolDown;
   Timer? typingTimeout;
   bool currentlyTyping = false;
   bool dragging = false;
+  late final ChatKeyboardHandlerAdapter _keyboardHandler;
 
   void onDragEntered(_) => setState(() => dragging = true);
 
@@ -351,6 +361,8 @@ class ChatController extends State<ChatPageWithRoom>
 
   @override
   void initState() {
+    _keyboardHandler = ChatKeyboardHandlerAdapter(this);
+    ShortcutDispatcher.instance.registerChatHandler(_keyboardHandler);
     inputFocus = FocusNode(onKeyEvent: _customEnterKeyHandling);
 
     scrollController.addListener(_updateScrollController);
@@ -358,6 +370,10 @@ class ChatController extends State<ChatPageWithRoom>
 
     _loadDraft();
     WidgetsBinding.instance.addPostFrameCallback(_shareItems);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      inputFocus.requestFocus();
+    });
     super.initState();
     _displayChatDetailsColumn = ValueNotifier(
       AppSettings.displayChatDetailsColumn.value,
@@ -558,6 +574,7 @@ class ChatController extends State<ChatPageWithRoom>
 
   @override
   void dispose() {
+    ShortcutDispatcher.instance.unregisterChatHandler(_keyboardHandler);
     timeline?.cancelSubscriptions();
     timeline = null;
     inputFocus.removeListener(_inputFocusListener);
@@ -971,6 +988,7 @@ class ChatController extends State<ChatPageWithRoom>
       selectedEvents,
     ).map((event) => event.getDisplayEvent(timeline)).toList();
 
+    setState(() => selectedEvents.clear());
     await showScaffoldDialog(
       context: context,
       builder: (context) => ShareScaffoldDialog(
@@ -980,7 +998,6 @@ class ChatController extends State<ChatPageWithRoom>
       ),
     );
     if (!mounted) return;
-    setState(() => selectedEvents.clear());
   }
 
   void sendAgainAction() {

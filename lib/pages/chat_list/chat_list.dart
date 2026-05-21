@@ -5,6 +5,8 @@ import 'package:cross_file/cross_file.dart';
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_view.dart';
+import 'package:fluffychat/utils/keyboard/chat_list_keyboard_adapter.dart';
+import 'package:fluffychat/utils/keyboard/shortcut_dispatcher.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
@@ -82,6 +84,7 @@ class ChatListController extends State<ChatList>
 
   String? _activeSpaceId;
   String? get activeSpaceId => _activeSpaceId;
+  late final ChatListKeyboardHandlerAdapter _keyboardHandler;
 
   Future<void> setActiveSpace(String spaceId) async {
     await Matrix.of(context).client.getRoomById(spaceId)!.postLoad();
@@ -469,6 +472,8 @@ class ChatListController extends State<ChatList>
 
   @override
   void initState() {
+    _keyboardHandler = ChatListKeyboardHandlerAdapter(this);
+    ShortcutDispatcher.instance.registerChatListHandler(_keyboardHandler);
     _initReceiveSharingIntent();
     _activeSpaceId = widget.activeSpace;
 
@@ -525,6 +530,7 @@ class ChatListController extends State<ChatList>
 
   @override
   void dispose() {
+    ShortcutDispatcher.instance.unregisterChatListHandler(_keyboardHandler);
     _intentDataStreamSubscription?.cancel();
     _intentFileStreamSubscription?.cancel();
     _onRoomTagUpdate?.cancel();
