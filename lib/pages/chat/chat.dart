@@ -902,6 +902,12 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   }
 
   void _inputFocusListener() {
+    if (inputFocus.hasFocus) {
+      // Clear stale message focus state when composer regains focus,
+      // so shortcuts like Space don't accidentally target old messages.
+      focusedEvent = null;
+      focusedMessageIndex = -1;
+    }
     if (showEmojiPicker && inputFocus.hasFocus) {
       setState(() => showEmojiPicker = false);
     }

@@ -50,7 +50,10 @@ class ShortcutResolver {
     }
 
     if (_matches(ShortcutCommand.toggleFocusedMessageSelection, keyState)) {
-      return chat?.toggleFocusedMessageSelection() ?? false;
+      if (chat != null && !chat.inputHasFocus && chat.messageFocusActive) {
+        return chat.toggleFocusedMessageSelection();
+      }
+      return false;
     }
 
     if (_matches(ShortcutCommand.forwardFocusedMessage, keyState)) {
