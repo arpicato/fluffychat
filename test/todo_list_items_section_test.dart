@@ -179,6 +179,50 @@ void main() {
     expect(subtitleText.overflow, TextOverflow.ellipsis);
   });
 
+  testWidgets('todo row text collapses embedded newlines before ellipsis', (
+    tester,
+  ) async {
+    final groupedItems = groupTodoItems([
+      _item(
+        id: '001',
+        title: 'Title line one\nline two\nline three',
+        description:
+            'Description line one\nline two\nline three\nline four\nline five',
+        completed: false,
+      ),
+    ]);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              TodoListItemsSection(
+                groupedItems: groupedItems,
+                showCompletedItems: false,
+                formatTimestamp: (_) => '',
+                onShowCompletedItemsChanged: (_) {},
+                onToggleItem: (item, completed) async {},
+                onMoveItem: (group, oldIndex, newIndex) async {},
+                onEditItem: (item) async {},
+                onDeleteItem: (item) async {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('\n'), findsNothing);
+    expect(find.text('Title line one line two line three'), findsOneWidget);
+    expect(
+      find.text(
+        'Description line one line two line three line four line five',
+      ),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('tapping a todo item row opens edit behavior', (tester) async {
     final groupedItems = groupTodoItems([
       _item(

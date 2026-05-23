@@ -27,6 +27,9 @@ const int _todoItemDescriptionMaxLength = 2000;
 const int _todoItemListTitleMaxLines = 1;
 const int _todoItemListSubtitleMaxLines = 2;
 
+String _compactTodoRowText(String value) =>
+    value.replaceAll(RegExp(r'\s+'), ' ').trim();
+
 class TodoListDetailPageView extends StatelessWidget {
   const TodoListDetailPageView(this.controller, {super.key});
 
@@ -865,10 +868,12 @@ class _TodoItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final titleText = _compactTodoRowText(item.title);
+    final descriptionText = _compactTodoRowText(item.description);
     final dueDateText =
         item.dueDate == null ? null : 'Due ${formatTimestamp(item.dueDate)}';
     final subtitleParts = <String>[
-      if (item.description.isNotEmpty) item.description,
+      if (descriptionText.isNotEmpty) descriptionText,
       ...?dueDateText == null ? null : [dueDateText],
     ];
     final subtitleText = subtitleParts.join(' • ');
@@ -885,7 +890,7 @@ class _TodoItemCard extends StatelessWidget {
           },
         ),
         title: Text(
-          item.title.isEmpty ? 'Untitled item' : item.title,
+          titleText.isEmpty ? 'Untitled item' : titleText,
           maxLines: _todoItemListTitleMaxLines,
           overflow: TextOverflow.ellipsis,
           style: item.completed
