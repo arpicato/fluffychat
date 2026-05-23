@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:messie_api/messie_api.dart' as api;
+import 'package:matrix/matrix.dart';
 
 DateTime? _normalizeMessieDateTime(DateTime? value) => value?.toUtc();
 
@@ -393,11 +394,26 @@ class MessieTodoService {
     required String jwt,
   }) async {
     final sdk = _sdkFactory(apiBaseUrl: apiBaseUrl, jwt: jwt);
+    final stopwatch = Stopwatch()..start();
+    Logs().d('[messie/todo] start $message base=$apiBaseUrl');
     try {
-      return await callback(sdk);
+      final result = await callback(sdk);
+      Logs().d(
+        '[messie/todo] ok $message elapsed=${stopwatch.elapsedMilliseconds}ms',
+      );
+      return result;
     } on DioException catch (error) {
+      Logs().w(
+        '[messie/todo] dio $message elapsed=${stopwatch.elapsedMilliseconds}ms '
+        'type=${error.type.name}',
+        error,
+      );
       throw _requestException(message, error);
     } catch (error) {
+      Logs().w(
+        '[messie/todo] fail $message elapsed=${stopwatch.elapsedMilliseconds}ms',
+        error,
+      );
       throw _genericException(message, error);
     }
   }

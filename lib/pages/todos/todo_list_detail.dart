@@ -119,7 +119,25 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     required List<MessieTodoItem> existingItems,
   }) async {
     final session = await _session(context);
-    final position = generateNewTodoItemPosition(existingItems);
+    final insertPlan = buildNewTodoItemInsertPlan(existingItems);
+    if (insertPlan.updatedPositions.isNotEmpty) {
+      for (final item in existingItems) {
+        final updatedPosition = insertPlan.updatedPositions[item.id];
+        if (updatedPosition != null) {
+          await _todoService.updateTodoItem(
+            apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+            jwt: session.jwt,
+            listId: widget.listId,
+            itemId: item.id,
+            title: item.title,
+            description: item.description,
+            completed: item.completed,
+            position: updatedPosition,
+            dueDate: item.dueDate,
+          );
+        }
+      }
+    }
     final createdItem = await _todoService.createTodoItem(
       apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
       jwt: session.jwt,
@@ -127,14 +145,18 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
       title: title,
       description: description,
       completed: false,
-      position: position,
+      position: insertPlan.position,
       dueDate: dueDate,
     );
     final currentData = _data;
     if (currentData == null) return;
+    final normalizedItems = currentData.items.map((item) {
+      final updatedPosition = insertPlan.updatedPositions[item.id];
+      return updatedPosition == null ? item : _copyItem(item, position: updatedPosition);
+    }).toList();
     _setData(
       currentData.copyWith(
-        items: _sortedItems([...currentData.items, createdItem]),
+        items: _sortedItems([...normalizedItems, createdItem]),
       ),
     );
   }

@@ -20,6 +20,8 @@ class MessieBridgeCatalogLoader {
   final MessieBridgeService _bridgeService;
 
   Future<LoadedMessieBridgeCatalog> load(Client client) async {
+    final stopwatch = Stopwatch()..start();
+    Logs().d('[messie/bridge] start load provider catalog');
     final states = await Future.wait(
       BridgeProviderCatalog.supportedProviders.keys.map(
         (provider) => _bridgeService.loadState(client, provider: provider),
@@ -35,7 +37,7 @@ class MessieBridgeCatalogLoader {
       loginNumbersByProvider[state.provider] = numbers;
     }
 
-    return LoadedMessieBridgeCatalog(
+    final result = LoadedMessieBridgeCatalog(
       catalog: BridgeProviderCatalog.fromStates(states),
       logins: [
         for (final state in states)
@@ -46,7 +48,11 @@ class MessieBridgeCatalogLoader {
               loginNumbersByProvider[state.provider]?[login.id] ?? 1,
             ),
           ),
-      ],
+        ],
     );
+    Logs().d(
+      '[messie/bridge] ok load provider catalog elapsed=${stopwatch.elapsedMilliseconds}ms',
+    );
+    return result;
   }
 }

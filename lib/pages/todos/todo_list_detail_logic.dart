@@ -26,6 +26,13 @@ class TodoReorderPlan {
   final Map<String, String> updatedPositions;
 }
 
+class TodoInsertPlan {
+  const TodoInsertPlan({required this.position, required this.updatedPositions});
+
+  final String position;
+  final Map<String, String> updatedPositions;
+}
+
 GroupedTodoItems groupTodoItems(List<MessieTodoItem> items) {
   final activeItems = <MessieTodoItem>[];
   final completedItems = <MessieTodoItem>[];
@@ -136,11 +143,39 @@ String generateTodoItemPosition(
   return _getMidpoint(previous, next);
 }
 
-String generateNewTodoItemPosition(List<MessieTodoItem> items) {
+TodoInsertPlan buildNewTodoItemInsertPlan(List<MessieTodoItem> items) {
   final activeItems = groupTodoItems(items).activeItems;
-  return generateTodoItemPosition(
-    null,
-    activeItems.isEmpty ? null : activeItems.first.position,
+  if (activeItems.isEmpty) {
+    return const TodoInsertPlan(position: 'm', updatedPositions: {});
+  }
+
+  final firstPosition = activeItems.first.position;
+  final firstNumeric = int.tryParse(firstPosition);
+  if (firstNumeric != null) {
+    if (firstNumeric > 1) {
+      return TodoInsertPlan(
+        position: (firstNumeric - 1).toString().padLeft(firstPosition.length, '0'),
+        updatedPositions: const {},
+      );
+    }
+
+    final updatedPositions = <String, String>{};
+    for (var i = 0; i < activeItems.length; i++) {
+      final item = activeItems[i];
+      final position = canonicalTodoItemPosition(i + 1);
+      if (item.position != position) {
+        updatedPositions[item.id] = position;
+      }
+    }
+    return TodoInsertPlan(
+      position: canonicalTodoItemPosition(0),
+      updatedPositions: updatedPositions,
+    );
+  }
+
+  return TodoInsertPlan(
+    position: generateTodoItemPosition(null, firstPosition),
+    updatedPositions: const {},
   );
 }
 

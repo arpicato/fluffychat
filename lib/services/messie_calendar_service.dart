@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cross_file/cross_file.dart';
 import 'package:dio/dio.dart';
 import 'package:messie_api/messie_api.dart' as api;
+import 'package:matrix/matrix.dart';
 
 String _normalizeMessieCalendarApiBaseUrl(String value) =>
     value.endsWith('/') ? value.substring(0, value.length - 1) : value;
@@ -419,11 +420,26 @@ class MessieCalendarService {
     required String jwt,
   }) async {
     final sdk = _sdkFactory(apiBaseUrl: apiBaseUrl, jwt: jwt);
+    final stopwatch = Stopwatch()..start();
+    Logs().d('[messie/calendar] start $message base=$apiBaseUrl');
     try {
-      return await callback(sdk);
+      final result = await callback(sdk);
+      Logs().d(
+        '[messie/calendar] ok $message elapsed=${stopwatch.elapsedMilliseconds}ms',
+      );
+      return result;
     } on DioException catch (error) {
+      Logs().w(
+        '[messie/calendar] dio $message elapsed=${stopwatch.elapsedMilliseconds}ms '
+        'type=${error.type.name}',
+        error,
+      );
       throw _requestException(message, error);
     } catch (error) {
+      Logs().w(
+        '[messie/calendar] fail $message elapsed=${stopwatch.elapsedMilliseconds}ms',
+        error,
+      );
       throw _genericException(message, error);
     }
   }
