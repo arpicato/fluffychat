@@ -10,8 +10,6 @@ import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/archive/archive.dart';
 import 'package:fluffychat/pages/bootstrap/bootstrap_dialog.dart';
-import 'package:fluffychat/pages/bridge_connections/bridge_connections.dart';
-import 'package:fluffychat/pages/calendar/calendar.dart';
 import 'package:fluffychat/pages/chat/chat.dart';
 import 'package:fluffychat/pages/chat_access_settings/chat_access_settings_controller.dart';
 import 'package:fluffychat/pages/chat_details/chat_details.dart';
@@ -23,9 +21,6 @@ import 'package:fluffychat/pages/chat_search/chat_search_page.dart';
 import 'package:fluffychat/pages/device_settings/device_settings.dart';
 import 'package:fluffychat/pages/intro/intro_page_presenter.dart';
 import 'package:fluffychat/pages/invitation_selection/invitation_selection.dart';
-import 'package:fluffychat/pages/messie_auth/login/messie_login.dart';
-import 'package:fluffychat/pages/messie_auth/register/messie_register.dart';
-import 'package:fluffychat/pages/messie_auth/sign_in/messie_sign_in_page.dart';
 import 'package:fluffychat/pages/new_group/new_group.dart';
 import 'package:fluffychat/pages/new_private_chat/new_private_chat.dart';
 import 'package:fluffychat/pages/settings/settings.dart';
@@ -38,7 +33,6 @@ import 'package:fluffychat/pages/settings_notifications/settings_notifications.d
 import 'package:fluffychat/pages/settings_password/settings_password.dart';
 import 'package:fluffychat/pages/settings_security/settings_security.dart';
 import 'package:fluffychat/pages/settings_style/settings_style.dart';
-import 'package:fluffychat/pages/todos/todos.dart';
 import 'package:fluffychat/widgets/config_viewer.dart';
 import 'package:fluffychat/widgets/layouts/empty_page.dart';
 import 'package:fluffychat/widgets/layouts/two_column_layout.dart';
@@ -71,54 +65,6 @@ abstract class AppRoutes {
 
   AppRoutes();
 
-  static GoRoute _messieSignInRoute(
-    FutureOr<String?> Function(BuildContext, GoRouterState) redirect,
-  ) => GoRoute(
-    path: 'sign_in',
-    pageBuilder: (context, state) => defaultPageBuilder(
-      context,
-      state,
-      MessieSignInPage(signUp: false),
-    ),
-    redirect: redirect,
-  );
-
-  static GoRoute _messieSignUpRoute(
-    FutureOr<String?> Function(BuildContext, GoRouterState) redirect,
-  ) => GoRoute(
-    path: 'sign_up',
-    pageBuilder: (context, state) => defaultPageBuilder(
-      context,
-      state,
-      MessieSignInPage(signUp: true),
-    ),
-    redirect: redirect,
-  );
-
-  static GoRoute _messieLoginRoute(
-    FutureOr<String?> Function(BuildContext, GoRouterState) redirect,
-  ) => GoRoute(
-    path: 'login',
-    pageBuilder: (context, state) => defaultPageBuilder(
-      context,
-      state,
-      MessieLogin(client: state.extra as Client),
-    ),
-    redirect: redirect,
-  );
-
-  static GoRoute _messieRegisterRoute(
-    FutureOr<String?> Function(BuildContext, GoRouterState) redirect,
-  ) => GoRoute(
-    path: 'register',
-    pageBuilder: (context, state) => defaultPageBuilder(
-      context,
-      state,
-      MessieRegister(client: state.extra as Client),
-    ),
-    redirect: redirect,
-  );
-
   static final List<RouteBase> routes = [
     GoRoute(
       path: '/',
@@ -133,10 +79,10 @@ abstract class AppRoutes {
           defaultPageBuilder(context, state, const IntroPagePresenter()),
       redirect: loggedInRedirect,
       routes: [
-        _messieSignInRoute(loggedInRedirect),
-        _messieSignUpRoute(loggedInRedirect),
-        _messieLoginRoute(loggedInRedirect),
-        _messieRegisterRoute(loggedInRedirect),
+        buildMessieSignInRoute(loggedInRedirect, defaultPageBuilder),
+        buildMessieSignUpRoute(loggedInRedirect, defaultPageBuilder),
+        buildMessieLoginRoute(loggedInRedirect, defaultPageBuilder),
+        buildMessieRegisterRoute(loggedInRedirect, defaultPageBuilder),
       ],
     ),
     GoRoute(
@@ -249,39 +195,9 @@ abstract class AppRoutes {
               ),
               redirect: loggedOutRedirect,
             ),
-            GoRoute(
-              path: 'calendar',
-              pageBuilder: (context, state) =>
-                  defaultPageBuilder(context, state, const CalendarPage()),
-              routes: [
-                GoRoute(
-                  path: 'events/:eventId',
-                  pageBuilder: (context, state) =>
-                      buildMessieCalendarEventDetailPage(
-                        context,
-                        state,
-                        defaultPageBuilder,
-                      ),
-                  redirect: loggedOutRedirect,
-                ),
-              ],
-              redirect: loggedOutRedirect,
-            ),
-            GoRoute(
-              path: 'todos',
-              pageBuilder: (context, state) =>
-                  defaultPageBuilder(context, state, const TodosPage()),
-              redirect: loggedOutRedirect,
-            ),
-            GoRoute(
-              path: 'todos/:listId',
-              pageBuilder: (context, state) => buildMessieTodoListDetailPage(
-                context,
-                state,
-                defaultPageBuilder,
-              ),
-              redirect: loggedOutRedirect,
-            ),
+            buildMessieCalendarRoute(loggedOutRedirect, defaultPageBuilder),
+            buildMessieTodosRoute(loggedOutRedirect, defaultPageBuilder),
+            buildMessieTodoListRoute(loggedOutRedirect, defaultPageBuilder),
             ShellRoute(
               pageBuilder: (context, state, child) => defaultPageBuilder(
                 context,
@@ -332,14 +248,9 @@ abstract class AppRoutes {
                       ),
                       redirect: loggedOutRedirect,
                     ),
-                    GoRoute(
-                      path: 'connections',
-                      pageBuilder: (context, state) => defaultPageBuilder(
-                        context,
-                        state,
-                        const BridgeConnectionsPage(),
-                      ),
-                      redirect: loggedOutRedirect,
+                    buildMessieConnectionsRoute(
+                      loggedOutRedirect,
+                      defaultPageBuilder,
                     ),
                     GoRoute(
                       path: 'chat',
@@ -371,9 +282,18 @@ abstract class AppRoutes {
                         const IntroPagePresenter(),
                       ),
                       routes: [
-                        _messieSignInRoute(loggedOutRedirect),
-                        _messieSignUpRoute(loggedOutRedirect),
-                        _messieLoginRoute(loggedOutRedirect),
+                        buildMessieSignInRoute(
+                          loggedOutRedirect,
+                          defaultPageBuilder,
+                        ),
+                        buildMessieSignUpRoute(
+                          loggedOutRedirect,
+                          defaultPageBuilder,
+                        ),
+                        buildMessieLoginRoute(
+                          loggedOutRedirect,
+                          defaultPageBuilder,
+                        ),
                       ],
                     ),
                     GoRoute(
