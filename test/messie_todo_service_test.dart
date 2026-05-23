@@ -258,5 +258,34 @@ void main() {
         ),
       );
     });
+
+    test('keeps Dio unknown inner error details for todo load failures', () async {
+      final sdk = RecordingMessieTodoSdk()
+        ..todoListsError = DioException(
+          requestOptions: RequestOptions(path: '/todolists'),
+          error: const FormatException('uuid parse failed'),
+          type: DioExceptionType.unknown,
+        );
+      final service = MessieTodoService(
+        sdkFactory: ({required apiBaseUrl, required jwt}) => sdk,
+      );
+
+      await expectLater(
+        () => service.getTodoLists(
+          apiBaseUrl: 'http://localhost:8080/api/v1',
+          jwt: 'jwt',
+          userId: 'not-a-uuid',
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'message',
+            contains(
+              'Failed to load todos (unknown): FormatException: uuid parse failed',
+            ),
+          ),
+        ),
+      );
+    });
   });
 }

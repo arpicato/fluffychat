@@ -367,7 +367,15 @@ class MessieTodoService {
         : data is String
         ? data
         : jsonEncode(data);
-    return Exception('$message ($statusCode): $body');
+    final fallbackDetail = [
+      if (error.error != null) error.error.toString(),
+      if (body.isEmpty && error.message != null && error.message!.isNotEmpty)
+        error.message!,
+      if (body.isEmpty && error.type != DioExceptionType.unknown)
+        'dio type=${error.type.name}',
+    ].where((part) => part.isNotEmpty).join(' | ');
+    final detail = body.isNotEmpty ? body : fallbackDetail;
+    return Exception('$message ($statusCode): $detail');
   }
 
   Exception _genericException(String message, Object error) {

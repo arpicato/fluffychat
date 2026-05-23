@@ -59,7 +59,7 @@ class MessieCalendarSource {
         id: source.id,
         userId: source.userId,
         kind: source.kind,
-        displayName: source.displayName?.trim() ?? '',
+        displayName: source.displayName.trim(),
         category: source.category,
         importMode: source.importMode,
         refreshState: source.refreshState,
@@ -383,13 +383,21 @@ class MessieCalendarService {
     if (serverMessage != null && serverMessage.isNotEmpty) {
       return Exception(serverMessage);
     }
-    final data = error.response?.data ?? error.error;
+    final data = error.response?.data;
     final body = data == null
         ? ''
         : data is String
         ? data
         : jsonEncode(_decodeErrorPayload(data));
-    return Exception('$message ($statusCode): $body');
+    final fallbackDetail = [
+      if (error.error != null) error.error.toString(),
+      if (body.isEmpty && error.message != null && error.message!.isNotEmpty)
+        error.message!,
+      if (body.isEmpty && error.type != DioExceptionType.unknown)
+        'dio type=${error.type.name}',
+    ].where((part) => part.isNotEmpty).join(' | ');
+    final detail = body.isNotEmpty ? body : fallbackDetail;
+    return Exception('$message ($statusCode): $detail');
   }
 
   Exception _genericException(String message, Object error) {

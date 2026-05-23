@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
@@ -221,6 +222,10 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
 }
 
 class ThrowingMessieCalendarSdk implements MessieCalendarSdk {
+  ThrowingMessieCalendarSdk({this.upcomingEventsError});
+
+  final Object? upcomingEventsError;
+
   @override
   Future<api.CalendarImportResponse> importCalendarSource({
     required List<int> bytes,
@@ -289,8 +294,12 @@ class ThrowingMessieCalendarSdk implements MessieCalendarSdk {
   }) => throw UnimplementedError();
 
   @override
-  Future<List<api.CalendarEvent>> getUpcomingCalendarEvents({int? limit}) =>
-      throw UnimplementedError();
+  Future<List<api.CalendarEvent>> getUpcomingCalendarEvents({int? limit}) async {
+    if (upcomingEventsError != null) {
+      throw upcomingEventsError!;
+    }
+    throw UnimplementedError();
+  }
 }
 
 class ThrowingBytesMessieCalendarSdk implements MessieCalendarSdk {
@@ -620,6 +629,39 @@ void main() {
             (error) => error.toString(),
             'message',
             contains('calendar file contains no VEVENT entries'),
+          ),
+        ),
+      );
+    });
+
+    test('keeps Dio unknown inner error details for upcoming events failures',
+        () async {
+      final service = MessieCalendarService(
+        sdkFactory: ({required apiBaseUrl, required jwt}) =>
+            ThrowingMessieCalendarSdk(
+              upcomingEventsError: DioException(
+                requestOptions: RequestOptions(
+                  path: '/calendar/events/upcoming',
+                ),
+                error: TimeoutException('Future not completed'),
+                type: DioExceptionType.unknown,
+              ),
+            ),
+      );
+
+      await expectLater(
+        () => service.getUpcomingCalendarEvents(
+          apiBaseUrl: 'http://localhost:8080/api/v1',
+          jwt: 'jwt',
+          limit: 25,
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'message',
+            contains(
+              'Failed to load upcoming calendar events (unknown): TimeoutException: Future not completed',
+            ),
           ),
         ),
       );
