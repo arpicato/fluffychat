@@ -36,6 +36,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../../utils/account_bundles.dart';
 import '../../config/setting_keys.dart';
+import '../../services/messie_bridge_catalog_loader.dart';
 import '../../services/bridge_room_mapping.dart';
 import '../../services/bridge_room_presentation.dart';
 import '../../services/messie_bridge_service.dart';
@@ -321,7 +322,8 @@ class ChatListController extends State<ChatList>
   final ValueNotifier<bool> scrolledToTop = ValueNotifier(true);
 
   final StreamController<Client> _clientStream = StreamController.broadcast();
-  final MessieBridgeService _messieBridgeService = MessieBridgeService();
+  final MessieBridgeCatalogLoader _bridgeCatalogLoader =
+      const MessieBridgeCatalogLoader();
   BridgeProviderCatalog _bridgeProviderCatalog =
       const BridgeProviderCatalog.empty();
   List<MessieBridgeLoginInfo> _bridgeLogins = const [];
@@ -412,34 +414,11 @@ class ChatListController extends State<ChatList>
     if (!mounted) return;
 
     try {
-      final matrix = Matrix.of(context);
-      final states = await Future.wait(
-        BridgeProviderCatalog.supportedProviders.keys.map(
-          (provider) =>
-              _messieBridgeService.loadState(matrix.client, provider: provider),
-        ),
-      );
+      final loaded = await _bridgeCatalogLoader.load(Matrix.of(context).client);
       if (!mounted) return;
-      final loginNumbersByProvider = <String, Map<String, int>>{};
-      for (final state in states) {
-        final numbers = <String, int>{};
-        for (var i = 0; i < state.logins.length; i++) {
-          numbers[state.logins[i].id] = i + 1;
-        }
-        loginNumbersByProvider[state.provider] = numbers;
-      }
       setState(() {
-        _bridgeProviderCatalog = BridgeProviderCatalog.fromStates(states);
-        _bridgeLogins = [
-          for (final state in states)
-            ...state.logins.map(
-              (login) => MessieBridgeLoginInfo.fromWhoamiLogin(
-                state.provider,
-                login,
-                loginNumbersByProvider[state.provider]?[login.id] ?? 1,
-              ),
-            ),
-        ];
+        _bridgeProviderCatalog = loaded.catalog;
+        _bridgeLogins = loaded.logins;
       });
     } catch (error, stackTrace) {
       Logs().w('Unable to load bridge provider catalog', error, stackTrace);
