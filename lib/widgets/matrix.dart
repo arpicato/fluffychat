@@ -7,11 +7,11 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:desktop_notifications/desktop_notifications.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/utils/client_manager.dart';
 import 'package:fluffychat/utils/init_with_restore.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_file_extension.dart';
+import 'package:fluffychat/utils/notification_background_handler.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/uia_request_manager.dart';
 import 'package:fluffychat/utils/voip_plugin.dart';
@@ -20,6 +20,7 @@ import 'package:fluffychat/widgets/fluffy_chat_app.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:just_audio/just_audio.dart';
@@ -207,33 +208,10 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     return route.split('/')[2];
   }
 
-  bool get _debugNotificationFlow => kDebugMode && PlatformInfos.isWeb;
-
-  bool _shouldLogNotificationEvent(Event event) =>
-      event.type == EventTypes.Message || event.type == EventTypes.Encrypted;
-
-  void _logNotificationEvent(String streamName, String clientName, Event event) {
-    if (!_debugNotificationFlow || !_shouldLogNotificationEvent(event)) return;
-    final visibilityState = html.document.visibilityState;
-    final ts = event.originServerTs.toIso8601String();
-    Logs().i(
-      '[notif-debug][$clientName][$streamName] '
-      'room=${event.room.id} '
-      'event=${event.eventId} '
-      'type=${event.type} '
-      'sender=${event.senderId} '
-      'ts=$ts '
-      'unread=${event.room.notificationCount} '
-      'activeRoom=$activeRoomId '
-      'visibility=$visibilityState',
-    );
-  }
-
   final linuxNotifications = PlatformInfos.isLinux
       ? NotificationsClient()
       : null;
   final Map<String, int> linuxNotificationIds = {};
-
   @override
   void initState() {
     super.initState();
@@ -313,18 +291,22 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
         });
     onUiaRequest[name] ??= c.onUiaRequest.stream.listen(uiaRequestHandler);
     if (PlatformInfos.isWeb || PlatformInfos.isLinux) {
+      FlutterLocalNotificationsPlugin().initialize(
+        settings: InitializationSettings(
+          linux: LinuxInitializationSettings(
+            defaultActionName: FluffyChatNotificationActions.open.name,
+          ),
+        ),
+        onDidReceiveNotificationResponse: (response) => notificationTap(
+          response,
+          clients: widget.clients,
+          router: FluffyChatApp.router,
+          l10n: null,
+        ),
+      );
       c.onSync.stream.first.then((s) {
         html.Notification.requestPermission();
-        if (_debugNotificationFlow) {
-          onTimelineDebug[name] ??= c.onTimelineEvent.stream.listen(
-            (event) => _logNotificationEvent('timeline', name, event),
-          );
-          onHistoryDebug[name] ??= c.onHistoryEvent.stream.listen(
-            (event) => _logNotificationEvent('history', name, event),
-          );
-        }
         onNotification[name] ??= c.onNotification.stream.listen((event) {
-          _logNotificationEvent('notification', name, event);
           if (_isBridgeBackfillNotification(event)) return;
           if (_isBridgeBotInvite(event)) return;
           showLocalNotification(event);
@@ -505,8 +487,6 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     onKeyVerificationRequestSub.values.map((s) => s.cancel());
     onLogoutSub.values.map((s) => s.cancel());
     onNotification.values.map((s) => s.cancel());
-
-    linuxNotifications?.close();
 
     super.dispose();
   }
