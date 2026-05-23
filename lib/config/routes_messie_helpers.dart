@@ -3,14 +3,16 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import 'dart:async';
+
 import 'package:fluffychat/pages/calendar/calendar_event_detail.dart';
 import 'package:fluffychat/pages/bridge_connections/bridge_connections.dart';
 import 'package:fluffychat/pages/calendar/calendar.dart';
 import 'package:fluffychat/pages/messie_auth/login/messie_login.dart';
 import 'package:fluffychat/pages/messie_auth/register/messie_register.dart';
 import 'package:fluffychat/pages/messie_auth/sign_in/messie_sign_in_page.dart';
-import 'package:fluffychat/pages/todos/todos.dart';
 import 'package:fluffychat/pages/todos/todo_list_detail.dart';
+import 'package:fluffychat/pages/todos/todos.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';

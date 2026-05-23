@@ -24,6 +24,8 @@ const double _todoItemDialogTargetWidth = 520;
 const double _todoItemDialogTargetHeight = 560;
 const int _todoItemTitleMaxLength = 120;
 const int _todoItemDescriptionMaxLength = 2000;
+const int _todoItemListTitleMaxLines = 1;
+const int _todoItemListSubtitleMaxLines = 2;
 
 class TodoListDetailPageView extends StatelessWidget {
   const TodoListDetailPageView(this.controller, {super.key});
@@ -863,14 +865,18 @@ class _TodoItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final descriptionParts = <String>[
+    final dueDateText =
+        item.dueDate == null ? null : 'Due ${formatTimestamp(item.dueDate)}';
+    final subtitleParts = <String>[
       if (item.description.isNotEmpty) item.description,
-      if (item.dueDate != null) 'Due ${formatTimestamp(item.dueDate)}',
+      ...?dueDateText == null ? null : [dueDateText],
     ];
+    final subtitleText = subtitleParts.join(' • ');
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: ListTile(
+        onTap: () => onEditItem(item),
         leading: Checkbox(
           value: item.completed,
           onChanged: (value) {
@@ -880,16 +886,22 @@ class _TodoItemCard extends StatelessWidget {
         ),
         title: Text(
           item.title.isEmpty ? 'Untitled item' : item.title,
+          maxLines: _todoItemListTitleMaxLines,
+          overflow: TextOverflow.ellipsis,
           style: item.completed
               ? theme.textTheme.titleMedium?.copyWith(
                   decoration: TextDecoration.lineThrough,
                 )
               : theme.textTheme.titleMedium,
         ),
-        subtitle: descriptionParts.isEmpty
+        subtitle: subtitleText.isEmpty
             ? const Text('No description')
-            : Text(descriptionParts.join('\n')),
-        isThreeLine: descriptionParts.length > 1,
+            : Text(
+                subtitleText,
+                maxLines: _todoItemListSubtitleMaxLines,
+                overflow: TextOverflow.ellipsis,
+              ),
+        isThreeLine: false,
         trailing: Wrap(
           spacing: 4,
           children: [

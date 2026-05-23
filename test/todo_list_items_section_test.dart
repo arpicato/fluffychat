@@ -8,13 +8,16 @@ MessieTodoItem _item({
   required String id,
   required String title,
   required bool completed,
+  String description = '',
+  DateTime? dueDate,
 }) => MessieTodoItem(
   id: id,
   listId: 'list-1',
   title: title,
-  description: '',
+  description: description,
   completed: completed,
   position: id,
+  dueDate: dueDate,
 );
 
 void main() {
@@ -131,5 +134,88 @@ void main() {
 
     expect(find.text('Done item'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('todo item rows stay compact and ellipsize long content', (
+    tester,
+  ) async {
+    final groupedItems = groupTodoItems([
+      _item(
+        id: '001',
+        title: 'Very long title ' * 20,
+        description: 'Very long description ' * 40,
+        dueDate: DateTime.utc(2026, 5, 24),
+        completed: false,
+      ),
+    ]);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              TodoListItemsSection(
+                groupedItems: groupedItems,
+                showCompletedItems: false,
+                formatTimestamp: (_) => 'May 24',
+                onShowCompletedItemsChanged: (_) {},
+                onToggleItem: (item, completed) async {},
+                onMoveItem: (group, oldIndex, newIndex) async {},
+                onEditItem: (item) async {},
+                onDeleteItem: (item) async {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final titleText = tester.widget<Text>(find.textContaining('Very long title'));
+    final subtitleText = tester.widget<Text>(find.textContaining('Very long description'));
+
+    expect(titleText.maxLines, 1);
+    expect(titleText.overflow, TextOverflow.ellipsis);
+    expect(subtitleText.maxLines, 2);
+    expect(subtitleText.overflow, TextOverflow.ellipsis);
+  });
+
+  testWidgets('tapping a todo item row opens edit behavior', (tester) async {
+    final groupedItems = groupTodoItems([
+      _item(
+        id: '001',
+        title: 'Open item',
+        description: 'Description',
+        completed: false,
+      ),
+    ]);
+    MessieTodoItem? editedItem;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              TodoListItemsSection(
+                groupedItems: groupedItems,
+                showCompletedItems: false,
+                formatTimestamp: (_) => '',
+                onShowCompletedItemsChanged: (_) {},
+                onToggleItem: (item, completed) async {},
+                onMoveItem: (group, oldIndex, newIndex) async {},
+                onEditItem: (item) async {
+                  editedItem = item;
+                },
+                onDeleteItem: (item) async {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open item'));
+    await tester.pump();
+
+    expect(editedItem?.id, '001');
   });
 }

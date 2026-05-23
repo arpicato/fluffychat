@@ -1,3 +1,4 @@
+import 'package:fluffychat/services/bridge_room_presentation.dart';
 import 'package:fluffychat/services/messie_bridge_service.dart';
 import 'package:matrix/matrix.dart';
 
@@ -12,9 +13,9 @@ class LoadedMessieBridgeCatalog {
 }
 
 class MessieBridgeCatalogLoader {
-  const MessieBridgeCatalogLoader({
+  MessieBridgeCatalogLoader({
     MessieBridgeService? bridgeService,
-  }) : _bridgeService = bridgeService ?? const MessieBridgeService();
+  }) : _bridgeService = bridgeService ?? MessieBridgeService();
 
   final MessieBridgeService _bridgeService;
 

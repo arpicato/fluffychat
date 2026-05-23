@@ -323,7 +323,7 @@ class ChatListController extends State<ChatList>
 
   final StreamController<Client> _clientStream = StreamController.broadcast();
   final MessieBridgeCatalogLoader _bridgeCatalogLoader =
-      const MessieBridgeCatalogLoader();
+      MessieBridgeCatalogLoader();
   BridgeProviderCatalog _bridgeProviderCatalog =
       const BridgeProviderCatalog.empty();
   List<MessieBridgeLoginInfo> _bridgeLogins = const [];
