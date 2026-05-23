@@ -136,6 +136,14 @@ String generateTodoItemPosition(
   return _getMidpoint(previous, next);
 }
 
+String generateNewTodoItemPosition(List<MessieTodoItem> items) {
+  final activeItems = groupTodoItems(items).activeItems;
+  return generateTodoItemPosition(
+    null,
+    activeItems.isEmpty ? null : activeItems.first.position,
+  );
+}
+
 int _charToIndex(String char) => _fractionalIndexAlphabet.indexOf(char);
 
 String _indexToChar(int index) => _fractionalIndexAlphabet[index];

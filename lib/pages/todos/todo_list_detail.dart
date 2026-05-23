@@ -119,11 +119,7 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     required List<MessieTodoItem> existingItems,
   }) async {
     final session = await _session(context);
-    final sortedItems = _sortedItems(existingItems);
-    final position = generateTodoItemPosition(
-      sortedItems.isEmpty ? null : sortedItems.last.position,
-      null,
-    );
+    final position = generateNewTodoItemPosition(existingItems);
     final createdItem = await _todoService.createTodoItem(
       apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
       jwt: session.jwt,

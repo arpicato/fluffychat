@@ -93,6 +93,28 @@ void main() {
     });
   });
 
+  group('generateNewTodoItemPosition', () {
+    test('places new items at the top of the active section', () {
+      final items = [
+        _item(id: 'a', completed: false, position: '001'),
+        _item(id: 'b', completed: false, position: '003'),
+        _item(id: 'c', completed: true, position: '002'),
+      ];
+
+      final position = generateNewTodoItemPosition(items);
+
+      expect(position.compareTo('001') < 0, isTrue);
+    });
+
+    test('starts from midpoint when there are no active items', () {
+      final items = [
+        _item(id: 'c', completed: true, position: '002'),
+      ];
+
+      expect(generateNewTodoItemPosition(items), 'm');
+    });
+  });
+
   group('buildTodoReorderPlan', () {
     test('updates only the moved item when neighbor positions are ordered', () {
       final items = [
