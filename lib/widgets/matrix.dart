@@ -182,8 +182,6 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
   final onRoomKeyRequestSub = <String, StreamSubscription>{};
   final onKeyVerificationRequestSub = <String, StreamSubscription>{};
   final onNotification = <String, StreamSubscription>{};
-  final onTimelineDebug = <String, StreamSubscription>{};
-  final onHistoryDebug = <String, StreamSubscription>{};
   final onLogoutSub = <String, StreamSubscription<LoginState>>{};
   final onUiaRequest = <String, StreamSubscription<UiaRequest>>{};
 
@@ -320,10 +318,6 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     onLogoutSub.remove(name);
     onNotification[name]?.cancel();
     onNotification.remove(name);
-    onTimelineDebug[name]?.cancel();
-    onTimelineDebug.remove(name);
-    onHistoryDebug[name]?.cancel();
-    onHistoryDebug.remove(name);
   }
 
   /// Bridge sender prefixes — used to detect bridged rooms and suppress
