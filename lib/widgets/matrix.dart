@@ -5,6 +5,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:collection/collection.dart';
 import 'package:fluffychat/l10n/l10n.dart';
@@ -18,7 +19,6 @@ import 'package:fluffychat/utils/voip_plugin.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_ok_cancel_alert_dialog.dart';
 import 'package:fluffychat/widgets/fluffy_chat_app.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:image_picker/image_picker.dart';
@@ -208,10 +208,6 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     return route.split('/')[2];
   }
 
-  final linuxNotifications = PlatformInfos.isLinux
-      ? NotificationsClient()
-      : null;
-  final Map<String, int> linuxNotificationIds = {};
   @override
   void initState() {
     super.initState();
