@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../services/backend_session_service.dart';
 import '../../services/messie_todo_service.dart';
+import '../../services/messie_workspace_refresh.dart';
 import '../../widgets/matrix.dart';
 import 'todo_list_detail_logic.dart';
 import 'todo_list_detail_view.dart';
@@ -310,6 +312,10 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
       jwt: session.jwt,
       listId: widget.listId,
     );
+    MessieWorkspaceRefresh.instance.bump();
+    if (context.mounted) {
+      context.go('/rooms');
+    }
   }
 
   Future<void> addCollaborator(

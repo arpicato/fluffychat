@@ -27,7 +27,7 @@ class MessieApi {
             Dio(BaseOptions(
               baseUrl: basePathOverride ?? basePath,
               connectTimeout: const Duration(milliseconds: 5000),
-              receiveTimeout: const Duration(milliseconds: 3000),
+              receiveTimeout: const Duration(milliseconds: 30000),
             )) {
     if (interceptors == null) {
       this.dio.interceptors.addAll([

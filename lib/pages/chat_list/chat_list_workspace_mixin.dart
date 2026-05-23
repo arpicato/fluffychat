@@ -72,6 +72,15 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
     });
   }
 
+  void removeTodoListFromWorkspace(String todoListId) {
+    if (!mounted) return;
+    setState(() {
+      _optimisticTodoListsById.remove(todoListId);
+      todoLists = todoLists.where((list) => list.id != todoListId).toList();
+      todoListsError = null;
+    });
+  }
+
   Future<void> refreshCalendarEvents() async {
     if (isLoadingCalendarEvents || !mounted) return;
 

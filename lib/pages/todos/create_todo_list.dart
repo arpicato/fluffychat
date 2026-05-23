@@ -1,5 +1,6 @@
 import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
+import 'package:fluffychat/services/messie_workspace_refresh.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -76,6 +77,7 @@ Future<void> showCreateTodoListFlow(
     );
     if (!context.mounted) return;
     onTodoListCreated?.call(todoList);
+    MessieWorkspaceRefresh.instance.bump();
     onCreated?.call();
     context.go(
       '/rooms/todos/${todoList.id}',
