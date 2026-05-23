@@ -368,15 +368,15 @@ class Message extends StatelessWidget {
                                                 padding: const EdgeInsets.only(
                                                   right: 2.0,
                                                 ),
-                                                child: Icon(
-                                                  sender.powerLevel.role ==
-                                                          PowerLevelRole
-                                                                .moderator
-                                                        ? Icons
-                                                              .add_moderator_outlined
-                                                      : Icons
-                                                            .admin_panel_settings,
-                                                  size: 14,
+                                                  child: Icon(
+                                                    sender.powerLevel.role ==
+                                                            PowerLevelRole
+                                                              .moderator
+                                                          ? Icons
+                                                                .add_moderator_outlined
+                                                        : Icons
+                                                              .admin_panel_settings,
+                                                    size: 14,
                                                   color: theme
                                                       .colorScheme
                                                       .onPrimaryContainer,

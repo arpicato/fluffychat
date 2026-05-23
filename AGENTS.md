@@ -145,5 +145,23 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - `chat_list_body.dart` is the highest-conflict file because it contains our todo/calendar interleaving, keyboard navigation wrappers, and bridge presentation alongside upstream's chat list rendering
 - When merging upstream, prefer taking their version of structural layout changes and re-adding our features on top, rather than trying to resolve inline conflicts
 - Upstream's `_customEnterKeyHandling` in `chat.dart` adds up-arrow-to-edit-last-message which conflicts with our message navigation; we remove that block and handle it through our resolver instead
-- Keep our additions at the end of files or in clearly separated sections where possible
-- Use public extracted classes (not private `_` prefixed) so they can live in separate files
+- Keep fork additions in clearly separated sections where possible, but do not churn shared files just to move code around
+- Prefer extracting fork-only policy, data shaping, service loading, and route-builder logic into fork-owned helpers instead of extracting mostly-upstream widget or page structure
+- Do not extract shared UI/layout blocks just to make a file smaller; only extract when the moved block is mostly fork-owned or already heavily diverged from upstream
+- Good extraction targets are helper seams like:
+  - bridge notification suppression or homeserver migration policy from `matrix.dart`
+  - bridge catalog loading and login-number mapping from `chat_list.dart`
+  - Messie-only auth, calendar, todos, and connections route builders from `routes.dart`
+- Bad extraction targets are mostly-upstream UI scaffolds like large chunks of `chat_list_item.dart`, `chat_list_view.dart`, or shell/widget tree structure in `routes.dart`
+- Treat these files as persistent high-conflict shared files and avoid opportunistic reshaping unless a new fork-only seam appears:
+  - `lib/pages/chat_list/chat_list.dart`
+  - `lib/pages/chat_list/chat_list_item.dart`
+  - `lib/pages/chat_list/chat_list_view.dart`
+  - `lib/pages/chat/chat.dart`
+- Remove temporary debug instrumentation from shared upstream-owned files as soon as it is no longer needed; debug residue in files like `matrix.dart` causes avoidable merge conflicts later
+- When touching shared files, prefer tiny local substitutions over structural rewrites:
+  - inject fork-computed values
+  - register fork helpers/adapters
+  - add a narrow fork-specific branch
+  - avoid reshaping the whole widget tree
+- Use public extracted classes and helpers (not private `_` prefixed) so they can live in separate files

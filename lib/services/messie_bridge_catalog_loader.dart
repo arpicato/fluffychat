@@ -1,0 +1,51 @@
+import 'package:fluffychat/services/messie_bridge_service.dart';
+import 'package:matrix/matrix.dart';
+
+class LoadedMessieBridgeCatalog {
+  const LoadedMessieBridgeCatalog({
+    required this.catalog,
+    required this.logins,
+  });
+
+  final BridgeProviderCatalog catalog;
+  final List<MessieBridgeLoginInfo> logins;
+}
+
+class MessieBridgeCatalogLoader {
+  const MessieBridgeCatalogLoader({
+    MessieBridgeService? bridgeService,
+  }) : _bridgeService = bridgeService ?? const MessieBridgeService();
+
+  final MessieBridgeService _bridgeService;
+
+  Future<LoadedMessieBridgeCatalog> load(Client client) async {
+    final states = await Future.wait(
+      BridgeProviderCatalog.supportedProviders.keys.map(
+        (provider) => _bridgeService.loadState(client, provider: provider),
+      ),
+    );
+
+    final loginNumbersByProvider = <String, Map<String, int>>{};
+    for (final state in states) {
+      final numbers = <String, int>{};
+      for (var i = 0; i < state.logins.length; i++) {
+        numbers[state.logins[i].id] = i + 1;
+      }
+      loginNumbersByProvider[state.provider] = numbers;
+    }
+
+    return LoadedMessieBridgeCatalog(
+      catalog: BridgeProviderCatalog.fromStates(states),
+      logins: [
+        for (final state in states)
+          ...state.logins.map(
+            (login) => MessieBridgeLoginInfo.fromWhoamiLogin(
+              state.provider,
+              login,
+              loginNumbersByProvider[state.provider]?[login.id] ?? 1,
+            ),
+          ),
+      ],
+    );
+  }
+}
