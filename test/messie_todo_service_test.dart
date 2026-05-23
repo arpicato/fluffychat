@@ -1,10 +1,15 @@
+import 'package:dio/dio.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:messie_api/messie_api.dart' as api;
 
+DateTime _expectedUtc(DateTime value) => value.toUtc();
+
 class RecordingMessieTodoSdk implements MessieTodoSdk {
   DateTime? createdDueDate;
   DateTime? updatedDueDate;
+  Object? todoListsError;
+  String? requestedTodoListsUserId;
 
   @override
   Future<api.TodoItem> createTodoItem({
@@ -86,8 +91,13 @@ class RecordingMessieTodoSdk implements MessieTodoSdk {
       throw UnimplementedError();
 
   @override
-  Future<List<api.TodoList>> getTodoLists({required String userId}) =>
-      throw UnimplementedError();
+  Future<List<api.TodoList>> getTodoLists({required String userId}) async {
+    requestedTodoListsUserId = userId;
+    if (todoListsError != null) {
+      throw todoListsError!;
+    }
+    return const [];
+  }
 
   @override
   Future<api.User?> getUserByMatrixId({required String matrixId}) =>
@@ -131,6 +141,7 @@ void main() {
       final service = MessieTodoService(
         sdkFactory: ({required apiBaseUrl, required jwt}) => sdk,
       );
+      final dueDate = DateTime(2026, 4, 16);
 
       await service.createTodoItem(
         apiBaseUrl: 'http://localhost:8080/api/v1',
@@ -140,10 +151,10 @@ void main() {
         description: 'Description',
         completed: false,
         position: 'a0',
-        dueDate: DateTime(2026, 4, 16),
+        dueDate: dueDate,
       );
 
-      expect(sdk.createdDueDate, DateTime.utc(2026, 4, 16));
+      expect(sdk.createdDueDate, _expectedUtc(dueDate));
       expect(sdk.createdDueDate?.isUtc, isTrue);
     });
 
@@ -152,6 +163,7 @@ void main() {
       final service = MessieTodoService(
         sdkFactory: ({required apiBaseUrl, required jwt}) => sdk,
       );
+      final dueDate = DateTime(2026, 4, 16);
 
       await service.updateTodoItem(
         apiBaseUrl: 'http://localhost:8080/api/v1',
@@ -162,11 +174,89 @@ void main() {
         description: 'Description',
         completed: false,
         position: 'a0',
-        dueDate: DateTime(2026, 4, 16),
+        dueDate: dueDate,
       );
 
-      expect(sdk.updatedDueDate, DateTime.utc(2026, 4, 16));
+      expect(sdk.updatedDueDate, _expectedUtc(dueDate));
       expect(sdk.updatedDueDate?.isUtc, isTrue);
+    });
+
+    test('fails clearly when todo load is called without backend userId', () async {
+      final sdk = RecordingMessieTodoSdk();
+      final service = MessieTodoService(
+        sdkFactory: ({required apiBaseUrl, required jwt}) => sdk,
+      );
+
+      await expectLater(
+        () => service.getTodoLists(
+          apiBaseUrl: 'http://localhost:8080/api/v1',
+          jwt: 'jwt',
+          userId: '  ',
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'message',
+            contains('backend session is missing userId'),
+          ),
+        ),
+      );
+
+      expect(sdk.requestedTodoListsUserId, isNull);
+    });
+
+    test('preserves non-Dio todo load failure details', () async {
+      final sdk = RecordingMessieTodoSdk()
+        ..todoListsError = StateError('invalid userId format');
+      final service = MessieTodoService(
+        sdkFactory: ({required apiBaseUrl, required jwt}) => sdk,
+      );
+
+      await expectLater(
+        () => service.getTodoLists(
+          apiBaseUrl: 'http://localhost:8080/api/v1',
+          jwt: 'jwt',
+          userId: 'not-a-uuid',
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'message',
+            contains('Failed to load todos: Bad state: invalid userId format'),
+          ),
+        ),
+      );
+    });
+
+    test('keeps Dio status and body details for todo load failures', () async {
+      final sdk = RecordingMessieTodoSdk()
+        ..todoListsError = DioException(
+          requestOptions: RequestOptions(path: '/todolists'),
+          response: Response(
+            requestOptions: RequestOptions(path: '/todolists'),
+            statusCode: 400,
+            data: {'error': 'invalid user id'},
+          ),
+          type: DioExceptionType.badResponse,
+        );
+      final service = MessieTodoService(
+        sdkFactory: ({required apiBaseUrl, required jwt}) => sdk,
+      );
+
+      await expectLater(
+        () => service.getTodoLists(
+          apiBaseUrl: 'http://localhost:8080/api/v1',
+          jwt: 'jwt',
+          userId: 'not-a-uuid',
+        ),
+        throwsA(
+          isA<Exception>().having(
+            (error) => error.toString(),
+            'message',
+            contains('Failed to load todos (400): {"error":"invalid user id"}'),
+          ),
+        ),
+      );
     });
   });
 }

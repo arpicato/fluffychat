@@ -370,6 +370,14 @@ class MessieTodoService {
     return Exception('$message ($statusCode): $body');
   }
 
+  Exception _genericException(String message, Object error) {
+    final text = error.toString();
+    if (text.startsWith('Exception: ')) {
+      return Exception(text.substring('Exception: '.length));
+    }
+    return Exception('$message: $text');
+  }
+
   Future<T> _wrapRequest<T>(
     String message,
     Future<T> Function(MessieTodoSdk sdk) callback, {
@@ -381,6 +389,8 @@ class MessieTodoService {
       return await callback(sdk);
     } on DioException catch (error) {
       throw _requestException(message, error);
+    } catch (error) {
+      throw _genericException(message, error);
     }
   }
 
@@ -388,14 +398,23 @@ class MessieTodoService {
     required String apiBaseUrl,
     required String jwt,
     required String userId,
-  }) async => _wrapRequest(
-    'Failed to load todos',
-    (sdk) async => (await sdk.getTodoLists(
-      userId: userId,
-    )).map(MessieTodoList.fromApi).toList(),
-    apiBaseUrl: apiBaseUrl,
-    jwt: jwt,
-  );
+  }) async {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      throw Exception(
+        'Failed to load todos: backend session is missing userId',
+      );
+    }
+
+    return _wrapRequest(
+      'Failed to load todos',
+      (sdk) async => (await sdk.getTodoLists(
+        userId: normalizedUserId,
+      )).map(MessieTodoList.fromApi).toList(),
+      apiBaseUrl: apiBaseUrl,
+      jwt: jwt,
+    );
+  }
 
   Future<MessieTodoList> getTodoListById({
     required String apiBaseUrl,
