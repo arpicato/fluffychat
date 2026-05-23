@@ -72,10 +72,15 @@ class BootstrapDialogState extends State<BootstrapDialog> {
   void initState() {
     super.initState();
     client = Matrix.of(context).client;
+    Logs().i(
+      '[bootstrap-debug] init wipe=${widget.wipe} '
+      'clientUser=${client.userID} homeserver=${client.homeserver}',
+    );
     _createBootstrap(widget.wipe);
   }
 
   Future<void> _cancelAction() async {
+    Logs().i('[bootstrap-debug] cancel requested');
     final consent = await showOkCancelAlertDialog(
       context: context,
       title: L10n.of(context).skipChatBackup,
@@ -89,6 +94,7 @@ class BootstrapDialogState extends State<BootstrapDialog> {
   }
 
   void _goBackAction(bool success) {
+    Logs().i('[bootstrap-debug] goBack success=$success canPop=${context.canPop()}');
     if (success) _decryptLastEvents();
 
     context.canPop() ? context.pop(success) : context.go('/rooms');
@@ -115,6 +121,7 @@ class BootstrapDialogState extends State<BootstrapDialog> {
   }
 
   Future<void> _createBootstrap(bool wipe) async {
+    Logs().i('[bootstrap-debug] create start wipe=$wipe user=${client.userID}');
     await client.roomsLoading;
     await client.accountDataLoading;
     await client.userDeviceKeysLoading;
@@ -127,6 +134,10 @@ class BootstrapDialogState extends State<BootstrapDialog> {
     _recoveryKeyStored = false;
     bootstrap = client.encryption!.bootstrap(onUpdate: (_) => setState(() {}));
     final key = await const FlutterSecureStorage().read(key: _secureStorageKey);
+    Logs().i(
+      '[bootstrap-debug] create ready state=${bootstrap?.state} '
+      'storedKey=${key != null} secureKey=$_secureStorageKey',
+    );
     if (key == null) return;
     _recoveryKeyTextEditingController.text = key;
   }
@@ -161,12 +172,18 @@ class BootstrapDialogState extends State<BootstrapDialog> {
     }
 
     _wipe ??= widget.wipe;
+    Logs().i(
+      '[bootstrap-debug] build state=${bootstrap.state} '
+      'stored=$_recoveryKeyStored copied=$_recoveryKeyCopied '
+      'wipe=$_wipe keyInput=${_recoveryKeyTextEditingController.text.isNotEmpty}',
+    );
     final buttons = <Widget>[];
     Widget body = const Center(child: CircularProgressIndicator.adaptive());
     titleText = L10n.of(context).loadingPleaseWait;
 
     if (bootstrap.newSsssKey?.recoveryKey != null &&
         _recoveryKeyStored == false) {
+      Logs().i('[bootstrap-debug] rendering new-ssss recovery-key screen');
       final key = bootstrap.newSsssKey!.recoveryKey;
       titleText = L10n.of(context).recoveryKey;
       return LoginScaffold(
@@ -259,33 +276,40 @@ class BootstrapDialogState extends State<BootstrapDialog> {
     } else {
       switch (bootstrap.state) {
         case BootstrapState.loading:
+          Logs().i('[bootstrap-debug] state loading');
           break;
         case BootstrapState.askWipeSsss:
+          Logs().i('[bootstrap-debug] state askWipeSsss wipe=$_wipe');
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => bootstrap.wipeSsss(_wipe!),
           );
           break;
         case BootstrapState.askBadSsss:
+          Logs().i('[bootstrap-debug] state askBadSsss');
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => bootstrap.ignoreBadSecrets(true),
           );
           break;
         case BootstrapState.askUseExistingSsss:
+          Logs().i('[bootstrap-debug] state askUseExistingSsss wipe=$_wipe');
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => bootstrap.useExistingSsss(!_wipe!),
           );
           break;
         case BootstrapState.askUnlockSsss:
+          Logs().i('[bootstrap-debug] state askUnlockSsss');
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => bootstrap.unlockedSsss(),
           );
           break;
         case BootstrapState.askNewSsss:
+          Logs().i('[bootstrap-debug] state askNewSsss');
           WidgetsBinding.instance.addPostFrameCallback(
             (_) => bootstrap.newSsss(),
           );
           break;
         case BootstrapState.openExistingSsss:
+          Logs().i('[bootstrap-debug] state openExistingSsss');
           _recoveryKeyStored = true;
           return LoginScaffold(
             appBar: AppBar(

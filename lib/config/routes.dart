@@ -5,13 +5,13 @@
 
 import 'dart:async';
 
+import 'package:fluffychat/config/routes_messie_helpers.dart';
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/archive/archive.dart';
 import 'package:fluffychat/pages/bootstrap/bootstrap_dialog.dart';
 import 'package:fluffychat/pages/bridge_connections/bridge_connections.dart';
 import 'package:fluffychat/pages/calendar/calendar.dart';
-import 'package:fluffychat/pages/calendar/calendar_event_detail.dart';
 import 'package:fluffychat/pages/chat/chat.dart';
 import 'package:fluffychat/pages/chat_access_settings/chat_access_settings_controller.dart';
 import 'package:fluffychat/pages/chat_details/chat_details.dart';
@@ -38,19 +38,23 @@ import 'package:fluffychat/pages/settings_notifications/settings_notifications.d
 import 'package:fluffychat/pages/settings_password/settings_password.dart';
 import 'package:fluffychat/pages/settings_security/settings_security.dart';
 import 'package:fluffychat/pages/settings_style/settings_style.dart';
-import 'package:fluffychat/pages/todos/todo_list_detail.dart';
 import 'package:fluffychat/pages/todos/todos.dart';
 import 'package:fluffychat/widgets/config_viewer.dart';
 import 'package:fluffychat/widgets/layouts/empty_page.dart';
 import 'package:fluffychat/widgets/layouts/two_column_layout.dart';
 import 'package:fluffychat/widgets/log_view.dart';
 import 'package:fluffychat/widgets/matrix.dart';
+import 'package:fluffychat/widgets/mobile_workspace_bottom_bar.dart';
 import 'package:fluffychat/widgets/share_scaffold_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
 abstract class AppRoutes {
+  static FutureOr<String?> Function(BuildContext, GoRouterState) _redirect(
+    FutureOr<String?> Function(BuildContext, GoRouterState) redirect,
+  ) => redirect;
+
   static FutureOr<String?> loggedInRedirect(
     BuildContext context,
     GoRouterState state,
@@ -67,6 +71,54 @@ abstract class AppRoutes {
 
   AppRoutes();
 
+  static GoRoute _messieSignInRoute(
+    FutureOr<String?> Function(BuildContext, GoRouterState) redirect,
+  ) => GoRoute(
+    path: 'sign_in',
+    pageBuilder: (context, state) => defaultPageBuilder(
+      context,
+      state,
+      MessieSignInPage(signUp: false),
+    ),
+    redirect: redirect,
+  );
+
+  static GoRoute _messieSignUpRoute(
+    FutureOr<String?> Function(BuildContext, GoRouterState) redirect,
+  ) => GoRoute(
+    path: 'sign_up',
+    pageBuilder: (context, state) => defaultPageBuilder(
+      context,
+      state,
+      MessieSignInPage(signUp: true),
+    ),
+    redirect: redirect,
+  );
+
+  static GoRoute _messieLoginRoute(
+    FutureOr<String?> Function(BuildContext, GoRouterState) redirect,
+  ) => GoRoute(
+    path: 'login',
+    pageBuilder: (context, state) => defaultPageBuilder(
+      context,
+      state,
+      MessieLogin(client: state.extra as Client),
+    ),
+    redirect: redirect,
+  );
+
+  static GoRoute _messieRegisterRoute(
+    FutureOr<String?> Function(BuildContext, GoRouterState) redirect,
+  ) => GoRoute(
+    path: 'register',
+    pageBuilder: (context, state) => defaultPageBuilder(
+      context,
+      state,
+      MessieRegister(client: state.extra as Client),
+    ),
+    redirect: redirect,
+  );
+
   static final List<RouteBase> routes = [
     GoRoute(
       path: '/',
@@ -81,42 +133,10 @@ abstract class AppRoutes {
           defaultPageBuilder(context, state, const IntroPagePresenter()),
       redirect: loggedInRedirect,
       routes: [
-        GoRoute(
-          path: 'sign_in',
-          pageBuilder: (context, state) => defaultPageBuilder(
-            context,
-            state,
-            MessieSignInPage(signUp: false),
-          ),
-          redirect: loggedInRedirect,
-        ),
-        GoRoute(
-          path: 'sign_up',
-          pageBuilder: (context, state) => defaultPageBuilder(
-            context,
-            state,
-            MessieSignInPage(signUp: true),
-          ),
-          redirect: loggedInRedirect,
-        ),
-        GoRoute(
-          path: 'login',
-          pageBuilder: (context, state) => defaultPageBuilder(
-            context,
-            state,
-            MessieLogin(client: state.extra as Client),
-          ),
-          redirect: loggedInRedirect,
-        ),
-        GoRoute(
-          path: 'register',
-          pageBuilder: (context, state) => defaultPageBuilder(
-            context,
-            state,
-            MessieRegister(client: state.extra as Client),
-          ),
-          redirect: loggedInRedirect,
-        ),
+        _messieSignInRoute(loggedInRedirect),
+        _messieSignUpRoute(loggedInRedirect),
+        _messieLoginRoute(loggedInRedirect),
+        _messieRegisterRoute(loggedInRedirect),
       ],
     ),
     GoRoute(
@@ -156,7 +176,7 @@ abstract class AppRoutes {
                 ),
                 sideView: child,
               )
-            : _MobileWorkspaceBottomBar(
+            : MobileWorkspaceBottomBar(
                 currentPath: state.uri.path,
                 child: child,
               ),
@@ -236,25 +256,12 @@ abstract class AppRoutes {
               routes: [
                 GoRoute(
                   path: 'events/:eventId',
-                  pageBuilder: (context, state) {
-                    final extra = state.extra;
-                    final initialTitle = extra is Map<String, Object?>
-                        ? extra['title'] as String?
-                        : null;
-                    final initialSourceDisplayName =
-                        extra is Map<String, Object?>
-                        ? extra['sourceDisplayName'] as String?
-                        : null;
-                    return defaultPageBuilder(
-                      context,
-                      state,
-                      CalendarEventDetailPage(
-                        eventId: state.pathParameters['eventId']!,
-                        initialTitle: initialTitle,
-                        initialSourceDisplayName: initialSourceDisplayName,
+                  pageBuilder: (context, state) =>
+                      buildMessieCalendarEventDetailPage(
+                        context,
+                        state,
+                        defaultPageBuilder,
                       ),
-                    );
-                  },
                   redirect: loggedOutRedirect,
                 ),
               ],
@@ -268,24 +275,11 @@ abstract class AppRoutes {
             ),
             GoRoute(
               path: 'todos/:listId',
-              pageBuilder: (context, state) {
-                final extra = state.extra;
-                final initialTitle = extra is Map<String, Object?>
-                    ? extra['title'] as String?
-                    : null;
-                final initialDescription = extra is Map<String, Object?>
-                    ? extra['description'] as String?
-                    : null;
-                return defaultPageBuilder(
-                  context,
-                  state,
-                  TodoListDetailPage(
-                    listId: state.pathParameters['listId']!,
-                    initialTitle: initialTitle,
-                    initialDescription: initialDescription,
-                  ),
-                );
-              },
+              pageBuilder: (context, state) => buildMessieTodoListDetailPage(
+                context,
+                state,
+                defaultPageBuilder,
+              ),
               redirect: loggedOutRedirect,
             ),
             ShellRoute(
@@ -377,33 +371,9 @@ abstract class AppRoutes {
                         const IntroPagePresenter(),
                       ),
                       routes: [
-                        GoRoute(
-                          path: 'sign_in',
-                          pageBuilder: (context, state) => defaultPageBuilder(
-                            context,
-                            state,
-                            MessieSignInPage(signUp: false),
-                          ),
-                          redirect: loggedOutRedirect,
-                        ),
-                        GoRoute(
-                          path: 'sign_up',
-                          pageBuilder: (context, state) => defaultPageBuilder(
-                            context,
-                            state,
-                            MessieSignInPage(signUp: true),
-                          ),
-                          redirect: loggedOutRedirect,
-                        ),
-                        GoRoute(
-                          path: 'login',
-                          pageBuilder: (context, state) => defaultPageBuilder(
-                            context,
-                            state,
-                            MessieLogin(client: state.extra as Client),
-                          ),
-                          redirect: loggedOutRedirect,
-                        ),
+                        _messieSignInRoute(loggedOutRedirect),
+                        _messieSignUpRoute(loggedOutRedirect),
+                        _messieLoginRoute(loggedOutRedirect),
                       ],
                     ),
                     GoRoute(
@@ -616,77 +586,5 @@ abstract class AppRoutes {
             restorationId: state.pageKey.value,
             child: child,
           );
-  }
-}
-
-class _MobileWorkspaceBottomBar extends StatelessWidget {
-  const _MobileWorkspaceBottomBar({
-    required this.currentPath,
-    required this.child,
-  });
-
-  final String currentPath;
-  final Widget child;
-
-  bool get _showBottomBar =>
-      currentPath == '/rooms' ||
-      currentPath.startsWith('/rooms/calendar') ||
-      currentPath == '/rooms/todos' ||
-      currentPath.startsWith('/rooms/todos/') ||
-      currentPath == '/rooms/settings' ||
-      currentPath.startsWith('/rooms/settings/');
-
-  int get _selectedIndex {
-    if (currentPath.startsWith('/rooms/calendar') ||
-        currentPath == '/rooms/todos' ||
-        currentPath.startsWith('/rooms/todos/')) {
-      return 1;
-    }
-    if (currentPath.startsWith('/rooms/settings')) return 2;
-    return 0;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (FluffyThemes.isColumnMode(context) || !_showBottomBar) {
-      return child;
-    }
-
-    return Scaffold(
-      body: child,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          switch (index) {
-            case 0:
-              context.go('/rooms');
-              break;
-            case 1:
-              context.go('/rooms/calendar');
-              break;
-            case 2:
-              context.go('/rooms/settings');
-              break;
-          }
-        },
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.forum_outlined),
-            selectedIcon: const Icon(Icons.forum),
-            label: L10n.of(context).chats,
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Calendar',
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: const Icon(Icons.settings),
-            label: L10n.of(context).settings,
-          ),
-        ],
-      ),
-    );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:fluffychat/pages/chat/chat.dart';
+import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/keyboard/intents.dart';
 import 'package:fluffychat/utils/keyboard/keyboard_navigation.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
@@ -33,7 +34,9 @@ class ChatKeyboardActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final keyboardNav = KeyboardNavigation.maybeOf(context);
+    final enableKeyboardFocusScope = !PlatformInfos.isMobile;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!enableKeyboardFocusScope) return;
       if (FocusManager.instance.primaryFocus != null) return;
       if (_keyboardFocusNode.hasFocus) return;
       debugPrint('[kb/focus] requesting ChatKeyboardScope');
@@ -114,7 +117,9 @@ class ChatKeyboardActions extends StatelessWidget {
         ),
       },
       child: Focus(
-        autofocus: true,
+        canRequestFocus: enableKeyboardFocusScope,
+        skipTraversal: !enableKeyboardFocusScope,
+        autofocus: enableKeyboardFocusScope,
         focusNode: _keyboardFocusNode,
         onFocusChange: (focused) => debugPrint(
           '[kb/focus] ChatKeyboardScope focused=$focused',

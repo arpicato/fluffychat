@@ -17,7 +17,12 @@ void main() {
           altPressed: false,
           shiftPressed: false,
         ),
-        context: const ShortcutContext(hasOpenChat: false),
+        context: const ShortcutContext(
+          hasOpenChat: false,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
         chatList: chatList,
       );
 
@@ -35,7 +40,12 @@ void main() {
           altPressed: false,
           shiftPressed: false,
         ),
-        context: const ShortcutContext(hasOpenChat: false),
+        context: const ShortcutContext(
+          hasOpenChat: false,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
         chatList: chatList,
       );
 
@@ -57,7 +67,12 @@ void main() {
           altPressed: false,
           shiftPressed: false,
         ),
-        context: const ShortcutContext(hasOpenChat: true),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
         chat: chat,
       );
 
@@ -75,7 +90,12 @@ void main() {
           altPressed: false,
           shiftPressed: false,
         ),
-        context: const ShortcutContext(hasOpenChat: true),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: true,
+          modalOpen: false,
+        ),
         chat: chat,
       );
 
@@ -93,12 +113,63 @@ void main() {
           altPressed: true,
           shiftPressed: false,
         ),
-        context: const ShortcutContext(hasOpenChat: true),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
         chat: chat,
       );
 
       expect(handled, isTrue);
       expect(chat.forwardFocusedMessageCalls, 1);
+    });
+
+    test('Alt+R replies to highlighted message', () {
+      final chat = _FakeChatHandler(replyFocusedMessageResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.keyR,
+          primaryPressed: false,
+          altPressed: true,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isTrue);
+      expect(chat.replyFocusedMessageCalls, 1);
+    });
+
+    test('Alt+E edits highlighted message', () {
+      final chat = _FakeChatHandler(editFocusedMessageResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.keyE,
+          primaryPressed: false,
+          altPressed: true,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isTrue);
+      expect(chat.editFocusedMessageCalls, 1);
     });
 
     test('Down moves through messages when message focus is active', () {
@@ -114,7 +185,12 @@ void main() {
           altPressed: false,
           shiftPressed: false,
         ),
-        context: const ShortcutContext(hasOpenChat: true),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
         chat: chat,
       );
 
@@ -133,7 +209,12 @@ void main() {
           altPressed: false,
           shiftPressed: false,
         ),
-        context: const ShortcutContext(hasOpenChat: true),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
         chat: chat,
         chatList: chatList,
       );
@@ -141,6 +222,224 @@ void main() {
       expect(handled, isTrue);
       expect(chat.handleEscapeCalls, 1);
       expect(chatList.handleEscapeCalls, 0);
+    });
+
+    test('Escape falls back to chat list when chat does not handle it', () {
+      final chat = _FakeChatHandler(handleEscapeResult: false);
+      final chatList = _FakeChatListHandler(handleEscapeResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.escape,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+        chatList: chatList,
+      );
+
+      expect(handled, isTrue);
+      expect(chat.handleEscapeCalls, 1);
+      expect(chatList.handleEscapeCalls, 1);
+    });
+
+    test('Enter opens focused chat list item when chat list is visible', () {
+      final chatList = _FakeChatListHandler(openFocusedResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.enter,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: false,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chatList: chatList,
+      );
+
+      expect(handled, isTrue);
+      expect(chatList.openFocusedCalls, 1);
+    });
+
+    test('Alt+Enter also opens focused chat list item', () {
+      final chatList = _FakeChatListHandler(openFocusedResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.enter,
+          primaryPressed: false,
+          altPressed: true,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: false,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chatList: chatList,
+      );
+
+      expect(handled, isTrue);
+      expect(chatList.openFocusedCalls, 1);
+    });
+
+    test('Page up dispatches to chat handler', () {
+      final chat = _FakeChatHandler(messagePageUpResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.pageUp,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isTrue);
+      expect(chat.messagePageUpCalls, 1);
+    });
+
+    test('Page down dispatches to chat handler', () {
+      final chat = _FakeChatHandler(messagePageDownResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.pageDown,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isTrue);
+      expect(chat.messagePageDownCalls, 1);
+    });
+
+    test('Down does not move messages when message focus is inactive', () {
+      final chat = _FakeChatHandler(
+        inputHasFocus: true,
+        messageFocusActive: false,
+        messageFocusDownResult: true,
+      );
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.arrowDown,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isFalse);
+      expect(chat.messageFocusDownCalls, 0);
+    });
+
+    test('Up does not enter message focus when composer is not on first line', () {
+      final chat = _FakeChatHandler(
+        inputHasFocus: true,
+        composerCursorOnFirstLine: false,
+        messageFocusUpResult: true,
+      );
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.arrowUp,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isFalse);
+      expect(chat.messageFocusUpCalls, 0);
+    });
+
+    test('Alt+Up dispatches to chat list modified navigation', () {
+      final chatList = _FakeChatListHandler(focusUpResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.arrowUp,
+          primaryPressed: false,
+          altPressed: true,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: false,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chatList: chatList,
+      );
+
+      expect(handled, isTrue);
+      expect(chatList.focusUpCalls, 1);
+    });
+
+    test('Alt+Shift+Down dispatches to modified message navigation', () {
+      final chat = _FakeChatHandler(messageFocusDownResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.arrowDown,
+          primaryPressed: false,
+          altPressed: true,
+          shiftPressed: true,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isTrue);
+      expect(chat.messageFocusDownCalls, 1);
     });
   });
 }
@@ -202,6 +501,8 @@ class _FakeChatHandler implements KeyboardChatHandler {
     this.inputHasFocus = false,
     this.composerCursorOnFirstLine = false,
     this.messageFocusActive = false,
+    this.messagePageUpResult = false,
+    this.messagePageDownResult = false,
     this.toggleFocusedMessageSelectionResult = false,
     this.forwardFocusedMessageResult = false,
     this.messageFocusUpResult = false,
@@ -221,6 +522,8 @@ class _FakeChatHandler implements KeyboardChatHandler {
   @override
   final bool messageFocusActive;
 
+  final bool messagePageUpResult;
+  final bool messagePageDownResult;
   final bool toggleFocusedMessageSelectionResult;
   final bool forwardFocusedMessageResult;
   final bool messageFocusUpResult;
@@ -232,6 +535,8 @@ class _FakeChatHandler implements KeyboardChatHandler {
 
   int messageFocusUpCalls = 0;
   int messageFocusDownCalls = 0;
+  int messagePageUpCalls = 0;
+  int messagePageDownCalls = 0;
   int toggleFocusedMessageSelectionCalls = 0;
   int forwardFocusedMessageCalls = 0;
   int replyFocusedMessageCalls = 0;
@@ -267,6 +572,18 @@ class _FakeChatHandler implements KeyboardChatHandler {
   bool messageFocusUp() {
     messageFocusUpCalls++;
     return messageFocusUpResult;
+  }
+
+  @override
+  bool messagePageDown() {
+    messagePageDownCalls++;
+    return messagePageDownResult;
+  }
+
+  @override
+  bool messagePageUp() {
+    messagePageUpCalls++;
+    return messagePageUpResult;
   }
 
   @override

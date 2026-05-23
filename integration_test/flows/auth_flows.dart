@@ -3,7 +3,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import 'package:fluffychat/pages/sign_in/view_model/model/public_homeserver_data.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,12 +17,12 @@ extension AuthFlows on FluffyChatTester {
     String username = user1Name,
     String password = user1Pw,
   }) async {
-    await waitFor('Sign in');
-    await tapOn('Sign in');
-    await enterText(TextField, 'http://$homeserver', index: 0);
-    await tapOn(RadioListTile<PublicHomeserverData>, index: 0);
+    final homeserverUrl = 'http://$homeserver';
+    await waitFor('Login with Matrix-ID');
+    await tapOn('Login with Matrix-ID');
+    await enterText(TextField, homeserverUrl, index: 0);
+    await tapOn(homeserverUrl, index: 1);
     await tapOn('Continue');
-    await waitFor('Log in to http://$homeserver');
     await enterText(TextField, username, index: 0);
     await enterText(TextField, password, index: 1);
     await tapOn('Login');
@@ -32,9 +31,9 @@ extension AuthFlows on FluffyChatTester {
   Future<void> logout() async {
     await ensureLoggedIn();
     await tapOn(Key('accounts_and_settings_buttons'));
-    await tapOn('Settings');
-    await scrollUntilVisible('Logout');
-    await tapOn('Logout');
+    await tapOn(find.widgetWithText(PopupMenuItem<Object>, 'Settings'));
+    await scrollUntilVisible(find.widgetWithText(ListTile, 'Logout'));
+    await tapOn(find.widgetWithText(ListTile, 'Logout'));
     await tapOn(Key('ok_cancel_alert_dialog_ok_button'));
     await waitFor('Sign in');
   }
@@ -46,12 +45,23 @@ extension AuthFlows on FluffyChatTester {
   }
 
   Future<bool> ensureLoggedIn() async {
-    if (await isVisible('Sign in') == false) return false;
+    var loginVisible = await isVisible('Login with Matrix-ID');
+    if (!loginVisible) {
+      await tester.pump(const Duration(seconds: 3));
+      loginVisible = await isVisible('Login with Matrix-ID');
+    }
+    final signInVisible = loginVisible && await isVisible('Sign in');
+    debugPrint(
+      '[INTEGRATION TEST] ensureLoggedIn loginVisible=$loginVisible signInVisible=$signInVisible',
+    );
+    if (!loginVisible || !signInVisible) return false;
 
+    debugPrint('[INTEGRATION TEST] ensureLoggedIn performing login flow');
     await login();
     await tapOn(CloseButton);
     await tapOn('Skip');
     await skipNoNotificationsDialog();
+    debugPrint('[INTEGRATION TEST] ensureLoggedIn login flow complete');
     return true;
   }
 }

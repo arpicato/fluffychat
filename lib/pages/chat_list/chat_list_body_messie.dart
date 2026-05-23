@@ -8,6 +8,7 @@ import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_calendar_item.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_entries.dart';
+import 'package:fluffychat/pages/chat_list/chat_list_focus_item.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_item.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_todo_item.dart';
 import 'package:fluffychat/pages/chat_list/dummy_chat_list_item.dart';
@@ -337,8 +338,7 @@ class ChatListViewBody extends StatelessWidget {
                     for (int j = 0; j < i; j++) {
                       if (entries[j] is! DividerChatListEntry) navIndex++;
                     }
-                    debugPrint('[kb/chatlist] item i=$i navIndex=$navIndex entry=${entry.runtimeType}');
-                    return _ChatListFocusItem(
+                    return ChatListFocusItem(
                       order: navIndex,
                       controller: controller,
                       onFocused: () {
@@ -391,71 +391,6 @@ class ChatListViewBody extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-/// Focus wrapper for chat list items. Registers its FocusNode with the
-/// controller so the adapter can directly requestFocus by index.
-class _ChatListFocusItem extends StatefulWidget {
-  const _ChatListFocusItem({
-    required this.order,
-    required this.controller,
-    required this.onFocused,
-    required this.child,
-  });
-
-  final int order;
-  final ChatListController controller;
-  final VoidCallback onFocused;
-  final Widget child;
-
-  @override
-  State<_ChatListFocusItem> createState() => _ChatListFocusItemState();
-}
-
-class _ChatListFocusItemState extends State<_ChatListFocusItem> {
-  final FocusNode _focusNode = FocusNode(skipTraversal: true);
-  bool _isFocused = false;
-
-  @override
-  void dispose() {
-    widget.controller.chatListFocusNodes.remove(widget.order);
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Register on every build so index stays correct after list rebuilds.
-    widget.controller.chatListFocusNodes[widget.order] = _focusNode;
-    final theme = Theme.of(context);
-    return Focus(
-      focusNode: _focusNode,
-      onFocusChange: (focused) {
-        if (focused != _isFocused) {
-          setState(() => _isFocused = focused);
-          if (focused) {
-            widget.onFocused();
-            Scrollable.ensureVisible(context, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd);
-            Scrollable.ensureVisible(context, alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtStart);
-          }
-        }
-      },
-      child: DecoratedBox(
-        decoration: _isFocused
-            ? BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                    color: theme.colorScheme.primary,
-                    width: 3,
-                  ),
-                ),
-                color: theme.colorScheme.primary.withOpacity(0.06),
-              )
-            : const BoxDecoration(),
-        child: widget.child,
-      ),
     );
   }
 }

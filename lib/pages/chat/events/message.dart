@@ -12,7 +12,6 @@ import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/utils/adaptive_bottom_sheet.dart';
 import 'package:fluffychat/utils/date_time_extension.dart';
 import 'package:fluffychat/utils/file_description.dart';
-import 'package:fluffychat/utils/matrix_power_level.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/utils/string_color.dart';
 import 'package:fluffychat/widgets/avatar.dart';
@@ -363,24 +362,18 @@ class Message extends StatelessWidget {
                                       ? const SizedBox(height: 12)
                                       : Row(
                                           children: [
-                                            if (matrixPowerLevelRoleFor(
-                                                  sender.powerLevel.level,
-                                                ) !=
-                                                MatrixPowerLevelRole.user)
+                                            if (sender.powerLevel.role !=
+                                                PowerLevelRole.user)
                                               Padding(
                                                 padding: const EdgeInsets.only(
                                                   right: 2.0,
                                                 ),
                                                 child: Icon(
-                                                  matrixPowerLevelRoleFor(
-                                                            sender
-                                                                .powerLevel
-                                                                .level,
-                                                          ) ==
-                                                          MatrixPowerLevelRole
-                                                              .moderator
-                                                      ? Icons
-                                                            .add_moderator_outlined
+                                                  sender.powerLevel.role ==
+                                                          PowerLevelRole
+                                                                .moderator
+                                                        ? Icons
+                                                              .add_moderator_outlined
                                                       : Icons
                                                             .admin_panel_settings,
                                                   size: 14,

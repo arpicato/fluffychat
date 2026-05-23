@@ -24,6 +24,7 @@ import 'package:fluffychat/pages/chat/chat_keyboard_actions.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
 import 'package:fluffychat/widgets/chat_settings_popup_menu.dart';
+import 'package:fluffychat/widgets/chat_back_button.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/widgets/mxc_image.dart';
@@ -128,7 +129,7 @@ class ChatView extends StatelessWidget {
                         builder: (context, _) => UnreadRoomsBadge(
                           filter: (r) => r.id != controller.roomId,
                           badgePosition: BadgePosition.topEnd(end: 8, top: 4),
-                          child: const Center(child: BackButton()),
+                          child: const ChatBackButton(),
                         ),
                       ),
                 titleSpacing: FluffyThemes.isColumnMode(context) ? 24 : 0,

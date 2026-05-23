@@ -4,7 +4,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import 'package:fluffychat/l10n/l10n.dart';
-import 'package:fluffychat/utils/matrix_power_level.dart';
 import 'package:fluffychat/widgets/permission_slider_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
@@ -41,12 +40,7 @@ Future<void> showMemberActionsPopupMenu({
     Offset.zero & overlay.size,
   );
 
-  const defaultPowerLevels = {
-    PowerLevel.defaultUserLevel,
-    PowerLevel.defaultModeratorLevel,
-    PowerLevel.defaultAdminLevel,
-    PowerLevel.ownerPowerLevel,
-  };
+  const defaultPowerLevels = {0, 50, 100, 9007199254740991};
 
   final action = await showMenu<_MemberActions>(
     context: context,
@@ -92,7 +86,7 @@ Future<void> showMemberActionsPopupMenu({
           ),
         ),
       if (user.canChangeUserPowerLevel) ...[
-        if (user.powerLevel < PowerLevel.admin)
+        if (user.powerLevel.level < 100)
           PopupMenuItem(
             value: _MemberActions.makeAdmin,
             child: Row(
@@ -103,7 +97,7 @@ Future<void> showMemberActionsPopupMenu({
               ],
             ),
           ),
-        if (user.powerLevel < PowerLevel.moderator)
+        if (user.powerLevel.level < 50)
           PopupMenuItem(
             value: _MemberActions.makeModerator,
             child: Row(
@@ -114,8 +108,7 @@ Future<void> showMemberActionsPopupMenu({
               ],
             ),
           ),
-        if (matrixPowerLevelRoleFor(user.powerLevel.level) ==
-            MatrixPowerLevelRole.admin)
+        if (user.powerLevel.role == PowerLevelRole.admin)
           PopupMenuItem(
             value: _MemberActions.removeAdmin,
             child: Row(
@@ -126,8 +119,7 @@ Future<void> showMemberActionsPopupMenu({
               ],
             ),
           )
-        else if (matrixPowerLevelRoleFor(user.powerLevel.level) ==
-            MatrixPowerLevelRole.moderator)
+        else if (user.powerLevel.role == PowerLevelRole.moderator)
           PopupMenuItem(
             value: _MemberActions.removeModerator,
             child: Row(
@@ -154,7 +146,7 @@ Future<void> showMemberActionsPopupMenu({
                     : L10n.of(context).powerLevel,
               ),
               if (!defaultPowerLevels.contains(user.powerLevel.level))
-                Text(' (${user.powerLevel.level})'),
+                Text(' (${user.powerLevel})'),
             ],
           ),
         ),
@@ -336,7 +328,7 @@ Future<void> showMemberActionsPopupMenu({
         );
       }
     case _MemberActions.makeAdmin:
-      if (user.room.ownPowerLevel <= PowerLevel.admin) {
+      if (user.room.ownPowerLevel.level <= 100) {
         final consent = await showOkCancelAlertDialog(
           context: context,
           title: L10n.of(context).areYouSure,

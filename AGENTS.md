@@ -77,6 +77,56 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - Squash merge completed feature branches into `main` when user approves
 - Prefer targeted `flutter test --no-pub` and `dart analyze`/`flutter analyze --no-pub` over broad full-project verification
 
+### Smoke Tests
+
+- Prefer a two-layer smoke-test workflow:
+  - fast widget smoke tests in `test/` for keyboard/navigation regressions
+  - full `flutter test` suite in Docker for stable automated coverage across services, widgets, and app logic
+- Default entrypoint: `bash scripts/run_smoke_tests.sh widget`
+- Broader automated suite: `bash scripts/run_smoke_tests.sh full`
+- For experimental end-to-end smoke tests: `bash scripts/run_smoke_tests.sh integration`
+- For user-requested visible/manual inspection of Linux integration tests: `VISIBLE=1 bash scripts/run_smoke_tests.sh integration`
+- Headless Linux smoke-test image: `Dockerfile.test-linux`
+- The smoke-test script runs `flutter pub get` inside the container against the bind-mounted workspace before running tests
+- Current widget smoke suite includes:
+  - `test/shortcut_resolver_test.dart`
+  - `test/shortcut_help_model_test.dart`
+  - `test/shortcut_context_conditions_test.dart`
+- The current reliable automation path is `widget` plus `full`; Linux/web integration remains experimental because Linux desktop is blocked by libsecret runtime behavior and Flutter web integration is not supported by `integration_test`
+- Keep existing unit/widget tests and integration tests; add new smoke tests rather than replacing them
+- Use widget smoke tests as the default pre-handoff verification for keyboard/navigation work because they are much faster than Synapse-backed integration tests
+- Android emulator is the primary local integration target when end-to-end verification is needed; prefer `bash scripts/run_android_integration.sh run` for narrowed reruns
+- To minimize Android rerun cost, prefer ABI-limited local emulator builds via `TARGET_ABI_FILTERS=x86_64` and reset app state before each narrowed rerun
+- The Android integration runner clears app data by default before each run so stale sessions do not mask real UI failures
+- When reproducing first-login/bootstrap flows, also reset homeserver state with `PREPARE_HOMESERVER=1`; app-only reset is not enough because Synapse account data persists across reruns
+
+### Automated Workflow
+
+- Default development loop for UI/keyboard/navigation changes:
+  1. make the code change
+  2. run `bash scripts/run_smoke_tests.sh widget`
+  3. fix failures before moving on
+  4. run `bash scripts/run_smoke_tests.sh full` before handoff
+  5. if the change specifically touches Synapse-backed integration wiring, optionally investigate `bash scripts/run_smoke_tests.sh integration`, but do not treat it as the required green gate
+- Use the headless widget smoke suite as the first-line regression net during development; do not wait until the end of a task to run it
+- Escalate from widget smoke tests to the full Dockerized `flutter test` suite when changes affect:
+  - focus/keyboard behavior across multiple screens
+  - routing or page-open/close behavior
+  - server-backed flows such as login, messaging, archive, todos, or calendar
+- Use Linux integration tests only as extra investigation when specifically debugging the integration harness
+- Use `VISIBLE=1 bash scripts/run_smoke_tests.sh integration` only when the user explicitly asks for a visible/manual run; otherwise prefer headless mode
+- When adding a new keyboard/navigation feature or fixing a regression, add or update a widget smoke test in the same turn so the workflow stays increasingly automated
+- For Android integration debugging, prefer this loop:
+  1. `SYNAPSE_PORT=40280 HOMESERVER=localhost:40280 bash scripts/prepare_integration_test.sh`
+  2. `bash scripts/run_android_integration.sh build`
+  3. `TEST_NAME="Login and logout flow" bash scripts/run_android_integration.sh run`
+  4. repeat step 3 for narrowed reruns until the failure is understood
+- For first-login/bootstrap debugging, prefer `PREPARE_HOMESERVER=1 TEST_NAME="Login and logout flow" bash scripts/run_android_integration.sh run` so server-side SSSS state is reset too
+- Keep tool-output token use low during debugging and verification:
+  - prefer saving large command output to `/tmp/opencode/...` or other files instead of pasting it into chat
+  - grep or otherwise return only decisive lines back into context
+  - avoid repeated full-log reads when a narrow follow-up read or search will do
+
 ### Keyboard Shortcuts
 
 - To minimize upstream merge conflicts, keep keyboard shortcut architecture concentrated under `lib/utils/keyboard/` whenever possible

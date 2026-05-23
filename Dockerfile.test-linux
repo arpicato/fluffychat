@@ -1,20 +1,19 @@
 # syntax=docker/dockerfile:1.7
 
-# Build FluffyChat Linux desktop bundle
-# Pin by digest so BuildKit never re-resolves the tag from the network.
-# To upgrade: update both the tag comment and the digest.
+# Headless Linux test runner for widget + integration smoke tests.
+# Uses the same pinned Flutter base as Dockerfile.linux, plus Xvfb/DBus.
 # flutter:3.41.6 linux/amd64
 FROM ghcr.io/cirruslabs/flutter@sha256:7efb4cd5ef95687924a02cb932dcc27f08450cca92b34a36850dec5292b029d5
 
-# Install Linux desktop build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     clang llvm lld cmake ninja-build pkg-config \
     libgtk-3-dev liblzma-dev libstdc++-12-dev \
     libsecret-1-dev libjsoncpp-dev libsqlite3-dev \
-    libwebkit2gtk-4.1-dev libssl-dev tcl \
+    libwebkit2gtk-4.1-dev libssl-dev tcl chromium \
+    xvfb dbus-x11 xauth mesa-utils libgl1-mesa-dri curl git ca-certificates yq unzip \
+    gnome-keyring libsecret-tools \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Rust toolchain for Vodozemac
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
     --mount=type=cache,id=cargo-install,target=/root/.cargo/install-cache \
@@ -23,25 +22,16 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 
 WORKDIR /app
 
-# Copy dependency files first for caching
 COPY pubspec.yaml pubspec.lock ./
 COPY packages/messie_api/pubspec.yaml packages/messie_api/pubspec.yaml
 RUN --mount=type=cache,target=/root/.pub-cache \
     flutter pub get
 
-# Copy source
 COPY . .
 
-# Build Linux release
 RUN --mount=type=cache,target=/root/.pub-cache \
-    --mount=type=cache,id=fluffychat-linux-dart-tool,target=/app/.dart_tool \
-    --mount=type=cache,id=fluffychat-linux-build,target=/app/build \
-    flutter build linux --release 2>&1 | tee /tmp/build.log; \
-    if [ ! -d /app/build/linux/x64/release/bundle ]; then \
-      tail -50 /tmp/build.log; exit 1; \
-    fi; \
-    rm -rf /opt/fluffychat-bundle; \
-    mkdir -p /opt; \
-    cp -a /app/build/linux/x64/release/bundle /opt/fluffychat-bundle
+    --mount=type=cache,id=fluffychat-test-dart-tool,target=/app/.dart_tool \
+    --mount=type=cache,id=fluffychat-test-build,target=/app/build \
+    flutter test --version
 
-# Runtime bundle is copied to /opt/fluffychat-bundle/
+CMD ["bash"]

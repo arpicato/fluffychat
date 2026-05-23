@@ -20,10 +20,11 @@ extension ChatFlows on FluffyChatTester {
   Future<void> ensureGroupChatCreated() async {
     if (await isVisible(groupChatName)) return;
     await tapOn(FloatingActionButton);
+    await tapOn('New chat');
     await tapOn('Create group');
     await enterText(TextField, groupChatName);
     await tapOn('Create a group and invite users');
-    await waitFor('Invite contact');
+    await waitFor(find.byTooltip('Back'));
     await goBack();
     await goBack();
   }

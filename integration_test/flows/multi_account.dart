@@ -29,9 +29,9 @@ extension on FluffyChatTester {
     await tapOn(Key('accounts_and_settings_buttons'));
     await tapOn(user2Name);
     await tapOn(Key('accounts_and_settings_buttons'));
-    await tapOn('Settings');
-    await scrollUntilVisible('Logout');
-    await tapOn('Logout');
+    await tapOn(find.widgetWithText(PopupMenuItem<Object>, 'Settings'));
+    await scrollUntilVisible(find.widgetWithText(ListTile, 'Logout'));
+    await tapOn(find.widgetWithText(ListTile, 'Logout'));
     await tapOn(Key('ok_cancel_alert_dialog_ok_button'));
     await waitFor('One of your clients has been logged out');
   }

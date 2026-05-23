@@ -35,6 +35,7 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../../utils/account_bundles.dart';
 import '../../config/setting_keys.dart';
+import '../../services/bridge_room_mapping.dart';
 import '../../services/bridge_room_presentation.dart';
 import '../../services/messie_bridge_service.dart';
 import '../../utils/url_launcher.dart';
@@ -326,52 +327,11 @@ class ChatListController extends State<ChatList>
 
   BridgeProviderCatalog get bridgeProviderCatalog => _bridgeProviderCatalog;
 
-  Map<String, int> get _bridgeLoginCountByProvider {
-    final counts = <String, Set<String>>{};
-    for (final mapping in _bridgeLogins) {
-      counts
-          .putIfAbsent(mapping.provider, () => <String>{})
-          .add(mapping.loginId);
-    }
-    return counts.map((provider, ids) => MapEntry(provider, ids.length));
-  }
-
-  bool get _forceShowLoginNumberBadge => false;
-
-  bool _showLoginNumberBadgeForProvider(String provider) =>
-      _forceShowLoginNumberBadge ||
-      (_bridgeLoginCountByProvider[provider] ?? 0) > 1;
-
-  MessieBridgeLoginInfo? _bridgeLoginForRoom(Room room) {
-    final parentIds = {
-      ...room.spaceParents.map((parent) => parent.roomId).whereType<String>(),
-      ...room.client.rooms
-          .where(
-            (space) =>
-                space.isSpace &&
-                space.spaceChildren.any((child) => child.roomId == room.id),
-          )
-          .map((space) => space.id),
-    };
-    if (parentIds.isEmpty) return null;
-    for (final login in _bridgeLogins) {
-      final spaceRoom = login.spaceRoom;
-      if (spaceRoom != null && parentIds.contains(spaceRoom)) return login;
-    }
-    return null;
-  }
-
   BridgeRoomPresentation bridgePresentationForRoom(Room room) =>
-      BridgeRoomPresentation.fromRoom(
+      BridgeRoomMapping.presentationForRoom(
         room,
         _bridgeProviderCatalog,
-        roomMapping: _bridgeLoginForRoom(room),
-        loginCountForProvider:
-            _bridgeLoginCountByProvider[_bridgeLoginForRoom(room)?.provider ?? ''] ??
-            0,
-        showLoginNumberBadge: _showLoginNumberBadgeForProvider(
-          _bridgeLoginForRoom(room)?.provider ?? '',
-        ),
+        _bridgeLogins,
       );
 
   Stream<Client> get clientStream => _clientStream.stream;

@@ -14,4 +14,4 @@ exec docker run --rm \
   -v "$HOME/.local/share/fluffychat-docker:/root/.local/share" \
   --network host \
   "$IMAGE" \
-  /app/build/linux/x64/release/bundle/fluffychat
+  /opt/fluffychat-bundle/fluffychat

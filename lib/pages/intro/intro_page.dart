@@ -167,16 +167,9 @@ class IntroPage extends StatelessWidget {
                                   child: Text(L10n.of(context).signIn),
                                 ),
                                 TextButton(
-                                  onPressed: () async {
-                                    final client = await Matrix.of(
-                                      context,
-                                    ).getLoginClient();
-                                    if (!context.mounted) return;
-                                    context.go(
-                                      '${GoRouterState.of(context).uri.path}/login',
-                                      extra: client,
-                                    );
-                                  },
+                                  onPressed: () => context.go(
+                                    '${GoRouterState.of(context).uri.path}/sign_in',
+                                  ),
                                   child: Text(
                                     L10n.of(context).loginWithMatrixId,
                                   ),

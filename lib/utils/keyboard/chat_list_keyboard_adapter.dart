@@ -37,7 +37,6 @@ class ChatListKeyboardHandlerAdapter implements KeyboardChatListHandler {
     final currentIdx = controller.focusedChatListIndex;
     final newIdx = currentIdx < 0 ? 0 : (currentIdx + 1).clamp(0, entries.length - 1);
     final node = controller.chatListFocusNodes[newIdx];
-    debugPrint('[kb/chatlist] focusDown: currentIdx=$currentIdx newIdx=$newIdx node=${node != null} registered=${controller.chatListFocusNodes.keys.toList()}');
     if (node != null) {
       node.requestFocus();
     }

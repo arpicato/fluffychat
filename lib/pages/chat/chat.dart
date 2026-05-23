@@ -392,7 +392,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     _loadDraft();
     WidgetsBinding.instance.addPostFrameCallback(_shareItems);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
+      if (!mounted || PlatformInfos.isMobile) return;
       inputFocus.requestFocus();
     });
     web.window.addEventListener('paste', _handleClipboardFilePasteWeb);
