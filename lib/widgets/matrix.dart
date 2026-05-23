@@ -36,6 +36,7 @@ import '../pages/key_verification/key_verification_dialog.dart';
 import '../utils/account_bundles.dart';
 import '../utils/background_push.dart';
 import 'local_notifications_extension.dart';
+import 'matrix_messie_helpers.dart';
 
 class Matrix extends StatefulWidget {
   final Widget? child;
@@ -301,8 +302,7 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
       c.onSync.stream.first.then((s) {
         html.Notification.requestPermission();
         onNotification[name] ??= c.onNotification.stream.listen((event) {
-          if (_isBridgeBackfillNotification(event)) return;
-          if (_isBridgeBotInvite(event)) return;
+          if (shouldSuppressMessieNotification(event)) return;
           showLocalNotification(event);
         });
       });
@@ -320,68 +320,12 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     onNotification.remove(name);
   }
 
-  /// Bridge sender prefixes — used to detect bridged rooms and suppress
-  /// backfill notifications. Add new bridge prefixes here as bridges are added.
-  static const _bridgeSenderPrefixes = [
-    '@whatsapp_',
-    '@telegram_',
-    '@signal_',
-    '@discord_',
-    '@instagram_',
-  ];
-
-  static const _bridgeBotLocalparts = [
-    'whatsappbot',
-    'telegrambot',
-    'signalbot',
-    'discordbot',
-    'instagrambot',
-  ];
-
-  /// Returns true if the sender looks like a bridge puppet or bot.
-  static bool _isBridgeSender(String senderId) {
-    return _bridgeSenderPrefixes.any((p) => senderId.startsWith(p));
-  }
-
-  static bool _isBridgeBot(String senderId) {
-    final localpart = senderId.split(':').first;
-    return _bridgeBotLocalparts.any((b) => localpart == '@$b');
-  }
-
-  /// Detects bridge backfill notifications that should be suppressed.
-  /// Suppresses when:
-  /// - Room was created/joined AFTER the event's originServerTs
-  ///   (message is older than the room join — it's backfill)
-  /// - Event is NOT a highlight/mention
-  bool _isBridgeBackfillNotification(Event event) {
-    final room = event.room;
-
-    // Highlights always notify
-    if (room.highlightCount > 0) return false;
-
-    // Core heuristic: room was created after the message was sent = backfill
-    final createEvent = room.getState(EventTypes.RoomCreate);
-    if (createEvent is MatrixEvent) {
-      if (createEvent.originServerTs.isAfter(event.originServerTs)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /// Returns true if this is an invite from a bridge bot.
-  bool _isBridgeBotInvite(Event event) {
-    return event.type == EventTypes.RoomMember &&
-        _isBridgeBot(event.senderId);
-  }
-
   void initMatrix() {
     for (final c in widget.clients) {
       _registerSubs(c.clientName);
     }
 
-    _migrateHomeserverUrl();
+    migrateMessieHomeserverUrls(widget.clients);
 
     if (PlatformInfos.isMobile) {
       backgroundPush = BackgroundPush(
@@ -414,34 +358,6 @@ class MatrixState extends State<Matrix> with WidgetsBindingObserver {
     }
 
     createVoipPlugin();
-  }
-
-  /// Migrates stored homeserver URLs when the preset homeserver changes.
-  /// This ensures existing sessions reconnect to the correct server after
-  /// a domain change, across all platforms (web, Android, desktop).
-  void _migrateHomeserverUrl() {
-    final preset = AppSettings.presetHomeserver.value;
-    if (preset.isEmpty) return;
-
-    var targetHomeserver = Uri.tryParse(preset);
-    if (targetHomeserver == null) return;
-    if (targetHomeserver.scheme.isEmpty) {
-      targetHomeserver = Uri.https(preset, '');
-    }
-
-    for (final c in widget.clients) {
-      if (!c.isLogged()) continue;
-      final current = c.homeserver;
-      if (current == null) continue;
-      if (current.host == targetHomeserver.host &&
-          current.scheme == targetHomeserver.scheme) {
-        continue;
-      }
-      Logs().i(
-        '[HomeserverMigration] Updating ${c.clientName} from $current to $targetHomeserver',
-      );
-      c.homeserver = targetHomeserver;
-    }
   }
 
   Future<void> createVoipPlugin() async {

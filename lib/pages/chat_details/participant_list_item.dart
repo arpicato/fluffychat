@@ -33,7 +33,7 @@ class ParticipantListItem extends StatelessWidget {
       PowerLevelRole.moderator => L10n.of(context).moderator,
       PowerLevelRole.admin => L10n.of(context).admin,
       PowerLevelRole.owner => L10n.of(context).owner,
-     };
+    };
 
     final isAdminOrOwner =
         user.powerLevel.role == PowerLevelRole.admin ||
