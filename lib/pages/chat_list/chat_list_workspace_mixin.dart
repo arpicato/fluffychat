@@ -56,6 +56,14 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
     }
   }
 
+  void addTodoListToWorkspace(MessieTodoList todoList) {
+    if (!mounted) return;
+    setState(() {
+      todoLists = [todoList, ...todoLists.where((list) => list.id != todoList.id)];
+      todoListsError = null;
+    });
+  }
+
   Future<void> refreshCalendarEvents() async {
     if (isLoadingCalendarEvents || !mounted) return;
 

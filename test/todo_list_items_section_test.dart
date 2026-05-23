@@ -223,6 +223,39 @@ void main() {
     );
   });
 
+  testWidgets('todo rows omit subtitle when description is empty', (tester) async {
+    final groupedItems = groupTodoItems([
+      _item(id: '001', title: 'Open item', completed: false),
+    ]);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: CustomScrollView(
+            slivers: [
+              TodoListItemsSection(
+                groupedItems: groupedItems,
+                showCompletedItems: false,
+                formatTimestamp: (_) => '',
+                onShowCompletedItemsChanged: (_) {},
+                onToggleItem: (item, completed) async {},
+                onMoveItem: (group, oldIndex, newIndex) async {},
+                onEditItem: (item) async {},
+                onDeleteItem: (item) async {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final listTile = tester.widget<ListTile>(find.byType(ListTile).first);
+
+    expect(find.text('No description'), findsNothing);
+    expect(listTile.subtitle, isNull);
+    expect(find.text('Open item'), findsOneWidget);
+  });
+
   testWidgets('tapping a todo item row opens edit behavior', (tester) async {
     final groupedItems = groupTodoItems([
       _item(

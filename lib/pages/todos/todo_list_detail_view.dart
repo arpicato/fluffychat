@@ -7,6 +7,7 @@ import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/widgets/avatar.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
@@ -170,66 +171,73 @@ class TodoListDetailPageView extends StatelessWidget {
           _todoItemDialogTargetHeight,
           availableSize.height * 0.8,
         );
-        return AlertDialog(
-          title: const Text('Add todo item'),
-          content: SizedBox(
-            width: dialogWidth,
-            height: dialogHeight,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  TextField(
-                    controller: titleController,
-                    autofocus: true,
-                    maxLength: _todoItemTitleMaxLength,
-                    minLines: 1,
-                    maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Title'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: descriptionController,
-                    minLines: 4,
-                    maxLines: 8,
-                    maxLength: _todoItemDescriptionMaxLength,
-                    decoration: const InputDecoration(labelText: 'Description'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: dueDateController,
-                    readOnly: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Due date',
-                      suffixIcon: Icon(Icons.calendar_today_outlined),
+        return CallbackShortcuts(
+          bindings: {
+            const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+              Navigator.of(dialogContext).pop(true);
+            },
+          },
+          child: AlertDialog(
+            title: const Text('Add todo item'),
+            content: SizedBox(
+              width: dialogWidth,
+              height: dialogHeight,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      autofocus: true,
+                      maxLength: _todoItemTitleMaxLength,
+                      minLines: 1,
+                      maxLines: 2,
+                      decoration: const InputDecoration(labelText: 'Title'),
                     ),
-                    onTap: () async {
-                      final picked = await showDatePicker(
-                        context: dialogContext,
-                        initialDate: DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (picked != null) {
-                        dueDateController.text = _formatDateInput(picked);
-                      }
-                    },
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: descriptionController,
+                      minLines: 4,
+                      maxLines: 8,
+                      maxLength: _todoItemDescriptionMaxLength,
+                      decoration: const InputDecoration(labelText: 'Description'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: dueDateController,
+                      readOnly: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Due date',
+                        suffixIcon: Icon(Icons.calendar_today_outlined),
+                      ),
+                      onTap: () async {
+                        final picked = await showDatePicker(
+                          context: dialogContext,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          dueDateController.text = _formatDateInput(picked);
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Add'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: const Text('Add'),
-            ),
-          ],
         );
       },
     );
@@ -280,89 +288,96 @@ class TodoListDetailPageView extends StatelessWidget {
             _todoItemDialogTargetHeight,
             availableSize.height * 0.8,
           );
-          return AlertDialog(
-            title: const Text('Edit todo item'),
-            content: SizedBox(
-              width: dialogWidth,
-              height: dialogHeight,
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextField(
-                      controller: titleController,
-                      autofocus: true,
-                      maxLength: _todoItemTitleMaxLength,
-                      minLines: 1,
-                      maxLines: 2,
-                      decoration: const InputDecoration(labelText: 'Title'),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: descriptionController,
-                      minLines: 4,
-                      maxLines: 8,
-                      maxLength: _todoItemDescriptionMaxLength,
-                      decoration: const InputDecoration(labelText: 'Description'),
-                    ),
-                    const SizedBox(height: 12),
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('Completed'),
-                      value: completed,
-                      onChanged: (value) => setState(() => completed = value),
-                    ),
-                    TextField(
-                      controller: dueDateController,
-                      readOnly: true,
-                      decoration: InputDecoration(
-                        labelText: 'Due date',
-                        suffixIcon: Wrap(
-                          spacing: 4,
-                          children: [
-                            if (dueDateController.text.isNotEmpty)
+          return CallbackShortcuts(
+            bindings: {
+              const SingleActivator(LogicalKeyboardKey.enter, control: true): () {
+                Navigator.of(dialogContext).pop(true);
+              },
+            },
+            child: AlertDialog(
+              title: const Text('Edit todo item'),
+              content: SizedBox(
+                width: dialogWidth,
+                height: dialogHeight,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextField(
+                        controller: titleController,
+                        autofocus: true,
+                        maxLength: _todoItemTitleMaxLength,
+                        minLines: 1,
+                        maxLines: 2,
+                        decoration: const InputDecoration(labelText: 'Title'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: descriptionController,
+                        minLines: 4,
+                        maxLines: 8,
+                        maxLength: _todoItemDescriptionMaxLength,
+                        decoration: const InputDecoration(labelText: 'Description'),
+                      ),
+                      const SizedBox(height: 12),
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Completed'),
+                        value: completed,
+                        onChanged: (value) => setState(() => completed = value),
+                      ),
+                      TextField(
+                        controller: dueDateController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          labelText: 'Due date',
+                          suffixIcon: Wrap(
+                            spacing: 4,
+                            children: [
+                              if (dueDateController.text.isNotEmpty)
+                                IconButton(
+                                  onPressed: () => setState(() {
+                                    dueDateController.text = '';
+                                  }),
+                                  icon: const Icon(Icons.clear),
+                                ),
                               IconButton(
-                                onPressed: () => setState(() {
-                                  dueDateController.text = '';
-                                }),
-                                icon: const Icon(Icons.clear),
+                                onPressed: () async {
+                                  final picked = await showDatePicker(
+                                    context: dialogContext,
+                                    initialDate: item.dueDate ?? DateTime.now(),
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(2100),
+                                  );
+                                  if (picked != null) {
+                                    setState(() {
+                                      dueDateController.text =
+                                          _formatDateInput(picked);
+                                    });
+                                  }
+                                },
+                                icon: const Icon(Icons.calendar_today_outlined),
                               ),
-                            IconButton(
-                              onPressed: () async {
-                                final picked = await showDatePicker(
-                                  context: dialogContext,
-                                  initialDate: item.dueDate ?? DateTime.now(),
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime(2100),
-                                );
-                                if (picked != null) {
-                                  setState(() {
-                                    dueDateController.text =
-                                        _formatDateInput(picked);
-                                  });
-                                }
-                              },
-                              icon: const Icon(Icons.calendar_today_outlined),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('Save'),
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Save'),
-              ),
-            ],
           );
         },
       ),
@@ -900,7 +915,7 @@ class _TodoItemCard extends StatelessWidget {
               : theme.textTheme.titleMedium,
         ),
         subtitle: subtitleText.isEmpty
-            ? const Text('No description')
+            ? null
             : Text(
                 subtitleText,
                 maxLines: _todoItemListSubtitleMaxLines,

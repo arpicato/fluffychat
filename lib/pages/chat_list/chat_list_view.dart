@@ -9,14 +9,9 @@ import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/pages/chat_list/chat_list.dart';
 import 'package:fluffychat/pages/chat_list/start_chat_fab.dart';
 import 'package:fluffychat/utils/keyboard/intents.dart';
-import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
-import 'package:fluffychat/widgets/avatar.dart';
 import 'package:fluffychat/widgets/navigation_rail.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../l10n/l10n.dart';
-import '../../widgets/matrix.dart';
 
 import 'chat_list_body_messie.dart';
 
@@ -103,7 +98,9 @@ class ChatListView extends StatelessWidget {
                     !controller.isSearchMode &&
                         controller.activeSpaceId == null &&
                         !FluffyThemes.isColumnMode(context)
-                    ? const StartChatFab()
+                    ? StartChatFab(
+                        onTodoListCreated: controller.addTodoListToWorkspace,
+                      )
                     : const SizedBox.shrink(),
               ),
             ),
