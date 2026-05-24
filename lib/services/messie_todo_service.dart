@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
-import 'package:messie_api/messie_api.dart' as api;
 import 'package:matrix/matrix.dart';
+import 'package:messie_api/messie_api.dart' as api;
 
 DateTime? _normalizeMessieDateTime(DateTime? value) => value?.toUtc();
 
@@ -15,6 +15,7 @@ class MessieTodoList {
     required this.ownerId,
     required this.title,
     required this.description,
+    this.lastActivityAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -23,6 +24,7 @@ class MessieTodoList {
   final String ownerId;
   final String title;
   final String description;
+  final DateTime? lastActivityAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -31,6 +33,7 @@ class MessieTodoList {
     ownerId: list.ownerId,
     title: list.title,
     description: list.description,
+    lastActivityAt: list.lastActivityAt,
     createdAt: list.createdAt,
     updatedAt: list.updatedAt,
   );

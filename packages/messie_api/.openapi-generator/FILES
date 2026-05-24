@@ -111,4 +111,3 @@ lib/src/model/wa_status_response.dart
 lib/src/model/wa_status_response_account.dart
 lib/src/serializers.dart
 pubspec.yaml
-test/bridge_submit_login_step_request_test.dart

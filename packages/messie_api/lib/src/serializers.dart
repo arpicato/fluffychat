@@ -144,10 +144,6 @@ Serializers serializers = (_$serializers.toBuilder()
         const FullType(BuiltList, [FullType(BridgeConnection)]),
         () => ListBuilder<BridgeConnection>(),
       )
-      ..addBuilderFactory(
-        const FullType(BuiltMap, [FullType(String), FullType(String)]),
-        () => MapBuilder<String, String>(),
-      )
       ..add(EmailLoginRequest.serializer)
       ..add(const OneOfSerializer())
       ..add(const AnyOfSerializer())

@@ -15,6 +15,7 @@ part 'todo_list.g.dart';
 /// * [ownerId] 
 /// * [title] 
 /// * [description] 
+/// * [lastActivityAt] 
 /// * [createdAt] 
 /// * [updatedAt] 
 @BuiltValue()
@@ -30,6 +31,9 @@ abstract class TodoList implements Built<TodoList, TodoListBuilder> {
 
   @BuiltValueField(wireName: r'description')
   String get description;
+
+  @BuiltValueField(wireName: r'last_activity_at')
+  DateTime? get lastActivityAt;
 
   @BuiltValueField(wireName: r'created_at')
   DateTime? get createdAt;
@@ -81,6 +85,13 @@ class _$TodoListSerializer implements PrimitiveSerializer<TodoList> {
       object.description,
       specifiedType: const FullType(String),
     );
+    if (object.lastActivityAt != null) {
+      yield r'last_activity_at';
+      yield serializers.serialize(
+        object.lastActivityAt,
+        specifiedType: const FullType(DateTime),
+      );
+    }
     if (object.createdAt != null) {
       yield r'created_at';
       yield serializers.serialize(
@@ -145,6 +156,13 @@ class _$TodoListSerializer implements PrimitiveSerializer<TodoList> {
             specifiedType: const FullType(String),
           ) as String;
           result.description = valueDes;
+          break;
+        case r'last_activity_at':
+          final valueDes = serializers.deserialize(
+            value,
+            specifiedType: const FullType(DateTime),
+          ) as DateTime;
+          result.lastActivityAt = valueDes;
           break;
         case r'created_at':
           final valueDes = serializers.deserialize(

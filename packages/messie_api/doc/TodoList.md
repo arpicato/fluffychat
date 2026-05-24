@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **ownerId** | **String** |  | 
 **title** | **String** |  | [default to '']
 **description** | **String** |  | 
+**lastActivityAt** | [**DateTime**](DateTime.md) |  | [optional] 
 **createdAt** | [**DateTime**](DateTime.md) |  | [optional] 
 **updatedAt** | [**DateTime**](DateTime.md) |  | [optional] 
 

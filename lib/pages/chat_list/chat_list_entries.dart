@@ -29,6 +29,7 @@ class TodoChatListEntry extends ChatListEntry {
 
   @override
   DateTime get sortTime =>
+      todoList.lastActivityAt ??
       todoList.updatedAt ??
       todoList.createdAt ??
       DateTime.fromMillisecondsSinceEpoch(0);
