@@ -1224,6 +1224,9 @@ components:
           default: ""
         description:
           type: string
+        last_activity_at:
+          type: string
+          format: date-time
         created_at:
           type: string
           format: date-time

@@ -93,6 +93,50 @@ void main() {
     });
   });
 
+  group('buildNewTodoItemInsertPlan', () {
+    test('places new items at the top of the active section', () {
+      final items = [
+        _item(id: 'a', completed: false, position: '001000'),
+        _item(id: 'b', completed: false, position: '003000'),
+        _item(id: 'c', completed: true, position: '002000'),
+      ];
+
+      final plan = buildNewTodoItemInsertPlan(items);
+
+      expect(plan.position, '000999');
+      expect(plan.updatedPositions, isEmpty);
+    });
+
+    test('starts from midpoint when there are no active items', () {
+      final items = [
+        _item(id: 'c', completed: true, position: '002'),
+      ];
+
+      final plan = buildNewTodoItemInsertPlan(items);
+
+      expect(plan.position, 'm');
+      expect(plan.updatedPositions, isEmpty);
+    });
+
+    test('renumbers active items when first position is already at floor', () {
+      final items = [
+        _item(id: 'a', completed: false, position: '000001'),
+        _item(id: 'b', completed: false, position: '001000'),
+      ];
+
+      final plan = buildNewTodoItemInsertPlan(items);
+
+      expect(plan.position, canonicalTodoItemPosition(0));
+      expect(
+        plan.updatedPositions,
+        {
+          'a': canonicalTodoItemPosition(1),
+          'b': canonicalTodoItemPosition(2),
+        },
+      );
+    });
+  });
+
   group('buildTodoReorderPlan', () {
     test('updates only the moved item when neighbor positions are ordered', () {
       final items = [

@@ -18,6 +18,7 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
   List<MessieTodoList> todoLists = const [];
   bool isLoadingTodoLists = false;
   Object? todoListsError;
+  final Map<String, MessieTodoList> _optimisticTodoListsById = {};
   List<MessieCalendarEvent> upcomingCalendarEvents = const [];
   bool isLoadingCalendarEvents = false;
   Object? calendarEventsError;
@@ -42,8 +43,14 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
         userId: session.userId,
       );
       if (!mounted) return;
+      final mergedTodoLists = [
+        ...todoLists,
+        ..._optimisticTodoListsById.values.where(
+          (optimistic) => todoLists.every((list) => list.id != optimistic.id),
+        ),
+      ];
       setState(() {
-        this.todoLists = todoLists;
+        this.todoLists = mergedTodoLists;
         isLoadingTodoLists = false;
       });
     } catch (error, stackTrace) {
@@ -54,6 +61,24 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
         todoListsError = error;
       });
     }
+  }
+
+  void addTodoListToWorkspace(MessieTodoList todoList) {
+    if (!mounted) return;
+    setState(() {
+      _optimisticTodoListsById[todoList.id] = todoList;
+      todoLists = [todoList, ...todoLists.where((list) => list.id != todoList.id)];
+      todoListsError = null;
+    });
+  }
+
+  void removeTodoListFromWorkspace(String todoListId) {
+    if (!mounted) return;
+    setState(() {
+      _optimisticTodoListsById.remove(todoListId);
+      todoLists = todoLists.where((list) => list.id != todoListId).toList();
+      todoListsError = null;
+    });
   }
 
   Future<void> refreshCalendarEvents() async {

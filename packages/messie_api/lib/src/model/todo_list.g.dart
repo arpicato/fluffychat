@@ -16,6 +16,8 @@ class _$TodoList extends TodoList {
   @override
   final String description;
   @override
+  final DateTime? lastActivityAt;
+  @override
   final DateTime? createdAt;
   @override
   final DateTime? updatedAt;
@@ -28,6 +30,7 @@ class _$TodoList extends TodoList {
       required this.ownerId,
       required this.title,
       required this.description,
+      this.lastActivityAt,
       this.createdAt,
       this.updatedAt})
       : super._();
@@ -46,6 +49,7 @@ class _$TodoList extends TodoList {
         ownerId == other.ownerId &&
         title == other.title &&
         description == other.description &&
+        lastActivityAt == other.lastActivityAt &&
         createdAt == other.createdAt &&
         updatedAt == other.updatedAt;
   }
@@ -57,6 +61,7 @@ class _$TodoList extends TodoList {
     _$hash = $jc(_$hash, ownerId.hashCode);
     _$hash = $jc(_$hash, title.hashCode);
     _$hash = $jc(_$hash, description.hashCode);
+    _$hash = $jc(_$hash, lastActivityAt.hashCode);
     _$hash = $jc(_$hash, createdAt.hashCode);
     _$hash = $jc(_$hash, updatedAt.hashCode);
     _$hash = $jf(_$hash);
@@ -70,6 +75,7 @@ class _$TodoList extends TodoList {
           ..add('ownerId', ownerId)
           ..add('title', title)
           ..add('description', description)
+          ..add('lastActivityAt', lastActivityAt)
           ..add('createdAt', createdAt)
           ..add('updatedAt', updatedAt))
         .toString();
@@ -95,6 +101,11 @@ class TodoListBuilder implements Builder<TodoList, TodoListBuilder> {
   String? get description => _$this._description;
   set description(String? description) => _$this._description = description;
 
+  DateTime? _lastActivityAt;
+  DateTime? get lastActivityAt => _$this._lastActivityAt;
+  set lastActivityAt(DateTime? lastActivityAt) =>
+      _$this._lastActivityAt = lastActivityAt;
+
   DateTime? _createdAt;
   DateTime? get createdAt => _$this._createdAt;
   set createdAt(DateTime? createdAt) => _$this._createdAt = createdAt;
@@ -114,6 +125,7 @@ class TodoListBuilder implements Builder<TodoList, TodoListBuilder> {
       _ownerId = $v.ownerId;
       _title = $v.title;
       _description = $v.description;
+      _lastActivityAt = $v.lastActivityAt;
       _createdAt = $v.createdAt;
       _updatedAt = $v.updatedAt;
       _$v = null;
@@ -144,6 +156,7 @@ class TodoListBuilder implements Builder<TodoList, TodoListBuilder> {
               title, r'TodoList', 'title'),
           description: BuiltValueNullFieldError.checkNotNull(
               description, r'TodoList', 'description'),
+          lastActivityAt: lastActivityAt,
           createdAt: createdAt,
           updatedAt: updatedAt,
         );

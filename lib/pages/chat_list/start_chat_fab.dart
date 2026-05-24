@@ -5,6 +5,7 @@
 
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/todos/create_todo_list.dart';
+import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_modal_action_popup.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +15,13 @@ enum _CreateAction { chat, todoList }
 
 class StartChatFab extends StatelessWidget {
   final VoidCallback? onCreateTodoList;
+  final ValueChanged<MessieTodoList>? onTodoListCreated;
 
-  const StartChatFab({super.key, this.onCreateTodoList});
+  const StartChatFab({
+    super.key,
+    this.onCreateTodoList,
+    this.onTodoListCreated,
+  });
 
   Future<_CreateAction?> _showDesktopMenu(BuildContext context) async {
     final button = context.findRenderObject() as RenderBox?;
@@ -88,7 +94,11 @@ class StartChatFab extends StatelessWidget {
         context.go('/rooms/newprivatechat');
       case _CreateAction.todoList:
         if (!context.mounted) return;
-        await showCreateTodoListFlow(context, onCreated: onCreateTodoList);
+        await showCreateTodoListFlow(
+          context,
+          onCreated: onCreateTodoList,
+          onTodoListCreated: onTodoListCreated,
+        );
     }
   }
 

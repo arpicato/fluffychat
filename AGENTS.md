@@ -58,6 +58,7 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - The build takes ~15-25 min first time (Rust/WASM compile), but Docker layer caching makes subsequent builds fast if only Dart code changed.
 - Deploy target: `arpin-hp.local` (Windows host running Docker Desktop)
 - Cannot pull images there; must `docker save | gzip | ssh arpin-hp.local "docker load"`
+- Treat `arpin-hp.local` as a no-pull deploy target for both client and backend images: build locally, transfer with `docker save | gzip | ssh arpin-hp.local "docker load"`, then restart containers there instead of rebuilding remotely with `docker compose build`
 - Deploy sequence:
   ```
   docker save fluffychat-web:prod | gzip | ssh arpin-hp.local "docker load"
@@ -65,7 +66,7 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
   ```
 - APK builds use `Dockerfile.apk` (arm64 only, ~20 min)
 - Linux desktop build: `Dockerfile.linux` + `run-linux.sh` (X11 forwarding)
-- `run-linux.sh` launches `FLUFFYCHAT_LINUX_IMAGE` if set, otherwise `fluffychat-linux:latest`; when rebuilding Linux images for testing, retag or set the image explicitly so desktop runs do not silently use a stale image
+- `run-linux.sh` launches `FLUFFYCHAT_LINUX_IMAGE` if set, otherwise `fluffychat-linux:latest`; when rebuilding Linux images for testing, also tag the build as `fluffychat-linux:latest` unless you intentionally want a side tag only, so desktop runs do not silently use a stale image
 - Build logs go to `/tmp/opencode/` for post-mortem
 
 ### Git

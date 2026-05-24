@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:matrix/matrix.dart';
 import 'package:messie_api/messie_api.dart' as api;
 
 DateTime? _normalizeMessieDateTime(DateTime? value) => value?.toUtc();
@@ -14,6 +15,7 @@ class MessieTodoList {
     required this.ownerId,
     required this.title,
     required this.description,
+    this.lastActivityAt,
     this.createdAt,
     this.updatedAt,
   });
@@ -22,14 +24,18 @@ class MessieTodoList {
   final String ownerId;
   final String title;
   final String description;
+  final DateTime? lastActivityAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
+  DateTime? get activityAt => lastActivityAt ?? updatedAt ?? createdAt;
 
   factory MessieTodoList.fromApi(api.TodoList list) => MessieTodoList(
     id: list.id,
     ownerId: list.ownerId,
     title: list.title,
     description: list.description,
+    lastActivityAt: list.lastActivityAt,
     createdAt: list.createdAt,
     updatedAt: list.updatedAt,
   );
@@ -367,7 +373,23 @@ class MessieTodoService {
         : data is String
         ? data
         : jsonEncode(data);
-    return Exception('$message ($statusCode): $body');
+    final fallbackDetail = [
+      if (error.error != null) error.error.toString(),
+      if (body.isEmpty && error.message != null && error.message!.isNotEmpty)
+        error.message!,
+      if (body.isEmpty && error.type != DioExceptionType.unknown)
+        'dio type=${error.type.name}',
+    ].where((part) => part.isNotEmpty).join(' | ');
+    final detail = body.isNotEmpty ? body : fallbackDetail;
+    return Exception('$message ($statusCode): $detail');
+  }
+
+  Exception _genericException(String message, Object error) {
+    final text = error.toString();
+    if (text.startsWith('Exception: ')) {
+      return Exception(text.substring('Exception: '.length));
+    }
+    return Exception('$message: $text');
   }
 
   Future<T> _wrapRequest<T>(
@@ -377,10 +399,27 @@ class MessieTodoService {
     required String jwt,
   }) async {
     final sdk = _sdkFactory(apiBaseUrl: apiBaseUrl, jwt: jwt);
+    final stopwatch = Stopwatch()..start();
+    Logs().d('[messie/todo] start $message base=$apiBaseUrl');
     try {
-      return await callback(sdk);
+      final result = await callback(sdk);
+      Logs().d(
+        '[messie/todo] ok $message elapsed=${stopwatch.elapsedMilliseconds}ms',
+      );
+      return result;
     } on DioException catch (error) {
+      Logs().w(
+        '[messie/todo] dio $message elapsed=${stopwatch.elapsedMilliseconds}ms '
+        'type=${error.type.name}',
+        error,
+      );
       throw _requestException(message, error);
+    } catch (error) {
+      Logs().w(
+        '[messie/todo] fail $message elapsed=${stopwatch.elapsedMilliseconds}ms',
+        error,
+      );
+      throw _genericException(message, error);
     }
   }
 
@@ -388,14 +427,23 @@ class MessieTodoService {
     required String apiBaseUrl,
     required String jwt,
     required String userId,
-  }) async => _wrapRequest(
-    'Failed to load todos',
-    (sdk) async => (await sdk.getTodoLists(
-      userId: userId,
-    )).map(MessieTodoList.fromApi).toList(),
-    apiBaseUrl: apiBaseUrl,
-    jwt: jwt,
-  );
+  }) async {
+    final normalizedUserId = userId.trim();
+    if (normalizedUserId.isEmpty) {
+      throw Exception(
+        'Failed to load todos: backend session is missing userId',
+      );
+    }
+
+    return _wrapRequest(
+      'Failed to load todos',
+      (sdk) async => (await sdk.getTodoLists(
+        userId: normalizedUserId,
+      )).map(MessieTodoList.fromApi).toList(),
+      apiBaseUrl: apiBaseUrl,
+      jwt: jwt,
+    );
+  }
 
   Future<MessieTodoList> getTodoListById({
     required String apiBaseUrl,
