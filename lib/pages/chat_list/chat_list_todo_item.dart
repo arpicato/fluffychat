@@ -23,7 +23,7 @@ class ChatListTodoItem extends StatelessWidget {
         ? theme.colorScheme.secondaryContainer
         : null;
     final description = todoList.description.trim();
-    final timestamp = todoList.updatedAt ?? todoList.createdAt;
+    final timestamp = todoList.activityAt;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),

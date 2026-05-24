@@ -28,6 +28,8 @@ class MessieTodoList {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  DateTime? get activityAt => lastActivityAt ?? updatedAt ?? createdAt;
+
   factory MessieTodoList.fromApi(api.TodoList list) => MessieTodoList(
     id: list.id,
     ownerId: list.ownerId,

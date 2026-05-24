@@ -28,11 +28,7 @@ class TodoChatListEntry extends ChatListEntry {
   final MessieTodoList todoList;
 
   @override
-  DateTime get sortTime =>
-      todoList.lastActivityAt ??
-      todoList.updatedAt ??
-      todoList.createdAt ??
-      DateTime.fromMillisecondsSinceEpoch(0);
+  DateTime get sortTime => todoList.activityAt ?? DateTime.fromMillisecondsSinceEpoch(0);
 }
 
 class CalendarChatListEntry extends ChatListEntry {
