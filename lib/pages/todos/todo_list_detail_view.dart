@@ -27,14 +27,35 @@ const int _todoItemTitleMaxLength = 120;
 const int _todoItemDescriptionMaxLength = 2000;
 const int _todoItemListTitleMaxLines = 1;
 const int _todoItemListSubtitleMaxLines = 2;
+const double _todoLeadingSlotWidth = 40;
 
 String _compactTodoRowText(String value) =>
     value.replaceAll(RegExp(r'\s+'), ' ').trim();
 
-class TodoListDetailPageView extends StatelessWidget {
+Widget _todoLeadingSlot({required Widget child}) => SizedBox(
+  width: _todoLeadingSlotWidth,
+  child: Center(child: child),
+);
+
+class TodoListDetailPageView extends StatefulWidget {
   const TodoListDetailPageView(this.controller, {super.key});
 
   final TodoListDetailPageController controller;
+
+  @override
+  State<TodoListDetailPageView> createState() => _TodoListDetailPageViewState();
+}
+
+class _TodoListDetailPageViewState extends State<TodoListDetailPageView> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  TodoListDetailPageController get controller => widget.controller;
 
   void _navigateBack(BuildContext context) {
     if (Navigator.of(context).canPop()) {
@@ -440,6 +461,33 @@ class TodoListDetailPageView extends StatelessWidget {
     }
   }
 
+  Future<void> _confirmDeleteItem(BuildContext context, MessieTodoItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete todo item?'),
+        content: Text(
+          item.title.trim().isEmpty
+              ? 'This will permanently delete the selected item.'
+              : 'This will permanently delete "${item.title.trim()}".',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      await _deleteItem(context, item);
+    }
+  }
+
   Future<void> _toggleItem(
     BuildContext context,
     MessieTodoItem item,
@@ -574,156 +622,187 @@ class TodoListDetailPageView extends StatelessWidget {
 
       final data = currentData ?? snapshot.requireData;
       final groupedItems = groupTodoItems(data.items);
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(data.list.title.isEmpty ? 'Todo list' : data.list.title),
-          automaticallyImplyLeading: false,
-          leading: FluffyThemes.isColumnMode(context)
-              ? null
-              : BackButton(onPressed: () => _navigateBack(context)),
-          centerTitle: FluffyThemes.isColumnMode(context),
-          actions: [
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                switch (value) {
-                  case 'edit':
-                    _editList(context, data.list);
-                  case 'collaborators':
-                    _showCollaboratorsDialog(context, data);
-                  case 'delete':
-                    _deleteList(context);
-                }
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'edit', child: Text('Edit list')),
-                PopupMenuItem(
-                  value: 'collaborators',
-                  child: Text('Manage collaborators'),
-                ),
-                PopupMenuItem(value: 'delete', child: Text('Delete list')),
-              ],
-            ),
-          ],
+      final shortcutTargets = <TodoShortcutTarget>[
+        const TodoShortcutTarget.addRow(),
+        ...groupedItems.activeItems.map(TodoShortcutTarget.item),
+        if (controller.showCompletedItems)
+          ...groupedItems.completedItems.map(TodoShortcutTarget.item),
+      ];
+      return TodoListShortcutScope(
+        targets: shortcutTargets,
+        scrollController: _scrollController,
+        onCreateItem: () {
+          unawaited(_createItem(context, data));
+        },
+        onEditItem: (item) => _editItem(context, item),
+        onToggleItem: (item, completed) => _toggleItem(context, item, completed),
+        onDeleteItem: (item) => _confirmDeleteItem(context, item),
+        onReorderItem: (item, moveDown) => controller.reorderItemById(
+          context,
+          itemId: item.id,
+          moveDown: moveDown,
         ),
-        body: MaxWidthBody(
-          withScrolling: false,
-          child: CustomScrollView(
-            slivers: [
-              SliverToBoxAdapter(
-                child: Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
+        builder: (context, bindings) => Scaffold(
+          appBar: AppBar(
+            title: Text(data.list.title.isEmpty ? 'Todo list' : data.list.title),
+            automaticallyImplyLeading: false,
+            leading: FluffyThemes.isColumnMode(context)
+                ? null
+                : BackButton(onPressed: () => _navigateBack(context)),
+            centerTitle: FluffyThemes.isColumnMode(context),
+            actions: [
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      _editList(context, data.list);
+                    case 'collaborators':
+                      _showCollaboratorsDialog(context, data);
+                    case 'delete':
+                      _deleteList(context);
+                  }
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit list')),
+                  PopupMenuItem(
+                    value: 'collaborators',
+                    child: Text('Manage collaborators'),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          data.list.title.isEmpty
-                              ? 'Untitled list'
-                              : data.list.title,
-                          style: theme.textTheme.titleLarge,
-                        ),
-                        if (data.list.description.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          Text(
-                            data.list.description,
-                            style: theme.textTheme.bodyMedium,
-                          ),
-                        ],
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            Chip(
-                              avatar: const Icon(
-                                Icons.format_list_bulleted,
-                                size: 18,
-                              ),
-                              label: Text('${data.items.length} items'),
-                            ),
-                            Chip(
-                              avatar: const Icon(
-                                Icons.check_circle_outline,
-                                size: 18,
-                              ),
-                              label: Text(
-                                '${data.items.where((item) => item.completed).length} completed',
-                              ),
-                            ),
-                            Chip(
-                              avatar: const Icon(
-                                Icons.group_outlined,
-                                size: 18,
-                              ),
-                              label: Text(
-                                '${data.collaborators.length} collaborator${data.collaborators.length == 1 ? '' : 's'}',
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (data.collaboratorsError != null) ...[
-                          const SizedBox(height: 12),
-                          Text(
-                            'Collaborators are temporarily unavailable. You can still work with the list and items.',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.error,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
+                  PopupMenuItem(value: 'delete', child: Text('Delete list')),
+                ],
               ),
-              SliverToBoxAdapter(
-                child: Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  child: TodoListAddItemRow(
-                    onTap: () => _createItem(context, data),
-                  ),
-                ),
-              ),
-              if (data.items.isEmpty)
+            ],
+          ),
+          body: MaxWidthBody(
+            withScrolling: false,
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
                 SliverToBoxAdapter(
                   child: Card(
                     margin: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 6,
                     ),
-                    child: ListTile(
-                      leading: const Icon(Icons.playlist_add_check_outlined),
-                      title: const Text('No items yet'),
-                      subtitle: const Text(
-                        'This list exists, but it does not have any todo items yet.',
-                      ),
-                      trailing: FilledButton.tonal(
-                        onPressed: () => _createItem(context, data),
-                        child: const Text('Add first item'),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            data.list.title.isEmpty
+                                ? 'Untitled list'
+                                : data.list.title,
+                            style: theme.textTheme.titleLarge,
+                          ),
+                          if (data.list.description.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              data.list.description,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ],
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              Chip(
+                                avatar: const Icon(
+                                  Icons.format_list_bulleted,
+                                  size: 18,
+                                ),
+                                label: Text('${data.items.length} items'),
+                              ),
+                              Chip(
+                                avatar: const Icon(
+                                  Icons.check_circle_outline,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  '${data.items.where((item) => item.completed).length} completed',
+                                ),
+                              ),
+                              Chip(
+                                avatar: const Icon(
+                                  Icons.group_outlined,
+                                  size: 18,
+                                ),
+                                label: Text(
+                                  '${data.collaborators.length} collaborator${data.collaborators.length == 1 ? '' : 's'}',
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (data.collaboratorsError != null) ...[
+                            const SizedBox(height: 12),
+                            Text(
+                              'Collaborators are temporarily unavailable. You can still work with the list and items.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
                 ),
-              if (data.items.isNotEmpty)
-                TodoListItemsSection(
-                  groupedItems: groupedItems,
-                  showCompletedItems: controller.showCompletedItems,
-                  formatTimestamp: _formatTimestamp,
-                  onShowCompletedItemsChanged: controller.setShowCompletedItems,
-                  onToggleItem: (item, completed) =>
-                      _toggleItem(context, item, completed),
-                  onMoveItem: (group, oldIndex, newIndex) =>
-                      _moveItem(context, data, group, oldIndex, newIndex),
-                  onEditItem: (item) => _editItem(context, item),
-                  onDeleteItem: (item) => _deleteItem(context, item),
+                SliverToBoxAdapter(
+                  child: Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    child: TodoShortcutFocusItem(
+                      bindings: bindings,
+                      targetId: 'add-row',
+                      child: (context, focused) => TodoListAddItemRow(
+                        focused: focused,
+                        onTap: () => _createItem(context, data),
+                      ),
+                    ),
+                  ),
                 ),
-            ],
+                if (data.items.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      child: ListTile(
+                        leading: const Icon(Icons.playlist_add_check_outlined),
+                        title: const Text('No items yet'),
+                        subtitle: const Text(
+                          'This list exists, but it does not have any todo items yet.',
+                        ),
+                        trailing: FilledButton.tonal(
+                          onPressed: () => _createItem(context, data),
+                          child: const Text('Add first item'),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (data.items.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: TodoListItemsSection(
+                      groupedItems: groupedItems,
+                      showCompletedItems: controller.showCompletedItems,
+                      formatTimestamp: _formatTimestamp,
+                      onShowCompletedItemsChanged:
+                          controller.setShowCompletedItems,
+                      onToggleItem: (item, completed) =>
+                          _toggleItem(context, item, completed),
+                      onMoveItem: (group, oldIndex, newIndex) =>
+                          _moveItem(context, data, group, oldIndex, newIndex),
+                      onEditItem: (item) => _editItem(context, item),
+                      onDeleteItem: (item) => _deleteItem(context, item),
+                      bindings: bindings,
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       );
@@ -741,6 +820,7 @@ class TodoListItemsSection extends StatelessWidget {
     required this.onMoveItem,
     required this.onEditItem,
     required this.onDeleteItem,
+    this.bindings,
     super.key,
   });
 
@@ -753,10 +833,11 @@ class TodoListItemsSection extends StatelessWidget {
   onMoveItem;
   final Future<void> Function(MessieTodoItem item) onEditItem;
   final Future<void> Function(MessieTodoItem item) onDeleteItem;
+  final TodoShortcutBindings? bindings;
 
   @override
-  Widget build(BuildContext context) {
-    final slivers = <Widget>[
+  Widget build(BuildContext context) => Column(
+    children: [
       if (groupedItems.activeItems.isNotEmpty)
         _TodoItemReorderableList(
           key: const ValueKey('todo-items-active'),
@@ -767,32 +848,21 @@ class TodoListItemsSection extends StatelessWidget {
           onMoveItem: onMoveItem,
           onEditItem: onEditItem,
           onDeleteItem: onDeleteItem,
+          bindings: bindings,
         ),
-      if (groupedItems.activeItems.isEmpty &&
-          groupedItems.completedItems.isEmpty)
-        const SliverToBoxAdapter(child: SizedBox.shrink()),
-    ];
-
-    if (groupedItems.completedItems.isNotEmpty) {
-      slivers.add(
-        SliverToBoxAdapter(
-          child: Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            child: ListTile(
-              leading: const Icon(Icons.checklist_outlined),
-              title: Text('Done (${groupedItems.completedItems.length})'),
-              trailing: Icon(
-                showCompletedItems ? Icons.expand_less : Icons.expand_more,
-              ),
-              onTap: () => onShowCompletedItemsChanged(!showCompletedItems),
+      if (groupedItems.completedItems.isNotEmpty)
+        Card(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: ListTile(
+            leading: const Icon(Icons.checklist_outlined),
+            title: Text('Done (${groupedItems.completedItems.length})'),
+            trailing: Icon(
+              showCompletedItems ? Icons.expand_less : Icons.expand_more,
             ),
+            onTap: () => onShowCompletedItemsChanged(!showCompletedItems),
           ),
         ),
-      );
-    }
-
-    if (showCompletedItems) {
-      slivers.add(
+      if (showCompletedItems && groupedItems.completedItems.isNotEmpty)
         _TodoItemReorderableList(
           key: const ValueKey('todo-items-completed'),
           group: TodoItemGroup.completed,
@@ -802,36 +872,398 @@ class TodoListItemsSection extends StatelessWidget {
           onMoveItem: onMoveItem,
           onEditItem: onEditItem,
           onDeleteItem: onDeleteItem,
+          bindings: bindings,
         ),
-      );
-    }
-
-    return SliverMainAxisGroup(slivers: slivers);
-  }
+    ],
+  );
 }
 
 class TodoListAddItemRow extends StatelessWidget {
-  const TodoListAddItemRow({required this.onTap, super.key});
+  const TodoListAddItemRow({
+    required this.onTap,
+    this.focused = false,
+    super.key,
+  });
 
   final VoidCallback onTap;
+  final bool focused;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListTile(
-      key: const ValueKey('todo-add-item-row'),
-      onTap: onTap,
-      leading: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 12),
-        child: Icon(Icons.add_task_outlined),
+    return Card(
+      margin: EdgeInsets.zero,
+      color: focused ? theme.colorScheme.secondaryContainer : null,
+      child: ListTile(
+        key: const ValueKey('todo-add-item-row'),
+        onTap: onTap,
+        leading: _todoLeadingSlot(
+          child: Icon(
+            Icons.add_task_outlined,
+            size: 28,
+          ),
+        ),
+        title: Text('Add todo item', style: theme.textTheme.titleMedium),
+        subtitle: const Text('Create a new item in this list.'),
+        trailing: const Icon(Icons.chevron_right),
+        isThreeLine: false,
       ),
-      title: Text('Add todo item', style: theme.textTheme.titleMedium),
-      subtitle: const Text('Create a new item in this list.'),
-      trailing: const Icon(Icons.chevron_right),
-      isThreeLine: false,
     );
   }
+}
+
+enum TodoShortcutTargetType { addRow, item }
+
+class TodoShortcutTarget {
+  const TodoShortcutTarget.addRow() : type = TodoShortcutTargetType.addRow, item = null;
+
+  const TodoShortcutTarget.item(this.item) : type = TodoShortcutTargetType.item;
+
+  final TodoShortcutTargetType type;
+  final MessieTodoItem? item;
+
+  String get targetId => switch (type) {
+    TodoShortcutTargetType.addRow => 'add-row',
+    TodoShortcutTargetType.item => item!.id,
+  };
+}
+
+class TodoShortcutBindings {
+  TodoShortcutBindings._(this._state);
+
+  final _TodoListShortcutScopeState _state;
+
+  String? get focusedTargetId => _state.focusedTargetId;
+
+  FocusNode registerFocusNode(String targetId) => _state.registerFocusNode(targetId);
+
+  GlobalKey registerScrollTargetKey(String targetId) =>
+      _state.registerScrollTargetKey(targetId);
+
+  void unregisterScrollTargetKey(String targetId, GlobalKey key) =>
+      _state.unregisterScrollTargetKey(targetId, key);
+
+  void unregisterFocusNode(String targetId, FocusNode focusNode) =>
+      _state.unregisterFocusNode(targetId, focusNode);
+
+  void reportFocusedTarget(String targetId) => _state.reportFocusedTarget(targetId);
+
+  KeyEventResult handleKey(FocusNode node, KeyEvent event) =>
+      _state.handleKey(node, event);
+}
+
+class TodoListShortcutScope extends StatefulWidget {
+  const TodoListShortcutScope({
+    required this.targets,
+    required this.scrollController,
+    required this.onCreateItem,
+    required this.onEditItem,
+    required this.onToggleItem,
+    required this.onDeleteItem,
+    required this.onReorderItem,
+    required this.builder,
+    super.key,
+  });
+
+  final List<TodoShortcutTarget> targets;
+  final ScrollController scrollController;
+  final VoidCallback onCreateItem;
+  final Future<void> Function(MessieTodoItem item) onEditItem;
+  final Future<void> Function(MessieTodoItem item, bool completed) onToggleItem;
+  final Future<void> Function(MessieTodoItem item) onDeleteItem;
+  final Future<void> Function(MessieTodoItem item, bool moveDown) onReorderItem;
+  final Widget Function(BuildContext context, TodoShortcutBindings bindings)
+  builder;
+
+  @override
+  State<TodoListShortcutScope> createState() => _TodoListShortcutScopeState();
+}
+
+class _TodoListShortcutScopeState extends State<TodoListShortcutScope> {
+  final Map<String, FocusNode> _focusNodes = {};
+  final Map<String, GlobalKey> _scrollTargetKeys = {};
+  String? _focusedTargetId = 'add-row';
+  static const int _maxFocusRetryFrames = 8;
+
+  TodoShortcutBindings get _bindings => TodoShortcutBindings._(this);
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _requestFocus(_focusedTargetId);
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant TodoListShortcutScope oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.targets.isEmpty) {
+      _focusedTargetId = null;
+      return;
+    }
+    final targetIds = widget.targets.map((target) => target.targetId).toSet();
+    if (_focusedTargetId == null || !targetIds.contains(_focusedTargetId)) {
+      final currentIndex = _currentFocusedIndex;
+      final clampedIndex = currentIndex.clamp(0, widget.targets.length - 1);
+      _focusedTargetId = widget.targets[clampedIndex].targetId;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _requestFocus(_focusedTargetId);
+    });
+  }
+
+  bool get _hasTargets => widget.targets.isNotEmpty;
+
+  int get _currentFocusedIndex {
+    if (!_hasTargets) return 0;
+    final index = widget.targets.indexWhere(
+      (target) => target.targetId == _focusedTargetId,
+    );
+    return index < 0 ? 0 : index;
+  }
+
+  TodoShortcutTarget? get _focusedTarget => _hasTargets
+      ? widget.targets[_currentFocusedIndex]
+      : null;
+
+  String? get focusedTargetId => _focusedTargetId;
+
+  FocusNode registerFocusNode(String targetId) =>
+      _focusNodes[targetId] ??= FocusNode(skipTraversal: true);
+
+  GlobalKey registerScrollTargetKey(String targetId) =>
+      _scrollTargetKeys[targetId] ??= GlobalKey();
+
+  void unregisterScrollTargetKey(String targetId, GlobalKey key) {
+    final registered = _scrollTargetKeys[targetId];
+    if (identical(registered, key)) {
+      _scrollTargetKeys.remove(targetId);
+    }
+  }
+
+  void unregisterFocusNode(String targetId, FocusNode focusNode) {
+    final registered = _focusNodes[targetId];
+    if (identical(registered, focusNode)) {
+      _focusNodes.remove(targetId);
+    }
+    focusNode.dispose();
+  }
+
+  void reportFocusedTarget(String targetId) {
+    if (_focusedTargetId == targetId) return;
+    setState(() {
+      _focusedTargetId = targetId;
+    });
+  }
+
+  void _requestFocus(String? targetId) {
+    if (targetId == null) return;
+    final node = _focusNodes[targetId];
+    if (node != null && node.canRequestFocus) {
+      node.requestFocus();
+    }
+  }
+
+  void _ensureTargetVisible(String targetId) {
+    final targetContext = _scrollTargetKeys[targetId]?.currentContext;
+    if (targetContext == null) return;
+    Scrollable.ensureVisible(targetContext, duration: Duration.zero, alignment: 0.5);
+  }
+
+  void _scrollTowardTarget(int delta) {
+    if (!widget.scrollController.hasClients) return;
+    final position = widget.scrollController.position;
+    final viewportStep = math.max(position.viewportDimension * 0.8, 96);
+    final nextOffset = (position.pixels + (delta * viewportStep)).clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    if (nextOffset == position.pixels) return;
+    widget.scrollController.jumpTo(nextOffset);
+  }
+
+  void _requestFocusWhenAvailable(
+    String targetId, {
+    required int delta,
+    int attemptsRemaining = _maxFocusRetryFrames,
+  }) {
+    if (!mounted) return;
+    final node = _focusNodes[targetId];
+    if (node != null && node.canRequestFocus) {
+      _ensureTargetVisible(targetId);
+      node.requestFocus();
+      return;
+    }
+    if (attemptsRemaining <= 0) return;
+    _scrollTowardTarget(delta);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _requestFocusWhenAvailable(
+        targetId,
+        delta: delta,
+        attemptsRemaining: attemptsRemaining - 1,
+      );
+    });
+  }
+
+  void _moveFocus(int delta) {
+    if (!_hasTargets) return;
+    final newIndex = (_currentFocusedIndex + delta).clamp(0, widget.targets.length - 1);
+    final targetId = widget.targets[newIndex].targetId;
+    setState(() {
+      _focusedTargetId = targetId;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _requestFocusWhenAvailable(targetId, delta: delta);
+    });
+  }
+
+  Future<void> _toggleFocusedItem() async {
+    final item = _focusedTarget?.item;
+    if (item == null) return;
+    await widget.onToggleItem(item, !item.completed);
+  }
+
+  Future<void> _editFocusedItem() async {
+    final item = _focusedTarget?.item;
+    if (item == null) return;
+    await widget.onEditItem(item);
+  }
+
+  Future<void> _deleteFocusedItem() async {
+    final item = _focusedTarget?.item;
+    if (item == null) return;
+    await widget.onDeleteItem(item);
+  }
+
+  Future<void> _reorderFocusedItem(bool moveDown) async {
+    final item = _focusedTarget?.item;
+    if (item == null) return;
+    _focusedTargetId = item.id;
+    await widget.onReorderItem(item, moveDown);
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _requestFocus(item.id);
+    });
+  }
+
+  KeyEventResult handleKey(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    final key = event.logicalKey;
+    final altPressed = HardwareKeyboard.instance.isAltPressed;
+    switch (key) {
+      case LogicalKeyboardKey.keyN:
+        widget.onCreateItem();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.keyE:
+        _editFocusedItem();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.space:
+      case LogicalKeyboardKey.enter:
+        _toggleFocusedItem();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.delete:
+      case LogicalKeyboardKey.backspace:
+        _deleteFocusedItem();
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.arrowUp:
+        if (altPressed) {
+          _reorderFocusedItem(false);
+        } else {
+          _moveFocus(-1);
+        }
+        return KeyEventResult.handled;
+      case LogicalKeyboardKey.arrowDown:
+        if (altPressed) {
+          _reorderFocusedItem(true);
+        } else {
+          _moveFocus(1);
+        }
+        return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.builder(context, _bindings);
+}
+
+class TodoShortcutFocusItem extends StatefulWidget {
+  const TodoShortcutFocusItem({
+    required this.bindings,
+    required this.targetId,
+    required this.child,
+    super.key,
+  });
+
+  final TodoShortcutBindings bindings;
+  final String targetId;
+  final Widget Function(BuildContext context, bool focused) child;
+
+  @override
+  State<TodoShortcutFocusItem> createState() => _TodoShortcutFocusItemState();
+}
+
+class _TodoShortcutFocusItemState extends State<TodoShortcutFocusItem> {
+  late final FocusNode _focusNode;
+  late bool _isFocused;
+  late final GlobalKey _scrollTargetKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = widget.bindings.registerFocusNode(widget.targetId);
+    _scrollTargetKey = widget.bindings.registerScrollTargetKey(widget.targetId);
+    _isFocused = widget.bindings.focusedTargetId == widget.targetId;
+  }
+
+  @override
+  void dispose() {
+    widget.bindings.unregisterScrollTargetKey(widget.targetId, _scrollTargetKey);
+    widget.bindings.unregisterFocusNode(widget.targetId, _focusNode);
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant TodoShortcutFocusItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final shouldBeFocused = widget.bindings.focusedTargetId == widget.targetId;
+    if (shouldBeFocused != _isFocused) {
+      _isFocused = shouldBeFocused;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Focus(
+    autofocus: widget.bindings.focusedTargetId == widget.targetId,
+    focusNode: _focusNode,
+    onKeyEvent: widget.bindings.handleKey,
+    onFocusChange: (focused) {
+      if (focused != _isFocused) {
+        setState(() => _isFocused = focused);
+        if (focused) {
+          widget.bindings.reportFocusedTarget(widget.targetId);
+        }
+      }
+    },
+    child: KeyedSubtree(
+      key: _scrollTargetKey,
+      child: widget.child(context, _isFocused),
+    ),
+  );
 }
 
 class _TodoItemReorderableList extends StatelessWidget {
@@ -844,6 +1276,7 @@ class _TodoItemReorderableList extends StatelessWidget {
     required this.onMoveItem,
     required this.onEditItem,
     required this.onDeleteItem,
+    this.bindings,
   });
 
   final TodoItemGroup group;
@@ -854,10 +1287,15 @@ class _TodoItemReorderableList extends StatelessWidget {
   onMoveItem;
   final Future<void> Function(MessieTodoItem item) onEditItem;
   final Future<void> Function(MessieTodoItem item) onDeleteItem;
+  final TodoShortcutBindings? bindings;
 
   @override
-  Widget build(BuildContext context) => SliverReorderableList(
+  Widget build(BuildContext context) => ReorderableListView.builder(
     key: key,
+    shrinkWrap: true,
+    primary: false,
+    physics: const NeverScrollableScrollPhysics(),
+    buildDefaultDragHandles: false,
     itemCount: items.length,
     onReorder: (oldIndex, newIndex) {
       final adjustedNewIndex = oldIndex < newIndex ? newIndex - 1 : newIndex;
@@ -871,6 +1309,7 @@ class _TodoItemReorderableList extends StatelessWidget {
       onToggleItem: onToggleItem,
       onEditItem: onEditItem,
       onDeleteItem: onDeleteItem,
+      bindings: bindings,
     ),
   );
 }
@@ -883,6 +1322,7 @@ class _TodoItemCard extends StatelessWidget {
     required this.onToggleItem,
     required this.onEditItem,
     required this.onDeleteItem,
+    this.bindings,
     super.key,
   });
 
@@ -892,6 +1332,7 @@ class _TodoItemCard extends StatelessWidget {
   final Future<void> Function(MessieTodoItem item, bool completed) onToggleItem;
   final Future<void> Function(MessieTodoItem item) onEditItem;
   final Future<void> Function(MessieTodoItem item) onDeleteItem;
+  final TodoShortcutBindings? bindings;
 
   @override
   Widget build(BuildContext context) {
@@ -906,16 +1347,18 @@ class _TodoItemCard extends StatelessWidget {
     ];
     final subtitleText = subtitleParts.join(' • ');
 
-    return Card(
+    final card = Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: ListTile(
         onTap: () => onEditItem(item),
-        leading: Checkbox(
-          value: item.completed,
-          onChanged: (value) {
-            if (value == null) return;
-            onToggleItem(item, value);
-          },
+        leading: _todoLeadingSlot(
+          child: Checkbox(
+            value: item.completed,
+            onChanged: (value) {
+              if (value == null) return;
+              onToggleItem(item, value);
+            },
+          ),
         ),
         title: Text(
           titleText.isEmpty ? 'Untitled item' : titleText,
@@ -964,6 +1407,20 @@ class _TodoItemCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+
+    if (bindings == null) {
+      return card;
+    }
+
+    return TodoShortcutFocusItem(
+      bindings: bindings!,
+      targetId: item.id,
+      child: (context, focused) => Card(
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        color: focused ? theme.colorScheme.secondaryContainer : null,
+        child: card.child,
       ),
     );
   }

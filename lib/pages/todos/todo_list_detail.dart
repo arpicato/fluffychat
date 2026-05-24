@@ -273,6 +273,34 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     }
   }
 
+  Future<void> reorderItemById(
+    BuildContext context, {
+    required String itemId,
+    required bool moveDown,
+  }) async {
+    final data = _data;
+    if (data == null) return;
+    final groupedItems = groupTodoItems(data.items);
+    for (final group in TodoItemGroup.values) {
+      final items = switch (group) {
+        TodoItemGroup.active => groupedItems.activeItems,
+        TodoItemGroup.completed => groupedItems.completedItems,
+      };
+      final oldIndex = items.indexWhere((item) => item.id == itemId);
+      if (oldIndex == -1) continue;
+      final newIndex = moveDown ? oldIndex + 1 : oldIndex - 1;
+      if (newIndex < 0 || newIndex >= items.length) return;
+      await reorderItems(
+        context,
+        items: items,
+        group: group,
+        oldIndex: oldIndex,
+        newIndex: newIndex,
+      );
+      return;
+    }
+  }
+
   Future<void> updateList(
     BuildContext context, {
     required String title,
@@ -414,6 +442,7 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     ownerId: list.ownerId,
     title: title ?? list.title,
     description: description ?? list.description,
+    lastActivityAt: list.lastActivityAt,
     createdAt: list.createdAt,
     updatedAt: list.updatedAt,
   );

@@ -35,21 +35,19 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: StatefulBuilder(
-              builder: (context, setState) => CustomScrollView(
-                slivers: [
-                  TodoListItemsSection(
-                    groupedItems: groupedItems,
-                    showCompletedItems: showCompletedItems,
-                    formatTimestamp: (_) => '',
-                    onShowCompletedItemsChanged: (value) {
-                      setState(() => showCompletedItems = value);
-                    },
-                    onToggleItem: (item, completed) async {},
-                    onMoveItem: (group, oldIndex, newIndex) async {},
-                    onEditItem: (item) async {},
-                    onDeleteItem: (item) async {},
-                  ),
-                ],
+              builder: (context, setState) => SingleChildScrollView(
+                child: TodoListItemsSection(
+                  groupedItems: groupedItems,
+                  showCompletedItems: showCompletedItems,
+                  formatTimestamp: (_) => '',
+                  onShowCompletedItemsChanged: (value) {
+                    setState(() => showCompletedItems = value);
+                  },
+                  onToggleItem: (item, completed) async {},
+                  onMoveItem: (group, oldIndex, newIndex) async {},
+                  onEditItem: (item) async {},
+                  onDeleteItem: (item) async {},
+                ),
               ),
             ),
           ),
@@ -82,11 +80,10 @@ void main() {
 
     await tester.pumpWidget(
       MaterialApp(
-        home: Scaffold(
-          body: StatefulBuilder(
-            builder: (context, setState) => CustomScrollView(
-              slivers: [
-                TodoListItemsSection(
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) => SingleChildScrollView(
+                child: TodoListItemsSection(
                   groupedItems: groupedItems,
                   showCompletedItems: showCompletedItems,
                   formatTimestamp: (_) => '',
@@ -98,11 +95,10 @@ void main() {
                   onEditItem: (item) async {},
                   onDeleteItem: (item) async {},
                 ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
     );
 
     groupedItems = groupTodoItems([
@@ -110,21 +106,19 @@ void main() {
     ]);
 
     await tester.pumpWidget(
-      MaterialApp(
+        MaterialApp(
         home: Scaffold(
-          body: CustomScrollView(
-            slivers: [
-              TodoListItemsSection(
-                groupedItems: groupedItems,
-                showCompletedItems: true,
-                formatTimestamp: (_) => '',
-                onShowCompletedItemsChanged: (_) {},
-                onToggleItem: (item, completed) async {},
-                onMoveItem: (group, oldIndex, newIndex) async {},
-                onEditItem: (item) async {},
-                onDeleteItem: (item) async {},
-              ),
-            ],
+          body: SingleChildScrollView(
+            child: TodoListItemsSection(
+              groupedItems: groupedItems,
+              showCompletedItems: true,
+              formatTimestamp: (_) => '',
+              onShowCompletedItemsChanged: (_) {},
+              onToggleItem: (item, completed) async {},
+              onMoveItem: (group, oldIndex, newIndex) async {},
+              onEditItem: (item) async {},
+              onDeleteItem: (item) async {},
+            ),
           ),
         ),
       ),
@@ -150,21 +144,19 @@ void main() {
     ]);
 
     await tester.pumpWidget(
-      MaterialApp(
+        MaterialApp(
         home: Scaffold(
-          body: CustomScrollView(
-            slivers: [
-              TodoListItemsSection(
-                groupedItems: groupedItems,
-                showCompletedItems: false,
-                formatTimestamp: (_) => 'May 24',
-                onShowCompletedItemsChanged: (_) {},
-                onToggleItem: (item, completed) async {},
-                onMoveItem: (group, oldIndex, newIndex) async {},
-                onEditItem: (item) async {},
-                onDeleteItem: (item) async {},
-              ),
-            ],
+          body: SingleChildScrollView(
+            child: TodoListItemsSection(
+              groupedItems: groupedItems,
+              showCompletedItems: false,
+              formatTimestamp: (_) => 'May 24',
+              onShowCompletedItemsChanged: (_) {},
+              onToggleItem: (item, completed) async {},
+              onMoveItem: (group, oldIndex, newIndex) async {},
+              onEditItem: (item) async {},
+              onDeleteItem: (item) async {},
+            ),
           ),
         ),
       ),
@@ -193,21 +185,19 @@ void main() {
     ]);
 
     await tester.pumpWidget(
-      MaterialApp(
+        MaterialApp(
         home: Scaffold(
-          body: CustomScrollView(
-            slivers: [
-              TodoListItemsSection(
-                groupedItems: groupedItems,
-                showCompletedItems: false,
-                formatTimestamp: (_) => '',
-                onShowCompletedItemsChanged: (_) {},
-                onToggleItem: (item, completed) async {},
-                onMoveItem: (group, oldIndex, newIndex) async {},
-                onEditItem: (item) async {},
-                onDeleteItem: (item) async {},
-              ),
-            ],
+          body: SingleChildScrollView(
+            child: TodoListItemsSection(
+              groupedItems: groupedItems,
+              showCompletedItems: false,
+              formatTimestamp: (_) => '',
+              onShowCompletedItemsChanged: (_) {},
+              onToggleItem: (item, completed) async {},
+              onMoveItem: (group, oldIndex, newIndex) async {},
+              onEditItem: (item) async {},
+              onDeleteItem: (item) async {},
+            ),
           ),
         ),
       ),
@@ -229,21 +219,19 @@ void main() {
     ]);
 
     await tester.pumpWidget(
-      MaterialApp(
+        MaterialApp(
         home: Scaffold(
-          body: CustomScrollView(
-            slivers: [
-              TodoListItemsSection(
-                groupedItems: groupedItems,
-                showCompletedItems: false,
-                formatTimestamp: (_) => '',
-                onShowCompletedItemsChanged: (_) {},
-                onToggleItem: (item, completed) async {},
-                onMoveItem: (group, oldIndex, newIndex) async {},
-                onEditItem: (item) async {},
-                onDeleteItem: (item) async {},
-              ),
-            ],
+          body: SingleChildScrollView(
+            child: TodoListItemsSection(
+              groupedItems: groupedItems,
+              showCompletedItems: false,
+              formatTimestamp: (_) => '',
+              onShowCompletedItemsChanged: (_) {},
+              onToggleItem: (item, completed) async {},
+              onMoveItem: (group, oldIndex, newIndex) async {},
+              onEditItem: (item) async {},
+              onDeleteItem: (item) async {},
+            ),
           ),
         ),
       ),
@@ -268,23 +256,21 @@ void main() {
     MessieTodoItem? editedItem;
 
     await tester.pumpWidget(
-      MaterialApp(
+        MaterialApp(
         home: Scaffold(
-          body: CustomScrollView(
-            slivers: [
-              TodoListItemsSection(
-                groupedItems: groupedItems,
-                showCompletedItems: false,
-                formatTimestamp: (_) => '',
-                onShowCompletedItemsChanged: (_) {},
-                onToggleItem: (item, completed) async {},
-                onMoveItem: (group, oldIndex, newIndex) async {},
-                onEditItem: (item) async {
-                  editedItem = item;
-                },
-                onDeleteItem: (item) async {},
-              ),
-            ],
+          body: SingleChildScrollView(
+            child: TodoListItemsSection(
+              groupedItems: groupedItems,
+              showCompletedItems: false,
+              formatTimestamp: (_) => '',
+              onShowCompletedItemsChanged: (_) {},
+              onToggleItem: (item, completed) async {},
+              onMoveItem: (group, oldIndex, newIndex) async {},
+              onEditItem: (item) async {
+                editedItem = item;
+              },
+              onDeleteItem: (item) async {},
+            ),
           ),
         ),
       ),
@@ -320,6 +306,16 @@ void main() {
     expect(find.byIcon(Icons.add_task_outlined), findsOneWidget);
     expect(find.text('Add todo item'), findsOneWidget);
     expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+
+    final listTile = tester.widget<ListTile>(find.byType(ListTile));
+    final leadingSizedBox = tester.widget<SizedBox>(
+      find.ancestor(
+        of: find.byIcon(Icons.add_task_outlined),
+        matching: find.byType(SizedBox),
+      ).first,
+    );
+    expect(listTile.leading, isA<SizedBox>());
+    expect(leadingSizedBox.width, 40);
 
     await tester.tap(find.byKey(const ValueKey('todo-add-item-row')));
     await tester.pump();
