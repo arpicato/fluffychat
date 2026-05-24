@@ -295,4 +295,35 @@ void main() {
 
     expect(editedItem?.id, '001');
   });
+
+  testWidgets('add item row uses inline item-style layout and tap target', (
+    tester,
+  ) async {
+    var tapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Card(
+            child: TodoListAddItemRow(
+              onTap: () {
+                tapped = true;
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.add), findsNothing);
+    expect(find.byType(FilledButton), findsNothing);
+    expect(find.byIcon(Icons.add_task_outlined), findsOneWidget);
+    expect(find.text('Add todo item'), findsOneWidget);
+    expect(find.byIcon(Icons.chevron_right), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('todo-add-item-row')));
+    await tester.pump();
+
+    expect(tapped, isTrue);
+  });
 }

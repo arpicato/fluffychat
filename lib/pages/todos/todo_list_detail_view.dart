@@ -583,11 +583,6 @@ class TodoListDetailPageView extends StatelessWidget {
               : BackButton(onPressed: () => _navigateBack(context)),
           centerTitle: FluffyThemes.isColumnMode(context),
           actions: [
-            IconButton(
-              onPressed: () => _createItem(context, data),
-              icon: const Icon(Icons.add),
-              tooltip: 'Add item',
-            ),
             PopupMenuButton<String>(
               onSelected: (value) {
                 switch (value) {
@@ -690,14 +685,8 @@ class TodoListDetailPageView extends StatelessWidget {
                     horizontal: 12,
                     vertical: 6,
                   ),
-                  child: ListTile(
-                    leading: const Icon(Icons.add_task_outlined),
-                    title: const Text('Add todo item'),
-                    subtitle: const Text('Create a new item in this list.'),
-                    trailing: FilledButton.tonal(
-                      onPressed: () => _createItem(context, data),
-                      child: const Text('Add'),
-                    ),
+                  child: TodoListAddItemRow(
+                    onTap: () => _createItem(context, data),
                   ),
                 ),
               ),
@@ -818,6 +807,30 @@ class TodoListItemsSection extends StatelessWidget {
     }
 
     return SliverMainAxisGroup(slivers: slivers);
+  }
+}
+
+class TodoListAddItemRow extends StatelessWidget {
+  const TodoListAddItemRow({required this.onTap, super.key});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return ListTile(
+      key: const ValueKey('todo-add-item-row'),
+      onTap: onTap,
+      leading: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 12),
+        child: Icon(Icons.add_task_outlined),
+      ),
+      title: Text('Add todo item', style: theme.textTheme.titleMedium),
+      subtitle: const Text('Create a new item in this list.'),
+      trailing: const Icon(Icons.chevron_right),
+      isThreeLine: false,
+    );
   }
 }
 
