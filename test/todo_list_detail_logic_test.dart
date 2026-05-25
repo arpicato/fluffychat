@@ -96,14 +96,14 @@ void main() {
   group('buildNewTodoItemInsertPlan', () {
     test('places new items at the top of the active section', () {
       final items = [
-        _item(id: 'a', completed: false, position: '001000'),
-        _item(id: 'b', completed: false, position: '003000'),
-        _item(id: 'c', completed: true, position: '002000'),
+        _item(id: 'a', completed: false, position: '000000500000'),
+        _item(id: 'b', completed: false, position: '000000503000'),
+        _item(id: 'c', completed: true, position: '000000502000'),
       ];
 
       final plan = buildNewTodoItemInsertPlan(items);
 
-      expect(plan.position, '000999');
+      expect(plan.position, '000000499999');
       expect(plan.updatedPositions, isEmpty);
     });
 
@@ -118,22 +118,16 @@ void main() {
       expect(plan.updatedPositions, isEmpty);
     });
 
-    test('renumbers active items when first position is already at floor', () {
+    test('uses fractional position when first numeric position is already at floor', () {
       final items = [
         _item(id: 'a', completed: false, position: '000001'),
-        _item(id: 'b', completed: false, position: '001000'),
+        _item(id: 'b', completed: false, position: '000000500000'),
       ];
 
       final plan = buildNewTodoItemInsertPlan(items);
 
-      expect(plan.position, canonicalTodoItemPosition(0));
-      expect(
-        plan.updatedPositions,
-        {
-          'a': canonicalTodoItemPosition(1),
-          'b': canonicalTodoItemPosition(2),
-        },
-      );
+      expect(plan.position.compareTo('000001') < 0, isTrue);
+      expect(plan.updatedPositions, isEmpty);
     });
   });
 

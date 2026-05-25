@@ -5,6 +5,8 @@ enum TodoItemGroup { active, completed }
 const _fractionalIndexAlphabet =
     '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const _fractionalIndexBase = 62;
+const _canonicalTodoItemBase = 500000;
+const _canonicalTodoItemStep = 1000;
 
 class GroupedTodoItems {
   const GroupedTodoItems({
@@ -158,18 +160,9 @@ TodoInsertPlan buildNewTodoItemInsertPlan(List<MessieTodoItem> items) {
         updatedPositions: const {},
       );
     }
-
-    final updatedPositions = <String, String>{};
-    for (var i = 0; i < activeItems.length; i++) {
-      final item = activeItems[i];
-      final position = canonicalTodoItemPosition(i + 1);
-      if (item.position != position) {
-        updatedPositions[item.id] = position;
-      }
-    }
     return TodoInsertPlan(
-      position: canonicalTodoItemPosition(0),
-      updatedPositions: updatedPositions,
+      position: generateTodoItemPosition(null, firstPosition),
+      updatedPositions: const {},
     );
   }
 
@@ -184,7 +177,7 @@ int _charToIndex(String char) => _fractionalIndexAlphabet.indexOf(char);
 String _indexToChar(int index) => _fractionalIndexAlphabet[index];
 
 String canonicalTodoItemPosition(int index) =>
-    ((index + 1) * 1000).toString().padLeft(12, '0');
+    (_canonicalTodoItemBase + (index * _canonicalTodoItemStep)).toString().padLeft(12, '0');
 
 String _incrementPosition(String key) {
   var result = '';

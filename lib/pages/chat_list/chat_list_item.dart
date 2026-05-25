@@ -72,8 +72,6 @@ class ChatListItem extends StatelessWidget {
     final needLastEventSender =
         lastEvent != null &&
         room.getState(EventTypes.RoomMember, lastEvent.senderId) == null;
-    final space = this.space;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
       child: Material(
@@ -162,6 +160,15 @@ class ChatListItem extends StatelessWidget {
                   Expanded(
                     child: Row(
                       children: [
+                        if (room.isFavourite)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 4.0),
+                            child: Icon(
+                              Icons.push_pin,
+                              size: 16,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
                         Flexible(
                           child: Text(
                             displayname,
@@ -200,17 +207,6 @@ class ChatListItem extends StatelessWidget {
                       ),
                       child: Icon(
                         Icons.low_priority,
-                        size: 16,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                  if (room.isFavourite)
-                    Padding(
-                      padding: EdgeInsets.only(
-                        right: hasNotifications ? 4.0 : 0.0,
-                      ),
-                      child: Icon(
-                        Icons.push_pin,
                         size: 16,
                         color: theme.colorScheme.primary,
                       ),

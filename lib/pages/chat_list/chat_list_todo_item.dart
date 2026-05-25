@@ -64,11 +64,13 @@ class ChatListTodoItem extends StatelessWidget {
                 ),
             ],
           ),
-          subtitle: Text(
-            description.isEmpty ? 'Messie todo list' : description,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
+          subtitle: description.isEmpty
+              ? null
+              : Text(
+                  description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
         ),
       ),
     );
