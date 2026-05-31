@@ -505,7 +505,7 @@ class _InputBarTextFieldState extends State<_InputBarTextField> {
 
   void _reportCaretVisualLine() {
     if (!mounted) return;
-    final editableState = context.findAncestorStateOfType<EditableTextState>();
+    final editableState = _findDescendantEditableTextState(context);
     final selection = widget.controller.selection;
     final isTopVisualLine = () {
       if (!widget.focusNode.hasFocus) return false;
@@ -570,4 +570,20 @@ class _InputBarTextFieldState extends State<_InputBarTextField> {
       textCapitalization: TextCapitalization.sentences,
     ),
   );
+}
+
+EditableTextState? _findDescendantEditableTextState(BuildContext context) {
+  EditableTextState? result;
+
+  void visit(Element element) {
+    if (result != null) return;
+    if (element is StatefulElement && element.state is EditableTextState) {
+      result = element.state as EditableTextState;
+      return;
+    }
+    element.visitChildElements(visit);
+  }
+
+  context.visitChildElements(visit);
+  return result;
 }
