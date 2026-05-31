@@ -327,6 +327,8 @@ class ChatInputRow extends StatelessWidget {
                           filled: false,
                         ),
                         onChanged: controller.onInputBarChanged,
+                        onCaretTopVisualLineChanged:
+                            controller.onComposerTopVisualLineChanged,
                         suggestionEmojis:
                             getDefaultEmojiLocale(
                               AppSettings.emojiSuggestionLocale.value.isNotEmpty

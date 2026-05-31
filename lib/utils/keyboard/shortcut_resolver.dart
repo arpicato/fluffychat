@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'shortcut_dispatcher.dart';
@@ -154,7 +153,7 @@ class ShortcutResolver {
           return chatList?.focusUp() ?? false;
         }
         if (chat != null &&
-            (!chat.inputHasFocus || chat.composerCursorOnFirstLine)) {
+            (!chat.inputHasFocus || chat.composerCaretOnTopVisualLine)) {
           return chat.messageFocusUp();
         }
         return false;

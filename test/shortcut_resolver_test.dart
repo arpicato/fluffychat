@@ -56,7 +56,7 @@ void main() {
     test('Up focuses messages from composer first line', () {
       final chat = _FakeChatHandler(
         inputHasFocus: true,
-        composerCursorOnFirstLine: true,
+        composerCaretOnTopVisualLine: true,
         messageFocusUpResult: true,
       );
 
@@ -369,10 +369,10 @@ void main() {
       expect(chat.messageFocusDownCalls, 0);
     });
 
-    test('Up does not enter message focus when composer is not on first line', () {
+    test('Up does not enter message focus when caret is below top visual line', () {
       final chat = _FakeChatHandler(
         inputHasFocus: true,
-        composerCursorOnFirstLine: false,
+        composerCaretOnTopVisualLine: false,
         messageFocusUpResult: true,
       );
 
@@ -448,14 +448,12 @@ class _FakeChatListHandler implements KeyboardChatListHandler {
   _FakeChatListHandler({
     this.triggerSearchResult = false,
     this.focusUpResult = false,
-    this.focusDownResult = false,
     this.openFocusedResult = false,
     this.handleEscapeResult = false,
   });
 
   final bool triggerSearchResult;
   final bool focusUpResult;
-  final bool focusDownResult;
   final bool openFocusedResult;
   final bool handleEscapeResult;
 
@@ -468,7 +466,7 @@ class _FakeChatListHandler implements KeyboardChatListHandler {
   @override
   bool focusDown() {
     focusDownCalls++;
-    return focusDownResult;
+    return false;
   }
 
   @override
@@ -499,7 +497,7 @@ class _FakeChatListHandler implements KeyboardChatListHandler {
 class _FakeChatHandler implements KeyboardChatHandler {
   _FakeChatHandler({
     this.inputHasFocus = false,
-    this.composerCursorOnFirstLine = false,
+    this.composerCaretOnTopVisualLine = false,
     this.messageFocusActive = false,
     this.messagePageUpResult = false,
     this.messagePageDownResult = false,
@@ -509,7 +507,6 @@ class _FakeChatHandler implements KeyboardChatHandler {
     this.messageFocusDownResult = false,
     this.replyFocusedMessageResult = false,
     this.editFocusedMessageResult = false,
-    this.exitMessageFocusToInputResult = false,
     this.handleEscapeResult = false,
   });
 
@@ -517,7 +514,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
   final bool inputHasFocus;
 
   @override
-  final bool composerCursorOnFirstLine;
+  final bool composerCaretOnTopVisualLine;
 
   @override
   final bool messageFocusActive;
@@ -530,7 +527,6 @@ class _FakeChatHandler implements KeyboardChatHandler {
   final bool messageFocusDownResult;
   final bool replyFocusedMessageResult;
   final bool editFocusedMessageResult;
-  final bool exitMessageFocusToInputResult;
   final bool handleEscapeResult;
 
   int messageFocusUpCalls = 0;
@@ -553,7 +549,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
   @override
   bool exitMessageFocusToInput() {
     exitMessageFocusToInputCalls++;
-    return exitMessageFocusToInputResult;
+    return false;
   }
 
   @override

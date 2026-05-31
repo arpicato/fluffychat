@@ -18,6 +18,17 @@ import '../../widgets/avatar.dart';
 import '../../widgets/matrix.dart';
 import 'command_hints.dart';
 
+bool isCaretOnTopVisualLine({
+  required EditableTextState editableTextState,
+  required TextSelection selection,
+}) {
+  if (!selection.isValid || !selection.isCollapsed) return false;
+  final renderEditable = editableTextState.renderEditable;
+  if (!renderEditable.hasSize) return false;
+  final caretRect = renderEditable.getLocalRectForCaret(selection.extent);
+  return caretRect.top <= renderEditable.preferredLineHeight * 0.5;
+}
+
 class InputBar extends StatelessWidget {
   final Room room;
   final int? minLines;
@@ -33,6 +44,7 @@ class InputBar extends StatelessWidget {
   final bool? autofocus;
   final bool readOnly;
   final List<Emoji> suggestionEmojis;
+  final ValueChanged<bool>? onCaretTopVisualLineChanged;
 
   const InputBar({
     required this.room,
@@ -49,6 +61,7 @@ class InputBar extends StatelessWidget {
     this.textInputAction,
     this.readOnly = false,
     required this.suggestionEmojis,
+    this.onCaretTopVisualLineChanged,
     super.key,
   });
 
@@ -393,52 +406,20 @@ class InputBar extends StatelessWidget {
       focusNode: focusNode,
       textEditingController: controller,
       optionsBuilder: getSuggestions,
-      fieldViewBuilder: (context, controller, focusNode, _) => TextField(
+      fieldViewBuilder: (context, controller, focusNode, _) => _InputBarTextField(
+        room: room,
         controller: controller,
         focusNode: focusNode,
         readOnly: readOnly,
-        onEditingComplete: () {
-          // To not lose focus on iOS:
-          // https://github.com/krille-chan/fluffychat/issues/2784
-        },
-        contextMenuBuilder: (c, e) => MarkdownContextBuilder(
-          editableTextState: e,
-          controller: controller,
-        ),
-        contentInsertionConfiguration: ContentInsertionConfiguration(
-          onContentInserted: (KeyboardInsertedContent content) {
-            final data = content.data;
-            if (data == null) return;
-
-            final file = MatrixFile(
-              mimeType: content.mimeType,
-              bytes: data,
-              name: content.uri.split('/').last,
-            );
-            room.sendFileEvent(file, shrinkImageMaxDimension: 1600);
-          },
-        ),
         minLines: minLines,
         maxLines: maxLines,
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         autofocus: autofocus!,
-        inputFormatters: [
-          LengthLimitingTextInputFormatter((maxPDUSize / 3).floor()),
-        ],
-        onSubmitted: (text) {
-          // fix for library for now
-          // it sets the types for the callback incorrectly
-          onSubmitted!(text);
-        },
-        maxLength: AppSettings.textMessageMaxLength.value,
+        onSubmitted: onSubmitted,
         decoration: decoration,
-        onChanged: (text) {
-          // fix for the library for now
-          // it sets the types for the callback incorrectly
-          onChanged!(text);
-        },
-        textCapitalization: TextCapitalization.sentences,
+        onChanged: onChanged,
+        onCaretTopVisualLineChanged: onCaretTopVisualLineChanged,
       ),
       optionsViewBuilder: (c, onSelected, s) {
         final suggestions = s.toList();
@@ -463,4 +444,130 @@ class InputBar extends StatelessWidget {
       optionsViewOpenDirection: OptionsViewOpenDirection.up,
     );
   }
+}
+
+class _InputBarTextField extends StatefulWidget {
+  const _InputBarTextField({
+    required this.room,
+    required this.controller,
+    required this.focusNode,
+    required this.readOnly,
+    required this.minLines,
+    required this.maxLines,
+    required this.keyboardType,
+    required this.textInputAction,
+    required this.autofocus,
+    required this.onSubmitted,
+    required this.decoration,
+    required this.onChanged,
+    required this.onCaretTopVisualLineChanged,
+  });
+
+  final Room room;
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool readOnly;
+  final int? minLines;
+  final int? maxLines;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final bool autofocus;
+  final ValueChanged<String>? onSubmitted;
+  final InputDecoration decoration;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<bool>? onCaretTopVisualLineChanged;
+
+  @override
+  State<_InputBarTextField> createState() => _InputBarTextFieldState();
+}
+
+class _InputBarTextFieldState extends State<_InputBarTextField> {
+  bool? _lastReportedTopVisualLine;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_scheduleCaretProbe);
+    widget.focusNode.addListener(_scheduleCaretProbe);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reportCaretVisualLine());
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_scheduleCaretProbe);
+    widget.focusNode.removeListener(_scheduleCaretProbe);
+    super.dispose();
+  }
+
+  void _scheduleCaretProbe() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reportCaretVisualLine());
+  }
+
+  void _reportCaretVisualLine() {
+    if (!mounted) return;
+    final editableState = context.findAncestorStateOfType<EditableTextState>();
+    final selection = widget.controller.selection;
+    final isTopVisualLine = () {
+      if (!widget.focusNode.hasFocus) return false;
+      if (!selection.isValid || !selection.isCollapsed) return false;
+      if (editableState == null) {
+        return !widget.controller.text.substring(0, selection.baseOffset.clamp(0, widget.controller.text.length)).contains('\n');
+      }
+      return isCaretOnTopVisualLine(
+        editableTextState: editableState,
+        selection: selection,
+      );
+    }();
+    if (_lastReportedTopVisualLine == isTopVisualLine) return;
+    _lastReportedTopVisualLine = isTopVisualLine;
+    widget.onCaretTopVisualLineChanged?.call(isTopVisualLine);
+  }
+
+  @override
+  Widget build(BuildContext context) => Builder(
+    builder: (context) => TextField(
+      controller: widget.controller,
+      focusNode: widget.focusNode,
+      readOnly: widget.readOnly,
+      onEditingComplete: () {
+        // To not lose focus on iOS:
+        // https://github.com/krille-chan/fluffychat/issues/2784
+      },
+      contextMenuBuilder: (c, e) => MarkdownContextBuilder(
+        editableTextState: e,
+        controller: widget.controller,
+      ),
+      contentInsertionConfiguration: ContentInsertionConfiguration(
+        onContentInserted: (KeyboardInsertedContent content) {
+          final data = content.data;
+          if (data == null) return;
+
+          final file = MatrixFile(
+            mimeType: content.mimeType,
+            bytes: data,
+            name: content.uri.split('/').last,
+          );
+          widget.room.sendFileEvent(file, shrinkImageMaxDimension: 1600);
+        },
+      ),
+      minLines: widget.minLines,
+      maxLines: widget.maxLines,
+      keyboardType: widget.keyboardType,
+      textInputAction: widget.textInputAction,
+      autofocus: widget.autofocus,
+      inputFormatters: [
+        LengthLimitingTextInputFormatter((maxPDUSize / 3).floor()),
+      ],
+      onSubmitted: (text) {
+        widget.onSubmitted?.call(text);
+      },
+      maxLength: AppSettings.textMessageMaxLength.value,
+      decoration: widget.decoration,
+      onChanged: (text) {
+        widget.onChanged?.call(text);
+        _scheduleCaretProbe();
+      },
+      textCapitalization: TextCapitalization.sentences,
+    ),
+  );
 }
