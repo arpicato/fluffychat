@@ -137,9 +137,11 @@ class ShortcutResolver {
         return chat?.messageFocusDown() ?? false;
 
       case ShortcutCommand.messagePageUp:
+        if (chat?.inputHasFocus == true) return false;
         return chat?.messagePageUp() ?? false;
 
       case ShortcutCommand.messagePageDown:
+        if (chat?.inputHasFocus == true) return false;
         return chat?.messagePageDown() ?? false;
 
       case ShortcutCommand.chatListFocusUpModified:
@@ -152,6 +154,9 @@ class ShortcutResolver {
         if (!context.hasOpenChat) {
           return chatList?.focusUp() ?? false;
         }
+        if (chat?.composerSuggestionsOpen == true) {
+          return false;
+        }
         if (chat != null &&
             (!chat.inputHasFocus || chat.composerCaretOnTopVisualLine)) {
           return chat.messageFocusUp();
@@ -161,6 +166,9 @@ class ShortcutResolver {
       case ShortcutCommand.arrowDown:
         if (!context.hasOpenChat) {
           return chatList?.focusDown() ?? false;
+        }
+        if (chat?.composerSuggestionsOpen == true) {
+          return false;
         }
         if (chat?.messageFocusActive == true) {
           return chat?.messageFocusDown() ?? false;

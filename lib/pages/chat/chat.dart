@@ -123,6 +123,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   late final FocusNode inputFocus;
   bool composerCaretOnTopVisualLine = true;
+  bool composerSuggestionsOpen = false;
 
   /// FocusScopeNode for the message list traversal group.
   /// The keyboard adapter uses this to move focus within messages only.
@@ -916,6 +917,10 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   void onComposerTopVisualLineChanged(bool value) {
     composerCaretOnTopVisualLine = value;
+  }
+
+  void onComposerSuggestionsOpenChanged(bool value) {
+    composerSuggestionsOpen = value;
   }
 
   Future<void> sendLocationAction() async {

@@ -20,6 +20,9 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   bool get composerCaretOnTopVisualLine => controller.composerCaretOnTopVisualLine;
 
   @override
+  bool get composerSuggestionsOpen => controller.composerSuggestionsOpen;
+
+  @override
   bool get messageFocusActive {
     // Message focus is active if the primary focus is NOT the composer
     // and not null.

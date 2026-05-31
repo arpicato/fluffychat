@@ -45,6 +45,7 @@ class InputBar extends StatelessWidget {
   final bool readOnly;
   final List<Emoji> suggestionEmojis;
   final ValueChanged<bool>? onCaretTopVisualLineChanged;
+  final ValueChanged<bool>? onSuggestionsOpenChanged;
 
   const InputBar({
     required this.room,
@@ -62,6 +63,7 @@ class InputBar extends StatelessWidget {
     this.readOnly = false,
     required this.suggestionEmojis,
     this.onCaretTopVisualLineChanged,
+    this.onSuggestionsOpenChanged,
     super.key,
   });
 
@@ -405,7 +407,13 @@ class InputBar extends StatelessWidget {
       key: Key('chat_input_field'),
       focusNode: focusNode,
       textEditingController: controller,
-      optionsBuilder: getSuggestions,
+      optionsBuilder: (text) {
+        final suggestions = getSuggestions(text);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          onSuggestionsOpenChanged?.call(suggestions.isNotEmpty);
+        });
+        return suggestions;
+      },
       fieldViewBuilder: (context, controller, focusNode, _) => _InputBarTextField(
         room: room,
         controller: controller,
