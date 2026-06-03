@@ -241,6 +241,8 @@ class InputBar extends StatelessWidget {
   ) {
     final theme = Theme.of(context);
     const size = 30.0;
+    final selectedTileColor = theme.colorScheme.primaryContainer;
+    final selectedColor = theme.colorScheme.onPrimaryContainer;
     if (suggestion['type'] == 'command') {
       final command = suggestion['name']!;
       final hint = commandHint(L10n.of(context), command);
@@ -250,6 +252,8 @@ class InputBar extends StatelessWidget {
         child: ListTile(
           onTap: () => onSelected(suggestion),
           selected: selected,
+          selectedTileColor: selectedTileColor,
+          selectedColor: selectedColor,
           title: Text(
             commandExample(command),
             style: const TextStyle(fontFamily: 'RobotoMono'),
@@ -271,6 +275,8 @@ class InputBar extends StatelessWidget {
         child: ListTile(
           onTap: () => onSelected(suggestion),
           selected: selected,
+          selectedTileColor: selectedTileColor,
+          selectedColor: selectedColor,
           leading: SizedBox.square(
             dimension: size,
             child: Text(
@@ -286,6 +292,8 @@ class InputBar extends StatelessWidget {
       return ListTile(
         onTap: () => onSelected(suggestion),
         selected: selected,
+        selectedTileColor: selectedTileColor,
+        selectedColor: selectedColor,
         leading: MxcImage(
           // ensure proper ordering ...
           key: ValueKey(suggestion['name']),
@@ -327,6 +335,8 @@ class InputBar extends StatelessWidget {
       return ListTile(
         onTap: () => onSelected(suggestion),
         selected: selected,
+        selectedTileColor: selectedTileColor,
+        selectedColor: selectedColor,
         leading: Avatar(
           mxContent: url,
           name:
