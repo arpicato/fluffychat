@@ -56,7 +56,8 @@ void main() {
     test('Up focuses messages from composer first line', () {
       final chat = _FakeChatHandler(
         inputHasFocus: true,
-        composerCursorOnFirstLine: true,
+        composerCaretOnTopVisualLine: true,
+        composerSuggestionsOpen: false,
         messageFocusUpResult: true,
       );
 
@@ -319,6 +320,32 @@ void main() {
       expect(chat.messagePageUpCalls, 1);
     });
 
+    test('Page up does not move focus out when composer has focus', () {
+      final chat = _FakeChatHandler(
+        inputHasFocus: true,
+        messagePageUpResult: true,
+      );
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.pageUp,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: true,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isFalse);
+      expect(chat.messagePageUpCalls, 0);
+    });
+
     test('Page down dispatches to chat handler', () {
       final chat = _FakeChatHandler(messagePageDownResult: true);
 
@@ -340,6 +367,32 @@ void main() {
 
       expect(handled, isTrue);
       expect(chat.messagePageDownCalls, 1);
+    });
+
+    test('Page down does not move focus out when composer has focus', () {
+      final chat = _FakeChatHandler(
+        inputHasFocus: true,
+        messagePageDownResult: true,
+      );
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.pageDown,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: true,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isFalse);
+      expect(chat.messagePageDownCalls, 0);
     });
 
     test('Down does not move messages when message focus is inactive', () {
@@ -369,10 +422,67 @@ void main() {
       expect(chat.messageFocusDownCalls, 0);
     });
 
-    test('Up does not enter message focus when composer is not on first line', () {
+    test('Down yields to composer suggestions when autocomplete is open', () {
       final chat = _FakeChatHandler(
         inputHasFocus: true,
-        composerCursorOnFirstLine: false,
+        composerSuggestionsOpen: true,
+        messageFocusActive: true,
+        messageFocusDownResult: true,
+      );
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.arrowDown,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isFalse);
+      expect(chat.messageFocusDownCalls, 0);
+    });
+
+    test('Up does not enter message focus when caret is below top visual line', () {
+      final chat = _FakeChatHandler(
+        inputHasFocus: true,
+        composerCaretOnTopVisualLine: false,
+        composerSuggestionsOpen: false,
+        messageFocusUpResult: true,
+      );
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.arrowUp,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isFalse);
+      expect(chat.messageFocusUpCalls, 0);
+    });
+
+    test('Up yields to composer suggestions when autocomplete is open', () {
+      final chat = _FakeChatHandler(
+        inputHasFocus: true,
+        composerCaretOnTopVisualLine: true,
+        composerSuggestionsOpen: true,
         messageFocusUpResult: true,
       );
 
@@ -448,14 +558,12 @@ class _FakeChatListHandler implements KeyboardChatListHandler {
   _FakeChatListHandler({
     this.triggerSearchResult = false,
     this.focusUpResult = false,
-    this.focusDownResult = false,
     this.openFocusedResult = false,
     this.handleEscapeResult = false,
   });
 
   final bool triggerSearchResult;
   final bool focusUpResult;
-  final bool focusDownResult;
   final bool openFocusedResult;
   final bool handleEscapeResult;
 
@@ -468,7 +576,7 @@ class _FakeChatListHandler implements KeyboardChatListHandler {
   @override
   bool focusDown() {
     focusDownCalls++;
-    return focusDownResult;
+    return false;
   }
 
   @override
@@ -499,7 +607,8 @@ class _FakeChatListHandler implements KeyboardChatListHandler {
 class _FakeChatHandler implements KeyboardChatHandler {
   _FakeChatHandler({
     this.inputHasFocus = false,
-    this.composerCursorOnFirstLine = false,
+    this.composerCaretOnTopVisualLine = false,
+    this.composerSuggestionsOpen = false,
     this.messageFocusActive = false,
     this.messagePageUpResult = false,
     this.messagePageDownResult = false,
@@ -509,7 +618,6 @@ class _FakeChatHandler implements KeyboardChatHandler {
     this.messageFocusDownResult = false,
     this.replyFocusedMessageResult = false,
     this.editFocusedMessageResult = false,
-    this.exitMessageFocusToInputResult = false,
     this.handleEscapeResult = false,
   });
 
@@ -517,7 +625,10 @@ class _FakeChatHandler implements KeyboardChatHandler {
   final bool inputHasFocus;
 
   @override
-  final bool composerCursorOnFirstLine;
+  final bool composerCaretOnTopVisualLine;
+
+  @override
+  final bool composerSuggestionsOpen;
 
   @override
   final bool messageFocusActive;
@@ -530,7 +641,6 @@ class _FakeChatHandler implements KeyboardChatHandler {
   final bool messageFocusDownResult;
   final bool replyFocusedMessageResult;
   final bool editFocusedMessageResult;
-  final bool exitMessageFocusToInputResult;
   final bool handleEscapeResult;
 
   int messageFocusUpCalls = 0;
@@ -553,7 +663,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
   @override
   bool exitMessageFocusToInput() {
     exitMessageFocusToInputCalls++;
-    return exitMessageFocusToInputResult;
+    return false;
   }
 
   @override

@@ -156,7 +156,7 @@ class _FakeChatListHandler implements KeyboardChatListHandler {
 class _FakeChatHandler implements KeyboardChatHandler {
   _FakeChatHandler({
     this.inputHasFocus = false,
-    this.composerCursorOnFirstLine = false,
+    this.composerCaretOnTopVisualLine = false,
     this.messageFocusActive = false,
     this.messageFocusUpResult = false,
     this.messageFocusDownResult = false,
@@ -174,7 +174,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
   final bool inputHasFocus;
 
   @override
-  final bool composerCursorOnFirstLine;
+  final bool composerCaretOnTopVisualLine;
 
   @override
   final bool messageFocusActive;

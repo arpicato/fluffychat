@@ -1,5 +1,3 @@
-import 'package:flutter/widgets.dart';
-
 abstract class KeyboardChatListHandler {
   bool triggerSearch();
   bool focusUp();
@@ -10,7 +8,8 @@ abstract class KeyboardChatListHandler {
 
 abstract class KeyboardChatHandler {
   bool get inputHasFocus;
-  bool get composerCursorOnFirstLine;
+  bool get composerCaretOnTopVisualLine;
+  bool get composerSuggestionsOpen;
   bool get messageFocusActive;
   bool messageFocusUp();
   bool messageFocusDown();

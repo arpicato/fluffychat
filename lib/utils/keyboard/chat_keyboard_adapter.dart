@@ -17,16 +17,10 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   bool get inputHasFocus => controller.inputFocus.hasFocus;
 
   @override
-  bool get composerCursorOnFirstLine {
-    final selection = controller.sendController.selection;
-    if (!selection.isValid) return true;
-    final offset = selection.baseOffset.clamp(
-      0,
-      controller.sendController.text.length,
-    );
-    final prefix = controller.sendController.text.substring(0, offset);
-    return !prefix.contains('\n');
-  }
+  bool get composerCaretOnTopVisualLine => controller.composerCaretOnTopVisualLine;
+
+  @override
+  bool get composerSuggestionsOpen => controller.composerSuggestionsOpen;
 
   @override
   bool get messageFocusActive {
@@ -52,10 +46,8 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
       if (context != null) {
         final policy = FocusTraversalGroup.of(context);
         final last = policy.findLastFocus(scope, ignoreCurrentFocus: true);
-        if (last != null) {
-          last.requestFocus();
-          return true;
-        }
+        last.requestFocus();
+        return true;
       }
       scope.previousFocus();
       return true;
@@ -111,7 +103,7 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   /// relevant message in the chat.
   Event? _actionTarget({bool ownMessageOnly = false}) {
     final ownUserId = controller.room.client.userID;
-    Event? candidate = controller.focusedEvent;
+    var candidate = controller.focusedEvent;
     if (candidate == null && controller.selectedEvents.length == 1) {
       candidate = controller.selectedEvents.single;
     }
