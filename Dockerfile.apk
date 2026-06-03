@@ -25,6 +25,12 @@ RUN flutter pub get
 # Copy source
 COPY . .
 
+# Ensure the Gradle wrapper uses a portable Linux shebang, LF line endings,
+# and executable permissions inside the container.
+RUN perl -0pi -e 's/\r\n/\n/g' android/gradlew \
+    && sed -i '1s|^#!.*|#!/usr/bin/env bash|' android/gradlew \
+    && chmod +x android/gradlew
+
 # Generate signing keystore
 RUN keytool -genkeypair -v -keystore android/app/dummy.keystore \
     -alias dummyAlias -keyalg RSA -keysize 2048 -validity 10000 \
@@ -33,9 +39,9 @@ RUN keytool -genkeypair -v -keystore android/app/dummy.keystore \
     -dname "CN=Dummy, OU=Dummy, O=Dummy, L=Dummy, ST=Dummy, C=US"
 
 # Build APK — arm64 only (--target-platform)
-RUN flutter build apk --release --target-platform android-arm64 2>&1 | tee /tmp/build.log; \
+RUN flutter build apk --release --target-platform android-arm64 -v 2>&1 | tee /tmp/build.log; \
     if [ ! -f /app/build/app/outputs/flutter-apk/app-release.apk ]; then \
-      tail -50 /tmp/build.log; exit 1; \
+      cat /tmp/build.log; exit 1; \
     fi
 
 # Output is at /app/build/app/outputs/flutter-apk/app-release.apk
