@@ -15,7 +15,6 @@ import 'package:matrix/matrix.dart';
 import 'package:slugify/slugify.dart';
 
 import '../../widgets/avatar.dart';
-import '../../widgets/matrix.dart';
 import 'command_hints.dart';
 
 bool isCaretOnTopVisualLine({
@@ -46,6 +45,8 @@ class InputBar extends StatelessWidget {
   final List<Emoji> suggestionEmojis;
   final ValueChanged<bool>? onCaretTopVisualLineChanged;
   final ValueChanged<bool>? onSuggestionsOpenChanged;
+  final ValueChanged<List<Map<String, String?>>>? onSuggestionsComputed;
+  final AutocompleteFieldViewBuilder? fieldViewBuilder;
 
   const InputBar({
     required this.room,
@@ -64,6 +65,8 @@ class InputBar extends StatelessWidget {
     required this.suggestionEmojis,
     this.onCaretTopVisualLineChanged,
     this.onSuggestionsOpenChanged,
+    this.onSuggestionsComputed,
+    this.fieldViewBuilder,
     super.key,
   });
 
@@ -234,6 +237,7 @@ class InputBar extends StatelessWidget {
     Map<String, String?> suggestion,
     void Function(Map<String, String?>) onSelected,
     Client? client,
+    bool selected,
   ) {
     final theme = Theme.of(context);
     const size = 30.0;
@@ -245,6 +249,7 @@ class InputBar extends StatelessWidget {
         waitDuration: const Duration(days: 1), // don't show on hover
         child: ListTile(
           onTap: () => onSelected(suggestion),
+          selected: selected,
           title: Text(
             commandExample(command),
             style: const TextStyle(fontFamily: 'RobotoMono'),
@@ -265,6 +270,7 @@ class InputBar extends StatelessWidget {
         waitDuration: const Duration(days: 1), // don't show on hover
         child: ListTile(
           onTap: () => onSelected(suggestion),
+          selected: selected,
           leading: SizedBox.square(
             dimension: size,
             child: Text(
@@ -279,6 +285,7 @@ class InputBar extends StatelessWidget {
     if (suggestion['type'] == 'emote') {
       return ListTile(
         onTap: () => onSelected(suggestion),
+        selected: selected,
         leading: MxcImage(
           // ensure proper ordering ...
           key: ValueKey(suggestion['name']),
@@ -319,6 +326,7 @@ class InputBar extends StatelessWidget {
       final url = Uri.parse(suggestion['avatar_url'] ?? '');
       return ListTile(
         onTap: () => onSelected(suggestion),
+        selected: selected,
         leading: Avatar(
           mxContent: url,
           name:
@@ -409,26 +417,28 @@ class InputBar extends StatelessWidget {
       textEditingController: controller,
       optionsBuilder: (text) {
         final suggestions = getSuggestions(text);
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          onSuggestionsOpenChanged?.call(suggestions.isNotEmpty);
-        });
+        onSuggestionsComputed?.call(suggestions);
+        onSuggestionsOpenChanged?.call(suggestions.isNotEmpty);
         return suggestions;
       },
-      fieldViewBuilder: (context, controller, focusNode, _) => _InputBarTextField(
-        room: room,
-        controller: controller,
-        focusNode: focusNode,
-        readOnly: readOnly,
-        minLines: minLines,
-        maxLines: maxLines,
-        keyboardType: keyboardType,
-        textInputAction: textInputAction,
-        autofocus: autofocus!,
-        onSubmitted: onSubmitted,
-        decoration: decoration,
-        onChanged: onChanged,
-        onCaretTopVisualLineChanged: onCaretTopVisualLineChanged,
-      ),
+      fieldViewBuilder: fieldViewBuilder ??
+          (context, controller, focusNode, _) {
+            return _InputBarTextField(
+              room: room,
+              controller: controller,
+              focusNode: focusNode,
+              readOnly: readOnly,
+              minLines: minLines,
+              maxLines: maxLines,
+              keyboardType: keyboardType,
+              textInputAction: textInputAction,
+              autofocus: autofocus!,
+              onSubmitted: onSubmitted,
+              decoration: decoration,
+              onChanged: onChanged,
+              onCaretTopVisualLineChanged: onCaretTopVisualLineChanged,
+            );
+          },
       optionsViewBuilder: (c, onSelected, s) {
         final suggestions = s.toList();
         return Material(
@@ -439,11 +449,14 @@ class InputBar extends StatelessWidget {
           child: ListView.builder(
             shrinkWrap: true,
             itemCount: suggestions.length,
-            itemBuilder: (context, i) => buildSuggestion(
-              c,
-              suggestions[i],
-              onSelected,
-              Matrix.of(context).client,
+            itemBuilder: (context, i) => Builder(
+              builder: (context) => buildSuggestion(
+                c,
+                suggestions[i],
+                onSelected,
+                room.client,
+                AutocompleteHighlightedOption.of(context) == i,
+              ),
             ),
           ),
         );
