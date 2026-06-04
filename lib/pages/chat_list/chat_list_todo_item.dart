@@ -9,12 +9,14 @@ class ChatListTodoItem extends StatelessWidget {
     required this.todoList,
     required this.onTap,
     this.active = false,
+    this.pinned = false,
     super.key,
   });
 
   final MessieTodoList todoList;
   final VoidCallback onTap;
   final bool active;
+  final bool pinned;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +34,7 @@ class ChatListTodoItem extends StatelessWidget {
         clipBehavior: Clip.hardEdge,
         color: backgroundColor,
         child: ListTile(
+          minTileHeight: 72,
           visualDensity: const VisualDensity(vertical: -0.5),
           contentPadding: const EdgeInsets.symmetric(horizontal: 8),
           onTap: onTap,
@@ -46,6 +49,15 @@ class ChatListTodoItem extends StatelessWidget {
           ),
           title: Row(
             children: [
+              if (pinned)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4.0),
+                  child: Icon(
+                    Icons.push_pin,
+                    size: 16,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
               Expanded(
                 child: Text(
                   todoList.title.isEmpty ? 'Untitled list' : todoList.title,
@@ -64,13 +76,11 @@ class ChatListTodoItem extends StatelessWidget {
                 ),
             ],
           ),
-          subtitle: description.isEmpty
-              ? null
-              : Text(
-                  description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
+          subtitle: Text(
+            description.isEmpty ? ' ' : description,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
         ),
       ),
     );

@@ -122,20 +122,29 @@ class ChatListViewBody extends StatelessWidget {
           ...visibleTodoLists.map(ChatListEntry.todo),
         ]..sort((a, b) {
           // Preserve SDK room ordering (respects pins, unread, low-priority)
-          // Only interleave todos by time among non-pinned rooms
+          // Interleave pinned todos with pinned rooms first, then sort the rest by time.
           final aIsRoom = a is RoomChatListEntry;
           final bIsRoom = b is RoomChatListEntry;
-          final aPin = aIsRoom && (a as RoomChatListEntry).room.isFavourite;
-          final bPin = bIsRoom && (b as RoomChatListEntry).room.isFavourite;
+          final aRoom = aIsRoom ? a.room : null;
+          final bRoom = bIsRoom ? b.room : null;
+          final aPin = aRoom?.isFavourite == true;
+          final bPin = bRoom?.isFavourite == true;
+          final aTodoPinned = a is TodoChatListEntry &&
+              controller.isTodoListPinned(a.todoList.id);
+          final bTodoPinned = b is TodoChatListEntry &&
+              controller.isTodoListPinned(b.todoList.id);
+          final aPinned = aPin || aTodoPinned;
+          final bPinned = bPin || bTodoPinned;
 
-          // Pinned rooms always first
-          if (aPin && !bPin) return -1;
-          if (bPin && !aPin) return 1;
+          if (aPinned && !bPinned) return -1;
+          if (bPinned && !aPinned) return 1;
 
-          // Among pinned rooms, preserve SDK order (by room index in original list)
-          if (aPin && bPin) {
-            return rooms.indexOf((a as RoomChatListEntry).room)
-                .compareTo(rooms.indexOf((b as RoomChatListEntry).room));
+          // Among pinned rooms, preserve SDK order. Pinned todo lists sort by activity.
+          if (aPinned && bPinned) {
+            if (aPin && bPin) {
+              return rooms.indexOf(aRoom!).compareTo(rooms.indexOf(bRoom!));
+            }
+            return b.sortTime.compareTo(a.sortTime);
           }
 
           // Non-pinned: sort by time
@@ -334,8 +343,8 @@ class ChatListViewBody extends StatelessWidget {
                       );
                     }
                     // Count navigable items before this one to get the correct index.
-                    int navIndex = 0;
-                    for (int j = 0; j < i; j++) {
+                    var navIndex = 0;
+                    for (var j = 0; j < i; j++) {
                       if (entries[j] is! DividerChatListEntry) navIndex++;
                     }
                     return ChatListFocusItem(
@@ -363,6 +372,7 @@ class ChatListViewBody extends StatelessWidget {
                         TodoChatListEntry(:final todoList) => ChatListTodoItem(
                           key: Key('chat_list_todo_${todoList.id}'),
                           todoList: todoList,
+                          pinned: controller.isTodoListPinned(todoList.id),
                           active:
                               activeRoute == '/rooms/todos/${todoList.id}' ||
                               activeRoute.startsWith('/rooms/todos/${todoList.id}/'),
