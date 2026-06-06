@@ -11,8 +11,8 @@ import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_entries.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_view.dart';
-import 'package:fluffychat/utils/keyboard/chat_list_keyboard_adapter.dart';
 import 'package:fluffychat/utils/error_reporter.dart';
+import 'package:fluffychat/utils/keyboard/chat_list_keyboard_adapter.dart';
 import 'package:fluffychat/utils/keyboard/shortcut_dispatcher.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
@@ -36,14 +36,14 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../../utils/account_bundles.dart';
 import '../../config/setting_keys.dart';
-import '../../services/messie_bridge_catalog_loader.dart';
 import '../../services/bridge_room_mapping.dart';
 import '../../services/bridge_room_presentation.dart';
+import '../../services/messie_bridge_catalog_loader.dart';
 import '../../services/messie_bridge_service.dart';
 import '../../services/messie_todo_service.dart';
 import '../../utils/url_launcher.dart';
-import 'chat_list_workspace_mixin.dart';
 import '../../widgets/matrix.dart';
+import 'chat_list_workspace_mixin.dart';
 
 enum ActiveFilter { allChats, spaces, messages, groups, unread, tag }
 
