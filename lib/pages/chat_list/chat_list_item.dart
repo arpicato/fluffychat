@@ -83,8 +83,7 @@ class ChatListItem extends StatelessWidget {
           color: backgroundColor,
           child: FutureBuilder(
             future: room.name.isEmpty ? room.loadHeroUsers() : null,
-            builder: (context, _) => HoverBuilder(
-              builder: (context, listTileHovered) => ListTile(
+            builder: (context, _) => ListTile(
                 visualDensity: const VisualDensity(vertical: -0.5),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 8),
                 leading: HoverBuilder(
@@ -130,26 +129,6 @@ class ChatListItem extends StatelessWidget {
                                     : null,
                             presenceBackgroundColor: backgroundColor,
                               onTap: onTap,
-                            ),
-                          ),
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: () => onLongPress?.call(context),
-                              child: AnimatedScale(
-                                duration: FluffyThemes.animationDuration,
-                                curve: FluffyThemes.animationCurve,
-                                scale: listTileHovered ? 1.0 : 0.0,
-                                child: Material(
-                                  color: backgroundColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                  child: const Icon(
-                                    Icons.arrow_drop_down_circle_outlined,
-                                    size: 18,
-                                  ),
-                                ),
-                              ),
                             ),
                           ),
                         ],
@@ -395,7 +374,6 @@ class ChatListItem extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }
