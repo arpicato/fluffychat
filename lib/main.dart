@@ -47,6 +47,9 @@ void main(List<String> args) async {
     if (hash.isNotEmpty && !hash.startsWith('/')) {
       web.window.location.hash = hash.replaceFirst('#', '#?');
     }
+    web.document.onContextMenu.listen((event) {
+      event.preventDefault();
+    });
   }
 
   // Our background push shared isolate accesses flutter-internal things very early in the startup proccess
