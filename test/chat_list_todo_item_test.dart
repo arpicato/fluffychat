@@ -1,5 +1,6 @@
 import 'package:fluffychat/pages/chat_list/chat_list_todo_item.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -59,5 +60,34 @@ void main() {
     );
 
     expect(find.byIcon(Icons.push_pin), findsOneWidget);
+  });
+
+  testWidgets('chat list todo item shows context menu on right click', (
+    tester,
+  ) async {
+    var opened = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ChatListTodoItem(
+            todoList: _todoList(
+              id: 'a',
+              title: 'Pinned list',
+              description: 'Description',
+            ),
+            onTap: () {},
+            onShowContextMenu: (_) {
+              opened = true;
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(ChatListTodoItem), buttons: kSecondaryButton);
+    await tester.pump();
+
+    expect(opened, isTrue);
   });
 }

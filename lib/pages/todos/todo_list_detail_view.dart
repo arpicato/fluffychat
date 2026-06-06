@@ -11,9 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
-import '../../services/messie_workspace_refresh.dart';
 import '../../widgets/matrix.dart';
-import '../chat_list/chat_list_workspace_mixin.dart';
 import 'todo_list_detail.dart';
 import 'todo_list_detail_logic.dart';
 
@@ -156,24 +154,6 @@ class _TodoListDetailPageViewState extends State<TodoListDetailPageView> {
       if (!context.mounted) return;
       _showTodoError(context, 'Could not delete todo list', error);
     }
-  }
-
-  Future<void> _setPinned(BuildContext context, MessieTodoList list, bool pinned) async {
-    final matrix = Matrix.of(context);
-    final pinnedTodoListIds = matrix.store
-            .getStringList(ChatListWorkspaceMixin.pinnedTodoListsStoreKey)
-            ?.toSet() ??
-        <String>{};
-    if (pinned) {
-      pinnedTodoListIds.add(list.id);
-    } else {
-      pinnedTodoListIds.remove(list.id);
-    }
-    await matrix.store.setStringList(
-      ChatListWorkspaceMixin.pinnedTodoListsStoreKey,
-      pinnedTodoListIds.toList(),
-    );
-    MessieWorkspaceRefresh.instance.bump();
   }
 
   Future<void> _showCollaboratorsDialog(
@@ -671,44 +651,25 @@ class _TodoListDetailPageViewState extends State<TodoListDetailPageView> {
                 : BackButton(onPressed: () => _navigateBack(context)),
             centerTitle: FluffyThemes.isColumnMode(context),
             actions: [
-              Builder(
-                builder: (context) {
-                  final pinnedTodoListIds = Matrix.of(context).store
-                          .getStringList(
-                            ChatListWorkspaceMixin.pinnedTodoListsStoreKey,
-                          )
-                          ?.toSet() ??
-                      const <String>{};
-                  final isPinned = pinnedTodoListIds.contains(data.list.id);
-                  return PopupMenuButton<String>(
-                    onSelected: (value) async {
-                      switch (value) {
-                        case 'pin':
-                          await _setPinned(context, data.list, !isPinned);
-                          if (!context.mounted) return;
-                          setState(() {});
-                        case 'edit':
-                          _editList(context, data.list);
-                        case 'collaborators':
-                          _showCollaboratorsDialog(context, data);
-                        case 'delete':
-                          _deleteList(context);
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'pin',
-                        child: Text(isPinned ? 'Unpin list' : 'Pin list'),
-                      ),
-                      const PopupMenuItem(value: 'edit', child: Text('Edit list')),
-                      const PopupMenuItem(
-                        value: 'collaborators',
-                        child: Text('Manage collaborators'),
-                      ),
-                      const PopupMenuItem(value: 'delete', child: Text('Delete list')),
-                    ],
-                  );
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'edit':
+                      _editList(context, data.list);
+                    case 'collaborators':
+                      _showCollaboratorsDialog(context, data);
+                    case 'delete':
+                      _deleteList(context);
+                  }
                 },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit list')),
+                  PopupMenuItem(
+                    value: 'collaborators',
+                    child: Text('Manage collaborators'),
+                  ),
+                  PopupMenuItem(value: 'delete', child: Text('Delete list')),
+                ],
               ),
             ],
           ),

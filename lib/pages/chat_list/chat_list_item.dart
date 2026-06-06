@@ -19,6 +19,7 @@ import 'package:matrix/matrix.dart';
 import '../../config/themes.dart';
 import '../../utils/date_time_extension.dart';
 import '../../widgets/avatar.dart';
+import 'chat_list_context_menu_region.dart';
 
 class ChatListItem extends StatelessWidget {
   final Room room;
@@ -74,31 +75,32 @@ class ChatListItem extends StatelessWidget {
         room.getState(EventTypes.RoomMember, lastEvent.senderId) == null;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-      child: Material(
-        borderRadius: BorderRadius.circular(AppConfig.borderRadius),
-        clipBehavior: Clip.hardEdge,
-        color: backgroundColor,
-        child: FutureBuilder(
-          future: room.name.isEmpty ? room.loadHeroUsers() : null,
-          builder: (context, _) => HoverBuilder(
-            builder: (context, listTileHovered) => ListTile(
-              visualDensity: const VisualDensity(vertical: -0.5),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-              onLongPress: () => onLongPress?.call(context),
-              leading: HoverBuilder(
-                builder: (context, hovered) => AnimatedScale(
-                  duration: FluffyThemes.animationDuration,
-                  curve: FluffyThemes.animationCurve,
-                  scale: hovered ? 1.1 : 1.0,
-                  child: SizedBox(
-                    width: Avatar.defaultSize,
-                    height: Avatar.defaultSize,
-                    child: Stack(
-                      children: [
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: BridgeAwareAvatar(
+      child: ChatListContextMenuRegion(
+        onShowContextMenu: (context) => onLongPress?.call(context),
+        child: Material(
+          borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+          clipBehavior: Clip.hardEdge,
+          color: backgroundColor,
+          child: FutureBuilder(
+            future: room.name.isEmpty ? room.loadHeroUsers() : null,
+            builder: (context, _) => HoverBuilder(
+              builder: (context, listTileHovered) => ListTile(
+                visualDensity: const VisualDensity(vertical: -0.5),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                leading: HoverBuilder(
+                  builder: (context, hovered) => AnimatedScale(
+                    duration: FluffyThemes.animationDuration,
+                    curve: FluffyThemes.animationCurve,
+                    scale: hovered ? 1.1 : 1.0,
+                    child: SizedBox(
+                      width: Avatar.defaultSize,
+                      height: Avatar.defaultSize,
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: BridgeAwareAvatar(
                             shapeBorder: room.isSpace
                                 ? RoundedSuperellipseBorder(
                                     side: BorderSide(
@@ -127,35 +129,35 @@ class ChatListItem extends StatelessWidget {
                                     ? directChatMatrixId
                                     : null,
                             presenceBackgroundColor: backgroundColor,
-                            onTap: () => onLongPress?.call(context),
+                              onTap: onTap,
+                            ),
                           ),
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: () => onLongPress?.call(context),
-                            child: AnimatedScale(
-                              duration: FluffyThemes.animationDuration,
-                              curve: FluffyThemes.animationCurve,
-                              scale: listTileHovered ? 1.0 : 0.0,
-                              child: Material(
-                                color: backgroundColor,
-                                borderRadius: BorderRadius.circular(16),
-                                child: const Icon(
-                                  Icons.arrow_drop_down_circle_outlined,
-                                  size: 18,
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () => onLongPress?.call(context),
+                              child: AnimatedScale(
+                                duration: FluffyThemes.animationDuration,
+                                curve: FluffyThemes.animationCurve,
+                                scale: listTileHovered ? 1.0 : 0.0,
+                                child: Material(
+                                  color: backgroundColor,
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: const Icon(
+                                    Icons.arrow_drop_down_circle_outlined,
+                                    size: 18,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              title: Row(
+                title: Row(
                 children: <Widget>[
                   Expanded(
                     child: Row(
@@ -231,7 +233,7 @@ class ChatListItem extends StatelessWidget {
                     ),
                 ],
               ),
-              subtitle: Row(
+                subtitle: Row(
                 crossAxisAlignment: .start,
                 mainAxisAlignment: .center,
                 children: <Widget>[
@@ -361,8 +363,8 @@ class ChatListItem extends StatelessWidget {
                   UnreadBubble(room: room),
                 ],
               ),
-              onTap: onTap,
-              trailing: onForget == null
+                onTap: onTap,
+                trailing: onForget == null
                   ? room.membership == Membership.invite
                         ? IconButton(
                             tooltip: L10n.of(context).declineInvitation,
@@ -389,6 +391,7 @@ class ChatListItem extends StatelessWidget {
                       icon: const Icon(Icons.delete_outlined),
                       onPressed: onForget,
                     ),
+              ),
             ),
           ),
         ),

@@ -373,6 +373,8 @@ class ChatListViewBody extends StatelessWidget {
                           key: Key('chat_list_todo_${todoList.id}'),
                           todoList: todoList,
                           pinned: controller.isTodoListPinned(todoList.id),
+                          onShowContextMenu: (context) => controller
+                              .todoListContextAction(todoList, context),
                           active:
                               activeRoute == '/rooms/todos/${todoList.id}' ||
                               activeRoute.startsWith('/rooms/todos/${todoList.id}/'),
