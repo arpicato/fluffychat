@@ -4,17 +4,23 @@ import 'package:fluffychat/utils/date_time_extension.dart';
 import 'package:fluffychat/widgets/avatar.dart';
 import 'package:flutter/material.dart';
 
+import 'chat_list_context_menu_region.dart';
+
 class ChatListTodoItem extends StatelessWidget {
   const ChatListTodoItem({
     required this.todoList,
     required this.onTap,
+    this.onShowContextMenu,
     this.active = false,
+    this.pinned = false,
     super.key,
   });
 
   final MessieTodoList todoList;
   final VoidCallback onTap;
+  final void Function(BuildContext context)? onShowContextMenu;
   final bool active;
+  final bool pinned;
 
   @override
   Widget build(BuildContext context) {
@@ -27,50 +33,61 @@ class ChatListTodoItem extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-      child: Material(
-        borderRadius: BorderRadius.circular(AppConfig.borderRadius),
-        clipBehavior: Clip.hardEdge,
-        color: backgroundColor,
-        child: ListTile(
-          visualDensity: const VisualDensity(vertical: -0.5),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-          onTap: onTap,
-          leading: SizedBox(
-            width: Avatar.defaultSize,
-            height: Avatar.defaultSize,
-            child: CircleAvatar(
-              backgroundColor: theme.colorScheme.tertiaryContainer,
-              foregroundColor: theme.colorScheme.onTertiaryContainer,
-              child: const Icon(Icons.checklist_rtl_outlined),
-            ),
-          ),
-          title: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  todoList.title.isEmpty ? 'Untitled list' : todoList.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                ),
+      child: ChatListContextMenuRegion(
+        onShowContextMenu: (context) => onShowContextMenu?.call(context),
+        child: Material(
+          borderRadius: BorderRadius.circular(AppConfig.borderRadius),
+          clipBehavior: Clip.hardEdge,
+          color: backgroundColor,
+          child: ListTile(
+            minTileHeight: 72,
+            visualDensity: const VisualDensity(vertical: -0.5),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+            onTap: onTap,
+            leading: SizedBox(
+              width: Avatar.defaultSize,
+              height: Avatar.defaultSize,
+              child: CircleAvatar(
+                backgroundColor: theme.colorScheme.tertiaryContainer,
+                foregroundColor: theme.colorScheme.onTertiaryContainer,
+                child: const Icon(Icons.checklist_rtl_outlined),
               ),
-              if (timestamp != null)
-                Padding(
-                  padding: const EdgeInsets.only(left: 4.0),
+            ),
+            title: Row(
+              children: [
+                if (pinned)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4.0),
+                    child: Icon(
+                      Icons.push_pin,
+                      size: 16,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                Expanded(
                   child: Text(
-                    timestamp.toLocal().localizedTimeShort(context),
-                    style: theme.textTheme.bodySmall,
+                    todoList.title.isEmpty ? 'Untitled list' : todoList.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
                   ),
                 ),
-            ],
+                if (timestamp != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4.0),
+                    child: Text(
+                      timestamp.toLocal().localizedTimeShort(context),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+              ],
+            ),
+            subtitle: Text(
+              description.isEmpty ? ' ' : description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          subtitle: description.isEmpty
-              ? null
-              : Text(
-                  description,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
         ),
       ),
     );

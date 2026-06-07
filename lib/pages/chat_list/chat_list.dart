@@ -11,9 +11,9 @@ import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_entries.dart';
 import 'package:fluffychat/pages/chat_list/chat_list_view.dart';
+import 'package:fluffychat/utils/error_reporter.dart';
 import 'package:fluffychat/utils/keyboard/chat_list_keyboard_adapter.dart';
 import 'package:fluffychat/utils/keyboard/shortcut_dispatcher.dart';
-import 'package:fluffychat/utils/error_reporter.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
@@ -36,10 +36,11 @@ import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 import '../../../utils/account_bundles.dart';
 import '../../config/setting_keys.dart';
-import '../../services/messie_bridge_catalog_loader.dart';
 import '../../services/bridge_room_mapping.dart';
 import '../../services/bridge_room_presentation.dart';
+import '../../services/messie_bridge_catalog_loader.dart';
 import '../../services/messie_bridge_service.dart';
+import '../../services/messie_todo_service.dart';
 import '../../utils/url_launcher.dart';
 import '../../widgets/matrix.dart';
 import 'chat_list_workspace_mixin.dart';
@@ -876,6 +877,76 @@ class ChatListController extends State<ChatList>
           context: context,
           future: () => room.removeTag(activeTag!),
         );
+        return;
+    }
+  }
+
+  Future<void> todoListContextAction(
+    MessieTodoList todoList,
+    BuildContext posContext,
+  ) async {
+    final overlay =
+        Overlay.of(posContext).context.findRenderObject() as RenderBox;
+    final button = posContext.findRenderObject() as RenderBox;
+    final position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(const Offset(0, -65), ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero) + const Offset(-50, 0),
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
+    final pinned = isTodoListPinned(todoList.id);
+    final action = await showMenu<String>(
+      context: posContext,
+      position: position,
+      items: [
+        PopupMenuItem(
+          value: 'open',
+          child: Row(
+            children: [
+              const Icon(Icons.checklist_rtl_outlined),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  todoList.title.isEmpty ? 'Untitled list' : todoList.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'pin',
+          child: Row(
+            children: [
+              Icon(pinned ? Icons.push_pin : Icons.push_pin_outlined),
+              const SizedBox(width: 12),
+              Text(pinned ? L10n.of(context).unpin : L10n.of(context).pin),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (action == null || !mounted) return;
+
+    switch (action) {
+      case 'open':
+        context.push(
+          '/rooms/todos/${todoList.id}',
+          extra: <String, Object?>{
+            'title': todoList.title,
+            'description': todoList.description,
+          },
+        );
+        return;
+      case 'pin':
+        await setTodoListPinned(todoList.id, !pinned);
         return;
     }
   }

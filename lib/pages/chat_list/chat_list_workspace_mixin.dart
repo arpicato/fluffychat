@@ -11,11 +11,14 @@ import '../../widgets/matrix.dart';
 /// controller. Keeps Messie-specific logic isolated from upstream FluffyChat
 /// code to reduce merge conflicts.
 mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
+  static const String pinnedTodoListsStoreKey =
+      'im.fluffychat.messie.pinned_todo_lists';
   final BackendSessionService _backendSessionService = BackendSessionService();
   final MessieCalendarService _messieCalendarService = MessieCalendarService();
   final MessieTodoService _messieTodoService = MessieTodoService();
 
   List<MessieTodoList> todoLists = const [];
+  Set<String> pinnedTodoListIds = const {};
   bool isLoadingTodoLists = false;
   Object? todoListsError;
   final Map<String, MessieTodoList> _optimisticTodoListsById = {};
@@ -42,6 +45,10 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
         jwt: session.token,
         userId: session.userId,
       );
+      final pinnedTodoListIds = matrix.store
+              .getStringList(pinnedTodoListsStoreKey)
+              ?.toSet() ??
+          const <String>{};
       if (!mounted) return;
       final mergedTodoLists = [
         ...todoLists,
@@ -51,6 +58,7 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
       ];
       setState(() {
         this.todoLists = mergedTodoLists;
+        this.pinnedTodoListIds = pinnedTodoListIds;
         isLoadingTodoLists = false;
       });
     } catch (error, stackTrace) {
@@ -77,8 +85,34 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
     setState(() {
       _optimisticTodoListsById.remove(todoListId);
       todoLists = todoLists.where((list) => list.id != todoListId).toList();
+      pinnedTodoListIds = {...pinnedTodoListIds}..remove(todoListId);
       todoListsError = null;
     });
+    final matrix = Matrix.of(context);
+    matrix.store.setStringList(
+      pinnedTodoListsStoreKey,
+      pinnedTodoListIds.toList(),
+    );
+  }
+
+  bool isTodoListPinned(String todoListId) => pinnedTodoListIds.contains(todoListId);
+
+  Future<void> setTodoListPinned(String todoListId, bool pinned) async {
+    final updatedPinnedTodoListIds = {...pinnedTodoListIds};
+    if (pinned) {
+      updatedPinnedTodoListIds.add(todoListId);
+    } else {
+      updatedPinnedTodoListIds.remove(todoListId);
+    }
+    if (!mounted) return;
+    setState(() {
+      pinnedTodoListIds = updatedPinnedTodoListIds;
+    });
+    final matrix = Matrix.of(context);
+    await matrix.store.setStringList(
+      pinnedTodoListsStoreKey,
+      updatedPinnedTodoListIds.toList(),
+    );
   }
 
   Future<void> refreshCalendarEvents() async {

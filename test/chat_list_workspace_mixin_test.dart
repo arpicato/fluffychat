@@ -1,8 +1,28 @@
 import 'package:fluffychat/pages/chat_list/chat_list_workspace_mixin.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/services/messie_workspace_refresh.dart';
+import 'package:fluffychat/widgets/matrix.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _FakeClient extends Fake implements Client {}
+
+class _FakeMatrixState with DiagnosticableTreeMixin implements MatrixState {
+  _FakeMatrixState({required this.client, required this.store});
+
+  @override
+  final Client client;
+
+  @override
+  final SharedPreferences store;
+
+  @override
+  Object? noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
 
 class _WorkspaceHost extends StatefulWidget {
   const _WorkspaceHost({required this.onState});
@@ -49,6 +69,10 @@ MessieTodoList _todoList(String id, String title) => MessieTodoList(
 );
 
 void main() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   testWidgets('workspace refresh bump triggers chat list workspace refresh', (
     tester,
   ) async {
@@ -71,10 +95,14 @@ void main() {
     tester,
   ) async {
     late _WorkspaceHostState state;
+    final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: _WorkspaceHost(onState: (value) => state = value),
+      Provider<MatrixState>.value(
+        value: _FakeMatrixState(client: _FakeClient(), store: prefs),
+        child: MaterialApp(
+          home: _WorkspaceHost(onState: (value) => state = value),
+        ),
       ),
     );
 
@@ -89,5 +117,35 @@ void main() {
     await tester.pump();
 
     expect(state.todoLists, isEmpty);
+  });
+
+  testWidgets('workspace stores pinned todo list ids', (tester) async {
+    late _WorkspaceHostState state;
+    final prefs = await SharedPreferences.getInstance();
+
+    await tester.pumpWidget(
+      Provider<MatrixState>.value(
+        value: _FakeMatrixState(client: _FakeClient(), store: prefs),
+        child: MaterialApp(
+          home: _WorkspaceHost(onState: (value) => state = value),
+        ),
+      ),
+    );
+
+    await state.setTodoListPinned('list-1', true);
+
+    expect(state.isTodoListPinned('list-1'), isTrue);
+    expect(
+      prefs.getStringList(ChatListWorkspaceMixin.pinnedTodoListsStoreKey),
+      ['list-1'],
+    );
+
+    await state.setTodoListPinned('list-1', false);
+
+    expect(state.isTodoListPinned('list-1'), isFalse);
+    expect(
+      prefs.getStringList(ChatListWorkspaceMixin.pinnedTodoListsStoreKey),
+      isEmpty,
+    );
   });
 }
