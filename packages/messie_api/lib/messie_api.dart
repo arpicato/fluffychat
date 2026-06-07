@@ -51,6 +51,7 @@ export 'package:messie_api/src/model/new_collaborator.dart';
 export 'package:messie_api/src/model/new_todo_item.dart';
 export 'package:messie_api/src/model/new_todo_list.dart';
 export 'package:messie_api/src/model/remote_profile.dart';
+export 'package:messie_api/src/model/set_todo_list_pin.dart';
 export 'package:messie_api/src/model/todo_item.dart';
 export 'package:messie_api/src/model/todo_list.dart';
 export 'package:messie_api/src/model/update_calendar_source.dart';

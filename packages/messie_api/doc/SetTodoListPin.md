@@ -1,4 +1,4 @@
-# messie_api.model.TodoList
+# messie_api.model.SetTodoListPin
 
 ## Load the model package
 ```dart
@@ -8,14 +8,7 @@ import 'package:messie_api/api.dart';
 ## Properties
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **String** |  | 
-**ownerId** | **String** |  | 
-**title** | **String** |  | [default to '']
-**description** | **String** |  | 
 **pinned** | **bool** |  | 
-**lastActivityAt** | [**DateTime**](DateTime.md) |  | [optional] 
-**createdAt** | [**DateTime**](DateTime.md) |  | [optional] 
-**updatedAt** | [**DateTime**](DateTime.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -11,14 +11,27 @@ import '../../widgets/matrix.dart';
 /// controller. Keeps Messie-specific logic isolated from upstream FluffyChat
 /// code to reduce merge conflicts.
 mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
-  static const String pinnedTodoListsStoreKey =
-      'im.fluffychat.messie.pinned_todo_lists';
   final BackendSessionService _backendSessionService = BackendSessionService();
   final MessieCalendarService _messieCalendarService = MessieCalendarService();
   final MessieTodoService _messieTodoService = MessieTodoService();
 
+  @protected
+  BackendSessionService get backendSessionService => _backendSessionService;
+
+  @protected
+  MessieCalendarService get messieCalendarService => _messieCalendarService;
+
+  @protected
+  MessieTodoService get messieTodoService => _messieTodoService;
+
+  @protected
+  Future<BackendSession> ensureBackendSession(MatrixState matrix) =>
+      backendSessionService.ensureSession(matrix.client, matrix.store);
+
+  @protected
+  String get backendApiBaseUrl => BackendSessionService.defaultApiBaseUrl;
+
   List<MessieTodoList> todoLists = const [];
-  Set<String> pinnedTodoListIds = const {};
   bool isLoadingTodoLists = false;
   Object? todoListsError;
   final Map<String, MessieTodoList> _optimisticTodoListsById = {};
@@ -36,19 +49,12 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
 
     try {
       final matrix = Matrix.of(context);
-      final session = await _backendSessionService.ensureSession(
-        matrix.client,
-        matrix.store,
-      );
-      final todoLists = await _messieTodoService.getTodoLists(
-        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+      final session = await ensureBackendSession(matrix);
+      final todoLists = await messieTodoService.getTodoLists(
+        apiBaseUrl: backendApiBaseUrl,
         jwt: session.token,
         userId: session.userId,
       );
-      final pinnedTodoListIds = matrix.store
-              .getStringList(pinnedTodoListsStoreKey)
-              ?.toSet() ??
-          const <String>{};
       if (!mounted) return;
       final mergedTodoLists = [
         ...todoLists,
@@ -58,7 +64,6 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
       ];
       setState(() {
         this.todoLists = mergedTodoLists;
-        this.pinnedTodoListIds = pinnedTodoListIds;
         isLoadingTodoLists = false;
       });
     } catch (error, stackTrace) {
@@ -85,34 +90,28 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
     setState(() {
       _optimisticTodoListsById.remove(todoListId);
       todoLists = todoLists.where((list) => list.id != todoListId).toList();
-      pinnedTodoListIds = {...pinnedTodoListIds}..remove(todoListId);
       todoListsError = null;
     });
-    final matrix = Matrix.of(context);
-    matrix.store.setStringList(
-      pinnedTodoListsStoreKey,
-      pinnedTodoListIds.toList(),
-    );
   }
 
-  bool isTodoListPinned(String todoListId) => pinnedTodoListIds.contains(todoListId);
+  bool isTodoListPinned(String todoListId) =>
+      todoLists.any((list) => list.id == todoListId && list.pinned);
 
   Future<void> setTodoListPinned(String todoListId, bool pinned) async {
-    final updatedPinnedTodoListIds = {...pinnedTodoListIds};
-    if (pinned) {
-      updatedPinnedTodoListIds.add(todoListId);
-    } else {
-      updatedPinnedTodoListIds.remove(todoListId);
-    }
+    final matrix = Matrix.of(context);
+    final session = await ensureBackendSession(matrix);
+    final updatedTodoList = await messieTodoService.setTodoListPin(
+      apiBaseUrl: backendApiBaseUrl,
+      jwt: session.token,
+      listId: todoListId,
+      pinned: pinned,
+    );
     if (!mounted) return;
     setState(() {
-      pinnedTodoListIds = updatedPinnedTodoListIds;
+      todoLists = todoLists
+          .map((list) => list.id == todoListId ? updatedTodoList : list)
+          .toList();
     });
-    final matrix = Matrix.of(context);
-    await matrix.store.setStringList(
-      pinnedTodoListsStoreKey,
-      updatedPinnedTodoListIds.toList(),
-    );
   }
 
   Future<void> refreshCalendarEvents() async {
@@ -125,12 +124,9 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
 
     try {
       final matrix = Matrix.of(context);
-      final session = await _backendSessionService.ensureSession(
-        matrix.client,
-        matrix.store,
-      );
-      final events = await _messieCalendarService.getUpcomingCalendarEvents(
-        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+      final session = await ensureBackendSession(matrix);
+      final events = await messieCalendarService.getUpcomingCalendarEvents(
+        apiBaseUrl: backendApiBaseUrl,
         jwt: session.token,
         limit: 25,
       );

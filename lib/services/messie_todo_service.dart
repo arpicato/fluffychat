@@ -15,6 +15,7 @@ class MessieTodoList {
     required this.ownerId,
     required this.title,
     required this.description,
+    required this.pinned,
     this.lastActivityAt,
     this.createdAt,
     this.updatedAt,
@@ -24,6 +25,7 @@ class MessieTodoList {
   final String ownerId;
   final String title;
   final String description;
+  final bool pinned;
   final DateTime? lastActivityAt;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -35,6 +37,7 @@ class MessieTodoList {
     ownerId: list.ownerId,
     title: list.title,
     description: list.description,
+    pinned: list.pinned,
     lastActivityAt: list.lastActivityAt,
     createdAt: list.createdAt,
     updatedAt: list.updatedAt,
@@ -140,6 +143,11 @@ abstract class MessieTodoSdk {
     required String listId,
     required String title,
     required String description,
+  });
+
+  Future<api.TodoList> setTodoListPin({
+    required String listId,
+    required bool pinned,
   });
 
   Future<void> deleteTodoList({required String listId});
@@ -248,6 +256,20 @@ class GeneratedMessieTodoSdk implements MessieTodoSdk {
   @override
   Future<void> deleteTodoList({required String listId}) async {
     await _api.deleteTodoList(listId: listId);
+  }
+
+  @override
+  Future<api.TodoList> setTodoListPin({
+    required String listId,
+    required bool pinned,
+  }) async {
+    final response = await _api.setTodoListPin(
+      listId: listId,
+      setTodoListPin: api.SetTodoListPin(
+        (builder) => builder..pinned = pinned,
+      ),
+    );
+    return response.data!;
   }
 
   @override
@@ -497,6 +519,20 @@ class MessieTodoService {
   }) async => _wrapRequest(
     'Failed to delete todo list',
     (sdk) => sdk.deleteTodoList(listId: listId),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
+
+  Future<MessieTodoList> setTodoListPin({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+    required bool pinned,
+  }) async => _wrapRequest(
+    'Failed to update todo list pin',
+    (sdk) async => MessieTodoList.fromApi(
+      await sdk.setTodoListPin(listId: listId, pinned: pinned),
+    ),
     apiBaseUrl: apiBaseUrl,
     jwt: jwt,
   );

@@ -41,6 +41,7 @@ doc/NewCollaborator.md
 doc/NewTodoItem.md
 doc/NewTodoList.md
 doc/RemoteProfile.md
+doc/SetTodoListPin.md
 doc/TodoItem.md
 doc/TodoList.md
 doc/UpdateCalendarSource.md
@@ -100,6 +101,7 @@ lib/src/model/new_collaborator.dart
 lib/src/model/new_todo_item.dart
 lib/src/model/new_todo_list.dart
 lib/src/model/remote_profile.dart
+lib/src/model/set_todo_list_pin.dart
 lib/src/model/todo_item.dart
 lib/src/model/todo_list.dart
 lib/src/model/update_calendar_source.dart
@@ -111,3 +113,4 @@ lib/src/model/wa_status_response.dart
 lib/src/model/wa_status_response_account.dart
 lib/src/serializers.dart
 pubspec.yaml
+test/set_todo_list_pin_test.dart

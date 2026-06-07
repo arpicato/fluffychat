@@ -344,6 +344,35 @@ paths:
           description: Todo list deleted successfully
         "404":
           description: Todo list not found
+  /todolists/{listId}/pin:
+    put:
+      security:
+        - bearerAuth: []
+      summary: Set personal pinned state for a todo list
+      operationId: setTodoListPin
+      parameters:
+        - in: path
+          name: listId
+          schema:
+            type: string
+            format: uuid
+          required: true
+          description: ID of the todo list to pin or unpin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetTodoListPin"
+      responses:
+        "200":
+          description: Todo list pin updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TodoList"
+        "404":
+          description: Todo list not found
   /todolists/{listId}/items:
     post:
       security:
@@ -1211,6 +1240,7 @@ components:
         - owner_id
         - title
         - description
+        - pinned
       properties:
         id:
           type: string
@@ -1224,6 +1254,8 @@ components:
           default: ""
         description:
           type: string
+        pinned:
+          type: boolean
         last_activity_at:
           type: string
           format: date-time
@@ -1257,6 +1289,13 @@ components:
           default: ""
         description:
           type: string
+    SetTodoListPin:
+      type: object
+      required:
+        - pinned
+      properties:
+        pinned:
+          type: boolean
     TodoItem:
       type: object
       required:

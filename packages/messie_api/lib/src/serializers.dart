@@ -53,6 +53,7 @@ import 'package:messie_api/src/model/new_collaborator.dart';
 import 'package:messie_api/src/model/new_todo_item.dart';
 import 'package:messie_api/src/model/new_todo_list.dart';
 import 'package:messie_api/src/model/remote_profile.dart';
+import 'package:messie_api/src/model/set_todo_list_pin.dart';
 import 'package:messie_api/src/model/todo_item.dart';
 import 'package:messie_api/src/model/todo_list.dart';
 import 'package:messie_api/src/model/update_calendar_source.dart';
@@ -105,6 +106,7 @@ part 'serializers.g.dart';
   NewTodoItem,
   NewTodoList,
   RemoteProfile,
+  SetTodoListPin,
   TodoItem,
   TodoList,
   UpdateCalendarSource,

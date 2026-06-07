@@ -442,6 +442,7 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     ownerId: list.ownerId,
     title: title ?? list.title,
     description: description ?? list.description,
+    pinned: list.pinned,
     lastActivityAt: list.lastActivityAt,
     createdAt: list.createdAt,
     updatedAt: list.updatedAt,
