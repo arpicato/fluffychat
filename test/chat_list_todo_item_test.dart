@@ -14,6 +14,7 @@ MessieTodoList _todoList({
   ownerId: 'owner',
   title: title,
   description: description,
+  pinned: false,
   createdAt: DateTime.utc(2026, 1, 1, 12),
   updatedAt: DateTime.utc(2026, 1, 1, 12),
 );

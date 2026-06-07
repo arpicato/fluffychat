@@ -24,6 +24,8 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 ### Rebuild/Restart Handling
 
 - Manage Flutter rebuilds/restarts yourself instead of pushing that work back to the user
+- Do not hand off mid-investigation with only harness/debugging progress; only ask the user to verify when there is a concrete product change or a stable runtime checkpoint to check
+- If a rebuild or image build is the next required step for progress or verification, do it directly without asking for confirmation first
 - Prefer the tmux helpers so the user keeps terminal access while Flutter runs:
   - `bash /workspace/fluffy-tmux-start`
   - `bash /workspace/fluffy-tmux-attach`

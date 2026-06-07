@@ -100,6 +100,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**postMatrixAuth**](doc/DefaultApi.md#postmatrixauth) | **POST** /auth/matrix/openid | Authenticate using Matrix OpenID
 [*DefaultApi*](doc/DefaultApi.md) | [**refreshCalendarSource**](doc/DefaultApi.md#refreshcalendarsource) | **POST** /calendar/sources/{sourceId}/refresh | Refresh a linked calendar source
 [*DefaultApi*](doc/DefaultApi.md) | [**removeCollaborator**](doc/DefaultApi.md#removecollaborator) | **DELETE** /todolists/{listId}/collaborators/{userId} | Remove a collaborator from a todo list
+[*DefaultApi*](doc/DefaultApi.md) | [**setTodoListPin**](doc/DefaultApi.md#settodolistpin) | **PUT** /todolists/{listId}/pin | Set personal pinned state for a todo list
 [*DefaultApi*](doc/DefaultApi.md) | [**updateCalendarSource**](doc/DefaultApi.md#updatecalendarsource) | **PATCH** /calendar/sources/{sourceId} | Rename a calendar source
 [*DefaultApi*](doc/DefaultApi.md) | [**updateTodoItem**](doc/DefaultApi.md#updatetodoitem) | **PUT** /todolists/{listId}/items/{itemId} | Update a todo item
 [*DefaultApi*](doc/DefaultApi.md) | [**updateTodoList**](doc/DefaultApi.md#updatetodolist) | **PUT** /todolists/{listId} | Update a todo list
@@ -146,6 +147,7 @@ Class | Method | HTTP request | Description
  - [NewTodoItem](doc/NewTodoItem.md)
  - [NewTodoList](doc/NewTodoList.md)
  - [RemoteProfile](doc/RemoteProfile.md)
+ - [SetTodoListPin](doc/SetTodoListPin.md)
  - [TodoItem](doc/TodoItem.md)
  - [TodoList](doc/TodoList.md)
  - [UpdateCalendarSource](doc/UpdateCalendarSource.md)

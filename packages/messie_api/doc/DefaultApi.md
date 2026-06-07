@@ -44,6 +44,7 @@ Method | HTTP request | Description
 [**postMatrixAuth**](DefaultApi.md#postmatrixauth) | **POST** /auth/matrix/openid | Authenticate using Matrix OpenID
 [**refreshCalendarSource**](DefaultApi.md#refreshcalendarsource) | **POST** /calendar/sources/{sourceId}/refresh | Refresh a linked calendar source
 [**removeCollaborator**](DefaultApi.md#removecollaborator) | **DELETE** /todolists/{listId}/collaborators/{userId} | Remove a collaborator from a todo list
+[**setTodoListPin**](DefaultApi.md#settodolistpin) | **PUT** /todolists/{listId}/pin | Set personal pinned state for a todo list
 [**updateCalendarSource**](DefaultApi.md#updatecalendarsource) | **PATCH** /calendar/sources/{sourceId} | Rename a calendar source
 [**updateTodoItem**](DefaultApi.md#updatetodoitem) | **PUT** /todolists/{listId}/items/{itemId} | Update a todo item
 [**updateTodoList**](DefaultApi.md#updatetodolist) | **PUT** /todolists/{listId} | Update a todo list
@@ -1504,6 +1505,49 @@ void (empty response body)
 
  - **Content-Type**: Not defined
  - **Accept**: Not defined
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **setTodoListPin**
+> TodoList setTodoListPin(listId, setTodoListPin)
+
+Set personal pinned state for a todo list
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String listId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | ID of the todo list to pin or unpin
+final SetTodoListPin setTodoListPin = ; // SetTodoListPin | 
+
+try {
+    final response = api.setTodoListPin(listId, setTodoListPin);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->setTodoListPin: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **listId** | **String**| ID of the todo list to pin or unpin | 
+ **setTodoListPin** | [**SetTodoListPin**](SetTodoListPin.md)|  | 
+
+### Return type
+
+[**TodoList**](TodoList.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 

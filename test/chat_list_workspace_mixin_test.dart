@@ -1,4 +1,5 @@
 import 'package:fluffychat/pages/chat_list/chat_list_workspace_mixin.dart';
+import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/services/messie_workspace_refresh.dart';
 import 'package:fluffychat/widgets/matrix.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:matrix/matrix.dart';
+import 'package:messie_api/messie_api.dart' as api;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -25,9 +27,15 @@ class _FakeMatrixState with DiagnosticableTreeMixin implements MatrixState {
 }
 
 class _WorkspaceHost extends StatefulWidget {
-  const _WorkspaceHost({required this.onState});
+  const _WorkspaceHost({
+    required this.onState,
+    this.todoService,
+    this.session,
+  });
 
   final void Function(_WorkspaceHostState state) onState;
+  final MessieTodoService? todoService;
+  final BackendSession? session;
 
   @override
   State<_WorkspaceHost> createState() => _WorkspaceHostState();
@@ -36,6 +44,23 @@ class _WorkspaceHost extends StatefulWidget {
 class _WorkspaceHostState extends State<_WorkspaceHost>
     with ChatListWorkspaceMixin<_WorkspaceHost> {
   var refreshCalls = 0;
+
+  @override
+  MessieTodoService get messieTodoService =>
+      widget.todoService ?? super.messieTodoService;
+
+  @override
+  Future<BackendSession> ensureBackendSession(MatrixState matrix) async =>
+      widget.session ??
+      BackendSession(
+        token: 'token',
+        mxid: '@user:example.com',
+        userId: 'user-1',
+        expiresAt: null,
+      );
+
+  @override
+  String get backendApiBaseUrl => 'https://example.test/api/v1';
 
   @override
   void initState() {
@@ -59,11 +84,29 @@ class _WorkspaceHostState extends State<_WorkspaceHost>
   Widget build(BuildContext context) => const SizedBox.shrink();
 }
 
+class _FakeTodoSdk implements MessieTodoSdk {
+  _FakeTodoSdk(this.todoLists);
+
+  final Map<String, api.TodoList> todoLists;
+
+  @override
+  Future<api.TodoList> setTodoListPin({required String listId, required bool pinned}) async {
+    final current = todoLists[listId]!;
+    final updated = current.rebuild((b) => b..pinned = pinned);
+    todoLists[listId] = updated;
+    return updated;
+  }
+
+  @override
+  Object? noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 MessieTodoList _todoList(String id, String title) => MessieTodoList(
   id: id,
   title: title,
   description: '',
   ownerId: 'owner',
+  pinned: false,
   createdAt: DateTime.utc(2026, 1, 1),
   updatedAt: DateTime.utc(2026, 1, 1),
 );
@@ -119,33 +162,47 @@ void main() {
     expect(state.todoLists, isEmpty);
   });
 
-  testWidgets('workspace stores pinned todo list ids', (tester) async {
+  testWidgets('workspace updates pinned todo lists from backend response', (tester) async {
     late _WorkspaceHostState state;
     final prefs = await SharedPreferences.getInstance();
-
+    final sdk = _FakeTodoSdk({
+      'list-1': api.TodoList(
+        (b) => b
+          ..id = 'list-1'
+          ..ownerId = 'owner'
+          ..title = 'List'
+          ..description = ''
+          ..pinned = false,
+      ),
+    });
     await tester.pumpWidget(
       Provider<MatrixState>.value(
         value: _FakeMatrixState(client: _FakeClient(), store: prefs),
         child: MaterialApp(
-          home: _WorkspaceHost(onState: (value) => state = value),
+          home: _WorkspaceHost(
+            onState: (value) => state = value,
+            todoService: MessieTodoService(
+              sdkFactory: ({required apiBaseUrl, required jwt}) => sdk,
+            ),
+            session: BackendSession(
+              token: 'token',
+              mxid: '@user:example.com',
+              userId: 'user-1',
+              expiresAt: null,
+            ),
+          ),
         ),
       ),
     );
 
+    state.todoLists = [_todoList('list-1', 'List')];
+
     await state.setTodoListPinned('list-1', true);
 
     expect(state.isTodoListPinned('list-1'), isTrue);
-    expect(
-      prefs.getStringList(ChatListWorkspaceMixin.pinnedTodoListsStoreKey),
-      ['list-1'],
-    );
 
     await state.setTodoListPinned('list-1', false);
 
     expect(state.isTodoListPinned('list-1'), isFalse);
-    expect(
-      prefs.getStringList(ChatListWorkspaceMixin.pinnedTodoListsStoreKey),
-      isEmpty,
-    );
   });
 }
