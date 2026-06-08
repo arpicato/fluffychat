@@ -129,6 +129,20 @@ void main() {
       expect(plan.position.compareTo('000001') < 0, isTrue);
       expect(plan.updatedPositions, isEmpty);
     });
+
+    test('does not reuse an existing top fractional position', () {
+      final items = [
+        _item(id: 'a', completed: false, position: '0'),
+        _item(id: 'b', completed: false, position: '0V'),
+        _item(id: 'c', completed: false, position: '0V'),
+      ];
+
+      final plan = buildNewTodoItemInsertPlan(items);
+
+      expect(plan.position, isNot('0V'));
+      expect(plan.position.compareTo('0') > 0, isTrue);
+      expect(plan.position.compareTo('0V') < 0, isTrue);
+    });
   });
 
   group('buildTodoReorderPlan', () {

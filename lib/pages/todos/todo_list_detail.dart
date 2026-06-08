@@ -162,22 +162,12 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     final session = await _session(context);
     final insertPlan = buildNewTodoItemInsertPlan(existingItems);
     if (insertPlan.updatedPositions.isNotEmpty) {
-      for (final item in existingItems) {
-        final updatedPosition = insertPlan.updatedPositions[item.id];
-        if (updatedPosition != null) {
-          await _todoService.updateTodoItem(
-            apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
-            jwt: session.jwt,
-            listId: widget.listId,
-            itemId: item.id,
-            title: item.title,
-            description: item.description,
-            completed: item.completed,
-            position: updatedPosition,
-            dueDate: item.dueDate,
-          );
-        }
-      }
+	  await _todoService.repositionTodoItems(
+		apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+		jwt: session.jwt,
+		listId: widget.listId,
+		positions: insertPlan.updatedPositions,
+	  );
     }
     final createdItem = await _todoService.createTodoItem(
       apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
@@ -290,21 +280,12 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     _setData(previousData.copyWith(items: optimisticItems));
     final session = await _session(context);
     try {
-      for (final item in reorderPlan.items) {
-        final updatedPosition = reorderPlan.updatedPositions[item.id];
-        if (updatedPosition == null) continue;
-        await _todoService.updateTodoItem(
-          apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
-          jwt: session.jwt,
-          listId: widget.listId,
-          itemId: item.id,
-          title: item.title,
-          description: item.description,
-          completed: item.completed,
-          position: updatedPosition,
-          dueDate: item.dueDate,
-        );
-      }
+	  await _todoService.repositionTodoItems(
+		apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+		jwt: session.jwt,
+		listId: widget.listId,
+		positions: reorderPlan.updatedPositions,
+	  );
       refresh();
     } catch (error) {
       _setData(previousData);
