@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/services/build_info_service.dart';
 import 'package:fluffychat/utils/file_selector.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_modal_action_popup.dart';
@@ -19,6 +20,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
+import 'package:universal_html/html.dart' as html;
 
 import '../../widgets/matrix.dart';
 import 'settings_view.dart';
@@ -31,6 +33,7 @@ class Settings extends StatefulWidget {
 }
 
 class SettingsController extends State<Settings> {
+  final BuildInfoService _buildInfoService = BuildInfoService();
   Future<Profile>? profileFuture;
   bool profileUpdated = false;
 
@@ -87,6 +90,37 @@ class SettingsController extends State<Settings> {
     );
     if (!mounted) return;
     context.go('/');
+  }
+
+  Future<void> showBuildInfoAction() async {
+    final frontend = await _buildInfoService.frontendInfo();
+    BackendBuildInfo? backend;
+    Object? backendError;
+    try {
+      backend = await _buildInfoService.backendInfo();
+    } catch (error) {
+      backendError = error;
+    }
+    if (!mounted) return;
+    await showOkAlertDialog(
+      context: context,
+      title: 'Build info',
+      message: [
+        'Frontend version: ${frontend.version}',
+        if (backend != null) ...[
+          'Backend version: ${backend.version}',
+          'Backend commit: ${backend.commit}',
+          'Backend build date: ${backend.buildDate}',
+        ] else
+          'Backend info error: $backendError',
+      ].join('\n'),
+      okLabel: L10n.of(context).close,
+    );
+  }
+
+  void reloadWebAppAction() {
+    if (!PlatformInfos.isWeb) return;
+    html.window.location.reload();
   }
 
   Future<void> setAvatarAction() async {
