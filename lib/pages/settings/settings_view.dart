@@ -223,6 +223,17 @@ class SettingsView extends StatelessWidget {
               title: Text(L10n.of(context).about),
               onTap: () => PlatformInfos.showDialog(context),
             ),
+            ListTile(
+              leading: const Icon(Icons.developer_mode_outlined),
+              title: const Text('Build info'),
+              onTap: controller.showBuildInfoAction,
+            ),
+            if (PlatformInfos.isWeb)
+              ListTile(
+                leading: const Icon(Icons.refresh_outlined),
+                title: const Text('Reload app'),
+                onTap: controller.reloadWebAppAction,
+              ),
             Divider(color: theme.dividerColor),
             ListTile(
               leading: const Icon(Icons.logout_outlined),

@@ -63,6 +63,9 @@ class _WorkspaceHostState extends State<_WorkspaceHost>
   String get backendApiBaseUrl => 'https://example.test/api/v1';
 
   @override
+  bool get enableMessieRealtime => false;
+
+  @override
   void initState() {
     super.initState();
     initWorkspace();

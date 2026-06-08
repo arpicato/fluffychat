@@ -3,6 +3,7 @@ import 'package:matrix/matrix.dart';
 
 import '../../services/backend_session_service.dart';
 import '../../services/messie_calendar_service.dart';
+import '../../services/messie_realtime_service.dart';
 import '../../services/messie_todo_service.dart';
 import '../../services/messie_workspace_refresh.dart';
 import '../../widgets/matrix.dart';
@@ -30,6 +31,9 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
 
   @protected
   String get backendApiBaseUrl => BackendSessionService.defaultApiBaseUrl;
+
+  @protected
+  bool get enableMessieRealtime => true;
 
   List<MessieTodoList> todoLists = const [];
   bool isLoadingTodoLists = false;
@@ -146,19 +150,39 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
   }
 
   Future<void> refreshWorkspaceData() async {
-    await Future.wait([
-      refreshTodoLists(),
-      refreshCalendarEvents(),
-    ]);
+    final signal = MessieWorkspaceRefresh.instance.signal;
+    switch (signal.kind) {
+      case MessieWorkspaceRefreshKind.full:
+        await Future.wait([refreshTodoLists(), refreshCalendarEvents()]);
+        break;
+      case MessieWorkspaceRefreshKind.todoLists:
+        await refreshTodoLists();
+        break;
+      case MessieWorkspaceRefreshKind.todoItems:
+        await refreshTodoLists();
+        break;
+      case MessieWorkspaceRefreshKind.calendar:
+        await refreshCalendarEvents();
+        break;
+    }
   }
 
   void initWorkspace() {
     MessieWorkspaceRefresh.instance.addListener(refreshWorkspaceData);
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => refreshWorkspaceData());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await refreshWorkspaceData();
+      if (!mounted || !enableMessieRealtime) return;
+      final matrix = Matrix.of(context);
+      await MessieRealtimeService.instance.start(
+        client: matrix.client,
+        store: matrix.store,
+        apiBaseUrl: backendApiBaseUrl,
+      );
+    });
   }
 
   void disposeWorkspace() {
     MessieWorkspaceRefresh.instance.removeListener(refreshWorkspaceData);
+    MessieRealtimeService.instance.stop();
   }
 }
