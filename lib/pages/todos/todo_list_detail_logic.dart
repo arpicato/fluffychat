@@ -160,6 +160,30 @@ TodoInsertPlan buildNewTodoItemInsertPlan(List<MessieTodoItem> items) {
         updatedPositions: const {},
       );
     }
+
+	  // We have no room left below the current first numeric key. Only renumber
+	  // when the top boundary is already exhausted by duplicated or non-increasing
+	  // sibling keys (for example 0 / 0V / 0V). Otherwise we can still prepend
+	  // safely with a fractional key before the current first position.
+	  final nextPosition = activeItems.length > 1 ? activeItems[1].position : null;
+	  final generatedTopPosition = generateTodoItemPosition(null, firstPosition);
+	  final needsRenumber =
+		  nextPosition != null && generatedTopPosition.compareTo(nextPosition) >= 0;
+	  if (needsRenumber) {
+		final updatedPositions = <String, String>{};
+		for (var i = 0; i < activeItems.length; i++) {
+		  final item = activeItems[i];
+		  final position = canonicalTodoItemPosition(i + 1);
+		  if (item.position != position) {
+			updatedPositions[item.id] = position;
+		  }
+		}
+		return TodoInsertPlan(
+		  position: canonicalTodoItemPosition(0),
+		  updatedPositions: updatedPositions,
+		);
+	  }
+
     return TodoInsertPlan(
       position: generateTodoItemPosition(null, firstPosition),
       updatedPositions: const {},

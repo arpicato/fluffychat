@@ -614,6 +614,50 @@ class MessieTodoService {
     jwt: jwt,
   );
 
+  Future<void> repositionTodoItems({
+    required String apiBaseUrl,
+    required String jwt,
+    required String listId,
+    required Map<String, String> positions,
+  }) async {
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: _normalizeMessieApiBaseUrl(apiBaseUrl),
+        headers: {'Authorization': 'Bearer $jwt'},
+      ),
+    );
+    final stopwatch = Stopwatch()..start();
+    Logs().d('[messie/todo] start Failed to reposition todo items base=$apiBaseUrl');
+    try {
+      await dio.put(
+        '/todolists/$listId/items/reposition',
+        data: {
+          'updates': [
+            for (final entry in positions.entries)
+              {'item_id': entry.key, 'position': entry.value},
+          ],
+        },
+      );
+      Logs().d(
+        '[messie/todo] ok Failed to reposition todo items elapsed=${stopwatch.elapsedMilliseconds}ms',
+      );
+    } on DioException catch (error) {
+      Logs().w(
+        '[messie/todo] dio Failed to reposition todo items elapsed=${stopwatch.elapsedMilliseconds}ms type=${error.type.name}',
+        error,
+      );
+      throw _requestException('Failed to reposition todo items', error);
+    } catch (error) {
+      Logs().w(
+        '[messie/todo] fail Failed to reposition todo items elapsed=${stopwatch.elapsedMilliseconds}ms',
+        error,
+      );
+      throw _genericException('Failed to reposition todo items', error);
+    } finally {
+      dio.close();
+    }
+  }
+
   Future<List<MessieTodoCollaborator>> getCollaborators({
     required String apiBaseUrl,
     required String jwt,

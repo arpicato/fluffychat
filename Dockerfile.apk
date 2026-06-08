@@ -1,4 +1,5 @@
 # Build FluffyChat APK (arm64 only for fast builds)
+# syntax=docker/dockerfile:1.7
 FROM ghcr.io/cirruslabs/flutter:3.41.6
 
 # Install Rust toolchain for native crypto (Vodozemac) — arm64 only
@@ -7,6 +8,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && rustup target add aarch64-linux-android
 
 ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PUB_CACHE=/root/.pub-cache
 
 # Install Android SDK dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -20,7 +22,8 @@ WORKDIR /app
 # Copy dependency files first for caching
 COPY pubspec.yaml pubspec.lock ./
 COPY packages/ packages/
-RUN flutter pub get
+RUN --mount=type=cache,target=/root/.pub-cache \
+    flutter pub get
 
 # Copy source
 COPY . .
@@ -39,7 +42,11 @@ RUN keytool -genkeypair -v -keystore android/app/dummy.keystore \
     -dname "CN=Dummy, OU=Dummy, O=Dummy, L=Dummy, ST=Dummy, C=US"
 
 # Build APK — arm64 only (--target-platform)
-RUN flutter build apk --release --target-platform android-arm64 -v 2>&1 | tee /tmp/build.log; \
+RUN --mount=type=cache,target=/root/.pub-cache \
+    --mount=type=cache,target=/root/.gradle \
+    --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    flutter build apk --release --target-platform android-arm64 -v 2>&1 | tee /tmp/build.log; \
     if [ ! -f /app/build/app/outputs/flutter-apk/app-release.apk ]; then \
       cat /tmp/build.log; exit 1; \
     fi
