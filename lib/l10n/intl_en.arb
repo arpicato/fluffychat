@@ -1715,11 +1715,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "presencesToggle": "Show status messages from other users",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
     "skip": "Skip",
     "@skip": {
         "type": "String",
@@ -2190,7 +2185,6 @@
     "newGroup": "New group",
     "newSpace": "New space",
     "allSpaces": "All spaces",
-    "hidePresences": "Hide Status List?",
     "doNotShowAgain": "Do not show again",
     "wasDirectChatDisplayName": "Empty chat (was {oldDisplayName})",
     "@wasDirectChatDisplayName": {
@@ -2608,6 +2602,8 @@
     "displayNavigationRail": "Show navigation rail on mobile",
     "customReaction": "Custom reaction",
     "moreEvents": "More events",
+    "showMore": "Show more",
+    "showLess": "Show less",
     "declineInvitation": "Decline invitation",
     "noMessagesYet": "No messages yet",
     "longPressToRecordVoiceMessage": "Long press to record voice message.",
@@ -2723,7 +2719,6 @@
     "createNewAccount": "Create new account",
     "signUpGreeting": "FluffyChat is decentralized! Select a server where you want to create your account and let's go!",
     "signInGreeting": "You already have an account in Matrix? Welcome back! Select your homeserver and sign in.",
-    "appIntro": "With FluffyChat you can chat with your friends. It's a secure decentralized [matrix] messenger! Learn more on https://matrix.org if you like or just sign up.",
     "theProcessWasCanceled": "The process was canceled.",
     "join": "Join",
     "searchOrEnterHomeserverAddress": "Search or enter homeserver address",
@@ -2746,14 +2741,6 @@
     "support": "Support",
     "setLowPriority": "Set low priority",
     "unsetLowPriority": "Unset low priority",
-    "removeCallFromChat": "Remove call from chat",
-    "removeCallFromChatDescription": "Do you want to remove the call from the chat for all members?",
-    "removeCallForEveryone": "Remove call for everyone",
-    "startVoiceCall": "Start voice call",
-    "startVideoCall": "Start video call",
-    "joinVoiceCall": "Join voice call",
-    "joinVideoCall": "Join video call",
-    "live": "Live",
     "playSoundOnNotification": "Play sound on notification",
     "addTag": "Add tag",
     "removeTag": "Remove tag",
@@ -2761,5 +2748,41 @@
     "createNewTag": "Create new tag",
     "hideRoomsInSpaces": "Hide rooms that are in a space",
     "possibleByYou": "This release was only possible thanks to your support. FluffyChat remains free, open-source, and entirely community-driven.",
-    "showThumbnailsInTimeline": "Show thumbnails of images and videos"
+    "showThumbnailsInTimeline": "Show thumbnails of images and videos",
+    "appSubtitle": "Secure [matrix] Communication",
+    "appDescription": "Communicate encrypted over the decentralized [matrix] network in an easy and accessible way for everyone.",
+    "interactiveVerification": "Interactive verification",
+    "interactiveVerificationDescription": "If you are next to each other or communicate via a secure channel then you can verify all devices at once by comparing a security number or emojis.",
+    "countUnverifiedDevices": "{count} unverified devices in the chat.",
+    "@countUnverifiedDevices": {
+        "type": "int",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "check": "Check",
+    "encryptedMessage": "Encrypted message",
+    "unencryptedMessage": "Unencrypted message",
+    "allow": "Allow",
+    "allowEncryptedCommunicationWith": "Allow encrypted communication with {name}?",
+    "@allowEncryptedCommunicationWith": {
+        "type": "String",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "publicKey": "Public key: {key}",
+    "@publicKey": {
+        "type": "String",
+        "placeholders": {
+            "key": {
+                "type": "String"
+            }
+        }
+    },
+    "deviceIdentityKey": "Device identity key"
 }

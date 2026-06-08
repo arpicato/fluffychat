@@ -1960,11 +1960,6 @@
             }
         }
     },
-    "presencesToggle": "Vis statusmeldinger fra andre brukere",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
     "voiceCall": "Taleanrop",
     "accessAndVisibilityDescription": "Hvem som har lov til å bli med i denne chatten og hvordan chatten kan oppdages.",
     "calls": "Anrop",
@@ -2142,7 +2137,6 @@
             }
         }
     },
-    "hidePresences": "Skjul statuslisten?",
     "noMessagesYet": "Ingen meldinger enda",
     "notificationRuleMasterDescription": "Overstyrer alle andre regler og deaktiverer alle varsler.",
     "notificationRuleSuppressNotices": "Undertrykk automatiserte meldinger",
@@ -2736,7 +2730,6 @@
     "createNewAccount": "Opprett ny konto",
     "signUpGreeting": "FluffyChat er desentralisert! Velg en server der du vil opprette kontoen din, så kjører vi på!",
     "signInGreeting": "Har du allerede en Matrix-konto? Velkommen tilbake! Velg hjemmeserveren din og logg inn.",
-    "appIntro": "Med FluffyChat kan du chatte med vennene dine. Det er en sikker, desentralisert [matrix]-meldingsapp! Les mer på https://matrix.org hvis du vil, eller bare registrer deg.",
     "theProcessWasCanceled": "Prosessen ble avbrutt.",
     "join": "Bli med",
     "searchOrEnterHomeserverAddress": "Søk eller angi adresse til hjemmeserver",
@@ -2759,14 +2752,6 @@
     "support": "Støtte",
     "setLowPriority": "Sett lav prioritet",
     "unsetLowPriority": "Fjern lav prioritet",
-    "removeCallFromChat": "Fjern anrop fra chat",
-    "removeCallFromChatDescription": "Vil du fjerne anropet fra chatten for alle medlemmer?",
-    "removeCallForEveryone": "Fjern anrop fra alle",
-    "startVoiceCall": "Start lydsamtale",
-    "startVideoCall": "Start videosamtale",
-    "joinVoiceCall": "Bli med i lydsamtale",
-    "joinVideoCall": "Bli med i videosamtale",
-    "live": "Direkte",
     "playSoundOnNotification": "Spill av lyd ved varsling",
     "addTag": "Legg til emneknagg",
     "removeTag": "Fjern emneknagg",

@@ -16,7 +16,7 @@ enum AppSettings<T> {
   textMessageMaxLength<int>('textMessageMaxLength', 16384),
 
   /// Max lines for unselected HTML/text bubbles; 0 = unlimited (no fade).
-  messagePreviewMaxLines<int>('chat.fluffy.message_preview_max_lines', 128),
+  messagePreviewMaxLines<int>('chat.fluffy.message_preview_max_lines', 25),
   audioRecordingNumChannels<int>('audioRecordingNumChannels', 1),
   audioRecordingAutoGain<bool>('audioRecordingAutoGain', true),
   audioRecordingEchoCancel<bool>('audioRecordingEchoCancel', false),
@@ -43,11 +43,8 @@ enum AppSettings<T> {
   sendPublicReadReceipts<bool>('chat.fluffy.send_public_read_receipts', true),
   swipeRightToLeftToReply<bool>('chat.fluffy.swipeRightToLeftToReply', true),
   sendOnEnter<bool>('chat.fluffy.send_on_enter', false),
-  showPresences<bool>('chat.fluffy.show_presences', true),
   displayNavigationRail<bool>('chat.fluffy.display_navigation_rail', false),
   experimentalVoip<bool>('chat.fluffy.experimental_voip', false),
-  jitsiFeature<bool>('chat.fluffy.enable_jitsi', false),
-  jitsiDomain<String>('chat.fluffy.jitsi_domain', 'meet.jit.si'),
   shareKeysWith<String>('chat.fluffy.share_keys_with_2', 'all'),
   noEncryptionWarningShown<bool>(
     'chat.fluffy.no_encryption_warning_shown',
@@ -78,7 +75,8 @@ enum AppSettings<T> {
   webNotificationSound<bool>('chat.fluffy.web_notification_sound', true),
   chatFilter<String>('chat.fluffy.chat_filter', 'allChats'),
   hideRoomsInSpaces<bool>('chat.fluffy.hideRoomsInSpaces', false),
-  showThumbnailsInTimeline<bool>('chat.fluffy.showThumbnailsInTimeline', true);
+  showThumbnailsInTimeline<bool>('chat.fluffy.showThumbnailsInTimeline', true),
+  debugPush<bool>('chat.fluffy.debug_push', false);
 
   final String key;
   final T defaultValue;

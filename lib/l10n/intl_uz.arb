@@ -1706,11 +1706,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "presencesToggle": "Boshqa foydalanuvchilarning holat xabarlarini ko‘rsatish",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
     "skip": "Tashlab ketish",
     "@skip": {
         "type": "String",
@@ -2081,7 +2076,6 @@
     "newGroup": "Yangi guruh",
     "newSpace": "Yangi maydon",
     "allSpaces": "Barcha maydonlar",
-    "hidePresences": "Holat roʻyxati yashirilsinmi?",
     "doNotShowAgain": "Qaytib koʻrsatilmasin",
     "wasDirectChatDisplayName": "Boʻsh suhbat ({oldDisplayName} edi)",
     "@wasDirectChatDisplayName": {
@@ -2711,5 +2705,36 @@
     },
     "logs": "Jurnallar",
     "advancedConfigs": "Kengaytirilgan konfiguratsiyalar",
-    "advancedConfigurations": "Kengaytirilgan sozlamalar"
+    "advancedConfigurations": "Kengaytirilgan sozlamalar",
+    "signIn": "",
+    "reset": "",
+    "createNewTag": "",
+    "join": "",
+    "signUpGreeting": "",
+    "createNewChat": "",
+    "makeModerator": "",
+    "tagName": "",
+    "setPowerLevelDescription": "",
+    "matrixId": "",
+    "support": "",
+    "createNewAccount": "",
+    "setPowerLevel": "",
+    "mute": "",
+    "@mute": {
+        "description": "This should be a very short string because there is not much space in the button!"
+    },
+    "removeModeratorRights": "",
+    "addTag": "",
+    "removeAdminRights": "",
+    "owner": "",
+    "powerLevel": "",
+    "playSoundOnNotification": "",
+    "makeAdmin": "",
+    "searchOrEnterHomeserverAddress": "",
+    "unsetLowPriority": "",
+    "setLowPriority": "",
+    "theProcessWasCanceled": "",
+    "signInGreeting": "",
+    "removeTag": "",
+    "supportFluffyChat": ""
 }

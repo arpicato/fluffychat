@@ -2202,11 +2202,6 @@
         }
     },
     "setChatDescription": "تنظیم توضیحات چت",
-    "presencesToggle": "نمایش پیام‌های وضعیت از دیگر کاربران",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
     "synchronizingPleaseWaitCounter": " در حال همگام‌سازی... ({percentage}%)",
     "@synchronizingPleaseWaitCounter": {
         "type": "String",
@@ -2235,7 +2230,6 @@
     "usersMustKnock": "کاربران باید در بزنند",
     "noOneCanJoin": "هیچ‌کس نمیتواند بپیوندد",
     "knock": "در زدن",
-    "hidePresences": "پنهان کردن فهرست وضعیت؟",
     "setColorTheme": "تنظیم پوسته رنگی:",
     "invite": "دعوت",
     "inviteGroupChat": "📨 دعوت به چت گروهی",
@@ -2719,7 +2713,6 @@
     "createNewAccount": "ساخت حساب جدید",
     "signUpGreeting": "فلافی چت غیرمتمرکز است! یک سرور که میخواهید در آن حسابتان را بسازید را انتخاب کنید و شروع کنید!",
     "signInGreeting": "از قبل در ماتریکس حساب کاربری دارید؟ خوش برگشتید! سرور خانه خود را انتخاب و لاگین کنید.",
-    "appIntro": "فلافی چت یک پیامرسان امن غیرمتمرکز ماتریکس است که با آن میتوانید با دوستانتان چت کنید! برای اطلاعات بیشتر میتوانید به https://matrix.org مراجعه کنید یا اینکه صرفا ثبت نام کنید.",
     "theProcessWasCanceled": "فرآیند لغو شد.",
     "join": "عضویت",
     "searchOrEnterHomeserverAddress": "جستجو یا وارد کردن آدرس سرور خانه",
@@ -2750,5 +2743,10 @@
                 "type": "int"
             }
         }
-    }
+    },
+    "createNewTag": "",
+    "tagName": "",
+    "addTag": "",
+    "playSoundOnNotification": "",
+    "removeTag": ""
 }

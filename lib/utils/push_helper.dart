@@ -18,6 +18,7 @@ import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_new_badger/flutter_new_badger.dart';
 import 'package:flutter_shortcuts_new/flutter_shortcuts_new.dart';
 import 'package:matrix/matrix.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -123,11 +124,11 @@ Future<void> _tryPushHelper(
   final awaitingOneShotSync = client.oneShotSync();
   l10n ??= await L10n.delegate.load(PlatformDispatcher.instance.locale);
 
+  updateAppBadge(notification.counts?.unread ?? 0);
+
   if (event == null) {
     Logs().v('Notification is a clearing indicator.');
-    if (clients?.length == 1 &&
-        (notification.counts?.unread == null ||
-            notification.counts?.unread == 0)) {
+    if (clients?.length == 1 && (notification.counts?.unread == 0)) {
       await flutterLocalNotificationsPlugin.cancelAll();
     } else {
       // Make sure client is fully loaded and synced before dismiss notifications:
@@ -141,15 +142,17 @@ Future<void> _tryPushHelper(
       var needsUpdateForSummaryNotification = false;
       for (final activeNotification in activeNotifications) {
         final room = client.rooms.singleWhereOrNull(
-          (room) => room.id.hashCode == activeNotification.id,
+          (room) =>
+              '${client.clientName}_${room.id}'.hashCode ==
+              activeNotification.id,
         );
-        if (room == null || !room.isUnreadOrInvited) {
+        if (room != null && !room.isUnreadOrInvited) {
           flutterLocalNotificationsPlugin.cancel(id: activeNotification.id!);
           if (PlatformInfos.isAndroid) needsUpdateForSummaryNotification = true;
         }
       }
       if (needsUpdateForSummaryNotification) {
-        await _updateSummaryNotification(
+        await updateSummaryNotification(
           clientName: client.clientName,
           l10n: l10n,
           flutterLocalNotificationsPlugin: flutterLocalNotificationsPlugin,
@@ -159,6 +162,11 @@ Future<void> _tryPushHelper(
     return;
   }
   Logs().v('Push helper got notification event of type ${event.type}.');
+
+  if (!client.pushruleEvaluator.match(event).notify) {
+    Logs().i('Push helper: filtered by client-side push rules.');
+    return;
+  }
 
   if (event.type.startsWith('m.call')) {
     // make sure bg sync is on (needed to update hold, unhold events)
@@ -333,10 +341,12 @@ Future<void> _tryPushHelper(
     await _setShortcut(event, l10n, title, roomAvatarFile);
   }
 
+  final needsTitleAndBody = !PlatformInfos.isAndroid;
+
   await flutterLocalNotificationsPlugin.show(
     id: id,
-    title: title,
-    body: body,
+    title: needsTitleAndBody ? title : null,
+    body: needsTitleAndBody ? body : null,
     notificationDetails: platformChannelSpecifics,
     payload: FluffyChatPushPayload(
       client.clientName,
@@ -347,7 +357,7 @@ Future<void> _tryPushHelper(
 
   // Send summary notification on Android
   if (PlatformInfos.isAndroid) {
-    await _updateSummaryNotification(
+    await updateSummaryNotification(
       clientName: client.clientName,
       l10n: l10n,
       flutterLocalNotificationsPlugin: flutterLocalNotificationsPlugin,
@@ -356,7 +366,18 @@ Future<void> _tryPushHelper(
   Logs().v('Push helper has been completed!');
 }
 
-Future<void> _updateSummaryNotification({
+void updateAppBadge(int unreadCount) {
+  if (PlatformInfos.isAndroid || PlatformInfos.isMacOS || PlatformInfos.isIOS) {
+    if (unreadCount == 0) {
+      FlutterNewBadger.removeBadge();
+    } else {
+      FlutterNewBadger.setBadge(unreadCount);
+    }
+    return;
+  }
+}
+
+Future<void> updateSummaryNotification({
   required FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin,
   required String clientName,
   required L10n l10n,
@@ -371,10 +392,12 @@ Future<void> _updateSummaryNotification({
     return;
   }
 
-  final title = l10n.unreadChatsInApp(
-    AppSettings.applicationName.value,
-    activeNotifications.length.toString(),
-  );
+  if (activeNotifications.any(
+    (notification) => notification.id == clientName.hashCode,
+  )) {
+    // Already have a visible summary notification!
+    return;
+  }
 
   await flutterLocalNotificationsPlugin.show(
     id: clientName.hashCode,
@@ -386,8 +409,6 @@ Future<void> _updateSummaryNotification({
         setAsGroupSummary: true,
         styleInformation: InboxStyleInformation(
           activeNotifications.map((n) => n.body ?? '').toList(),
-          contentTitle: title,
-          summaryText: title,
         ),
         autoCancel: false,
       ),

@@ -2286,12 +2286,6 @@
         }
     },
     "incomingMessages": "Входящие сообщения",
-    "presencesToggle": "Показывать сообщения в статусах других пользователей",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "hidePresences": "Скрыть список статусов?",
     "stickers": "Стикеры",
     "discover": "Исследовать",
     "globalChatId": "ID глобального чата",
@@ -2673,7 +2667,6 @@
     "advancedConfigurations": "Расширенные конфигурации",
     "signUpGreeting": "FluffyChat децентрализорован! Выберите сервер, где вы хотите сделать свой аккаунт и заходите!",
     "signInGreeting": "У вас есть уже аккаунт в Matrix? Добро пожаловать! Выберите свой сервер и войдите.",
-    "appIntro": "С FluffyChat'ом вы можете говорить со своими друзьями. Это защищённый децентрализорованный [matrix] мессенджер! Узнайте больше на https://matrix.org, если вам нравится или просто зарегистрироваться.",
     "join": "Присоединиться",
     "countFiles": "{count} файлов",
     "@countFiles": {
@@ -2752,14 +2745,6 @@
     "support": "Поддержка",
     "setLowPriority": "Установить низкий приоритет",
     "unsetLowPriority": "Неопределенный приоритет",
-    "removeCallFromChat": "Удалить сообщение из чата",
-    "removeCallFromChatDescription": "Вы хотите удалить это сообщение из чата для всех участников?",
-    "removeCallForEveryone": "Отменить вызов для всех",
-    "startVoiceCall": "Начать голосовой вызов",
-    "startVideoCall": "Начать видеозвонок",
-    "joinVoiceCall": "Присоединиться к голосовому звонку",
-    "joinVideoCall": "Присоединиться к видеозвонку",
-    "live": "Прямой эфир",
     "playSoundOnNotification": "Воспроизвести звук при получении уведомления",
     "addTag": "Добавить тег",
     "removeTag": "Удалить тег",

@@ -14,7 +14,6 @@ import 'package:fluffychat/pages/chat_list/chat_list_todo_item.dart';
 import 'package:fluffychat/pages/chat_list/dummy_chat_list_item.dart';
 import 'package:fluffychat/pages/chat_list/search_title.dart';
 import 'package:fluffychat/pages/chat_list/space_view.dart';
-import 'package:fluffychat/pages/chat_list/status_msg_list.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/utils/stream_extension.dart';
@@ -220,14 +219,6 @@ class ChatListViewBody extends StatelessWidget {
                             ),
                     ),
                   ],
-                  if (!controller.isSearchMode &&
-                      AppSettings.showPresences.value)
-                    GestureDetector(
-                      onLongPress: controller.dismissStatusList,
-                      child: StatusMessageList(
-                        onStatusEdit: controller.setStatus,
-                      ),
-                    ),
                   if (client.rooms.isNotEmpty && !controller.isSearchMode)
                     SizedBox(
                       height: 64,

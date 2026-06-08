@@ -1970,7 +1970,6 @@
     "sendReadReceipts": "Seol admhálacha léite",
     "formattedMessagesDescription": "Taispeáin ábhar saibhir teachtaireachta cosúil le téacs trom ag baint úsáide as marcáil síos.",
     "verifyOtherUser": "🔐 Fíoraigh úsáideoir eile",
-    "hidePresences": "Folaigh Liosta Stádais?",
     "jump": "Léim",
     "reportErrorDescription": "😭 Ó, a mhac go deo. Chuaigh rud éigin mícheart. Más mian leat, is féidir leat an fabht seo a thuairisciú do na forbróirí.",
     "invalidInput": "Ionchur neamhbhailí!",
@@ -2307,11 +2306,6 @@
     },
     "recoveryKey": "Eochair athshlánaithe",
     "setChatDescription": "Socraigh cur síos ar an gcomhrá",
-    "presencesToggle": "Taispeáin teachtaireachtaí stádais ó úsáideoirí eile",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
     "time": "Am",
     "removeFromSpace": "Bain as spás",
     "placeCall": "Cuir glaoch",
@@ -2735,7 +2729,6 @@
     "createNewAccount": "Cruthaigh cuntas nua",
     "signUpGreeting": "Tá FluffyChat díláraithe! Roghnaigh freastalaí inar mian leat do chuntas a chruthú agus déanaimis é!",
     "signInGreeting": "An bhfuil cuntas agat i Matrix cheana féin? Fáilte ar ais! Roghnaigh do fhreastalaí baile agus sínigh isteach.",
-    "appIntro": "Le FluffyChat is féidir leat comhrá a dhéanamh le do chairde. Is teachtaire [maitrís] díláraithe slán é! Foghlaim tuilleadh ar https://matrix.org más maith leat nó cláraigh.",
     "theProcessWasCanceled": "Cuireadh an próiseas ar ceal.",
     "join": "Téigh i",
     "searchOrEnterHomeserverAddress": "Cuardaigh nó cuir isteach seoladh an fhreastalaí baile",
@@ -2758,17 +2751,55 @@
     "support": "Tacaíocht",
     "setLowPriority": "Socraigh tosaíocht íseal",
     "unsetLowPriority": "Díshuiteáil tosaíocht íseal",
-    "removeCallFromChat": "Bain glao den chomhrá",
-    "removeCallFromChatDescription": "Ar mhaith leat an glao a bhaint den chomhrá do gach ball?",
-    "removeCallForEveryone": "Bain glao do gach duine",
-    "startVoiceCall": "Tosaigh glao gutha",
-    "startVideoCall": "Tosaigh glao físe",
-    "joinVoiceCall": "Glac páirt i nglao gutha",
-    "joinVideoCall": "Glac páirt i nglao físe",
-    "live": "Beo",
     "playSoundOnNotification": "Seinn fuaim ar fhógra",
     "addTag": "Cuir clib leis",
     "removeTag": "Bain an chlib",
     "tagName": "Ainm an chlib",
-    "createNewTag": "Cruthaigh clib nua"
+    "createNewTag": "Cruthaigh clib nua",
+    "discardEdits": "Tá athruithe neamhshábháilte agat. Ar mhaith leat do chuid eagarthóireachtaí a chaitheamh amach?",
+    "@discardEdits": {
+        "type": "String",
+        "placeholders": {}
+    },
+    "showMore": "Taispeáin níos mó",
+    "showLess": "Taispeáin níos lú",
+    "hideRoomsInSpaces": "Folaigh seomraí atá i spás",
+    "possibleByYou": "Níorbh fhéidir an scaoileadh seo a dhéanamh ach amháin a bhuíochas le do thacaíocht. Tá FluffyChat fós saor in aisce, foinse oscailte, agus dírithe go hiomlán ar an bpobal.",
+    "showThumbnailsInTimeline": "Taispeáin mionsamhlacha d'íomhánna agus físeáin",
+    "appSubtitle": "Cumarsáid [maitrís] Shlán",
+    "appDescription": "Cumarsáid chriptithe thar an líonra díláraithe [maitrís] ar bhealach éasca agus inrochtana do gach duine.",
+    "interactiveVerification": "Fíorú idirghníomhach",
+    "interactiveVerificationDescription": "Má tá sibh in aice le chéile nó má bhíonn sibh ag cumarsáid trí chainéal slán, is féidir libh gach gléas a fhíorú ag an am céanna trí uimhir slándála nó emoji a chur i gcomparáid.",
+    "countUnverifiedDevices": "{count} gléasanna neamhfhíoraithe sa chomhrá.",
+    "@countUnverifiedDevices": {
+        "type": "int",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "check": "Seiceáil",
+    "encryptedMessage": "Teachtaireacht chriptithe",
+    "unencryptedMessage": "Teachtaireacht neamhchriptithe",
+    "allow": "Ceadaigh",
+    "allowEncryptedCommunicationWith": "Cumarsáid chriptithe le {name} a cheadú?",
+    "@allowEncryptedCommunicationWith": {
+        "type": "String",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "publicKey": "Eochair phoiblí: {key}",
+    "@publicKey": {
+        "type": "String",
+        "placeholders": {
+            "key": {
+                "type": "String"
+            }
+        }
+    },
+    "deviceIdentityKey": "Eochair aitheantais gléis"
 }

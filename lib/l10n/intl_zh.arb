@@ -2302,12 +2302,6 @@
         }
     },
     "transparent": "透明",
-    "presencesToggle": "显示其他用户的状态消息",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "hidePresences": "隐藏状态列表？",
     "incomingMessages": "传入消息",
     "stickers": "贴纸",
     "discover": "发现",
@@ -2729,7 +2723,6 @@
     "createNewAccount": "创建新账户",
     "signUpGreeting": "FluffyChat 是去中心化的！选择您希望创建账户的服务器！",
     "signInGreeting": "已经有 Matrix 账户了？欢迎回来！选择 homeserver 登录。",
-    "appIntro": "借助 FluffyChat，您可以和好友聊天。它是安全的去中心化 [matrix] 消息收发应用！如果愿意，可以在 https://matrix.org 了解更多信息，也可直接注册账户。",
     "theProcessWasCanceled": "过程被取消。",
     "join": "加入",
     "searchOrEnterHomeserverAddress": "搜索或输入 homeserver 地址",
@@ -2752,17 +2745,55 @@
     "support": "支持",
     "setLowPriority": "设置低优先级",
     "unsetLowPriority": "取消设置低优先级",
-    "removeCallFromChat": "从聊天中删除通话",
-    "removeCallFromChatDescription": "要为所有成员从聊天中删除通话吗？",
-    "removeCallForEveryone": "为所有人删除通话",
-    "startVoiceCall": "开始语音通话",
-    "startVideoCall": "开始视频通话",
-    "joinVoiceCall": "加入语音通话",
-    "joinVideoCall": "加入视频通话",
-    "live": "实时",
     "playSoundOnNotification": "播放通知声音",
     "addTag": "添加标签",
     "removeTag": "删除标签",
     "tagName": "标签名",
-    "createNewTag": "创建新标签"
+    "createNewTag": "创建新标签",
+    "discardEdits": "有未保存的更改。放弃编辑吗？",
+    "@discardEdits": {
+        "type": "String",
+        "placeholders": {}
+    },
+    "hideRoomsInSpaces": "隐藏位于空间中的聊天室",
+    "possibleByYou": "没有您的支持不会有这个版本。FluffyChat 依旧免费、开源、完全由社区驱动。",
+    "showThumbnailsInTimeline": "显示图片和视频的缩略图",
+    "appSubtitle": "安全的 [matrix] 通信",
+    "appDescription": "以对所有人简单易得的方式通过去中心化 [matrix] 网络加密通信。",
+    "interactiveVerification": "互动式验证",
+    "interactiveVerificationDescription": "如果你和联系人就在一起或通过安全渠道通信，你们可以通过比较安全号码或绘文字同时验证所有设备。",
+    "countUnverifiedDevices": "该聊天中有 {count} 台未验证设备。",
+    "@countUnverifiedDevices": {
+        "type": "int",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "check": "检查",
+    "encryptedMessage": "加密的消息",
+    "unencryptedMessage": "未加密的消息",
+    "allow": "允许",
+    "allowEncryptedCommunicationWith": "允许和 {name} 的加密通信？",
+    "@allowEncryptedCommunicationWith": {
+        "type": "String",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "publicKey": "公钥：{key}",
+    "@publicKey": {
+        "type": "String",
+        "placeholders": {
+            "key": {
+                "type": "String"
+            }
+        }
+    },
+    "deviceIdentityKey": "设备身份密钥",
+    "showMore": "显示更多",
+    "showLess": "显示较少"
 }

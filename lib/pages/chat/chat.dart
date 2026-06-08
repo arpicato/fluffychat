@@ -17,6 +17,7 @@ import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/chat_view.dart';
 import 'package:fluffychat/pages/chat/event_info_dialog.dart';
 import 'package:fluffychat/pages/chat/start_poll_bottom_sheet.dart';
+import 'package:fluffychat/pages/chat/trust_user_key_dialog.dart';
 import 'package:fluffychat/pages/chat/utils/web_file_to_x_file.dart';
 import 'package:fluffychat/pages/chat_details/chat_details.dart';
 import 'package:fluffychat/utils/adaptive_bottom_sheet.dart';
@@ -141,6 +142,8 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   bool currentlyTyping = false;
   bool dragging = false;
   late final ChatKeyboardHandlerAdapter _keyboardHandler;
+
+  final GlobalKey inputBarKey = GlobalKey();
 
   void onDragEntered(_) => setState(() => dragging = true);
 
@@ -291,7 +294,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     }
   }
 
-  void _shareItems([_]) {
+  Future<void> _shareItems([_]) async {
     final shareItems = widget.shareItems;
     if (shareItems == null || shareItems.isEmpty) return;
     if (!room.otherPartyCanReceiveMessages) {
@@ -309,6 +312,8 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
       );
       return;
     }
+    final proceed = await showTrustUserInRoomDialog(context, room);
+    if (!mounted || !proceed) return;
     for (final item in shareItems) {
       if (item is FileShareItem) continue;
       if (item is TextShareItem) room.sendTextEvent(item.value);
@@ -589,11 +594,6 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
         .then((_) {
           _setReadMarkerFuture = null;
         });
-    if (eventId == null || eventId == timeline.room.lastEvent?.eventId) {
-      Matrix.of(
-        context,
-      ).backgroundPush?.cancelNotification(room.client, roomId);
-    }
   }
 
   @override
@@ -636,6 +636,8 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   });
 
   Future<void> send() async {
+    final proceed = await showTrustUserInRoomDialog(context, room);
+    if (!mounted || !proceed) return;
     if (sendController.text.trim().isEmpty) return;
     _storeInputTimeoutTimer?.cancel();
     final prefs = Matrix.of(context).store;
@@ -840,6 +842,8 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     List<int> waveform,
     String fileName,
   ) async {
+    final proceed = await showTrustUserInRoomDialog(context, room);
+    if (!mounted || !proceed) return;
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     final audioFile = XFile(path);
 
@@ -1438,6 +1442,22 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   Timer? _storeInputTimeoutTimer;
   static const Duration _storeInputTimeout = Duration(milliseconds: 500);
+
+  double? inputBarHeight;
+
+  void updateInputBarHeight() {
+    RenderBox? renderBox;
+    if (inputBarKey.currentContext?.findRenderObject() != null) {
+      renderBox = inputBarKey.currentContext!.findRenderObject() as RenderBox;
+    }
+
+    final height = renderBox?.size.height ?? 72.0;
+    if (height != inputBarHeight) {
+      setState(() {
+        inputBarHeight = height;
+      });
+    }
+  }
 
   void onInputBarChanged(String text) {
     if (_inputTextIsEmpty != text.isEmpty) {

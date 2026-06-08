@@ -2302,12 +2302,6 @@
             }
         }
     },
-    "presencesToggle": "Показувати повідомлення про стан від інших користувачів",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
-    "hidePresences": "Сховати список станів?",
     "incomingMessages": "Вхідні повідомлення",
     "discover": "Огляд",
     "stickers": "Наліпки",
@@ -2332,7 +2326,7 @@
     "createNewAddress": "Створити нову адресу",
     "commandHint_unignore": "Не ігнорувати цей Matrix ID",
     "knockRestricted": "Стук обмежено",
-    "appLockDescription": "Блокувати додаток, коли не використовується ПІН-код",
+    "appLockDescription": "Блокувати додаток, коли не використовується PIN-код",
     "hideRedactedMessages": "Сховати змінені повідомлення",
     "hideRedactedMessagesBody": "Якщо хтось змінить повідомлення, його більше не буде видно в бесіді.",
     "hideInvalidOrUnknownMessageFormats": "Сховати недійсні або невідомі формати повідомлень",
@@ -2729,7 +2723,6 @@
     "createNewAccount": "Створити новий обліковий запис",
     "signUpGreeting": "FluffyChat децентралізований! Виберіть сервер, на якому ви хочете створити свій обліковий запис, і почнімо!",
     "signInGreeting": "Ви вже маєте обліковий запис у Matrix? Ласкаво просимо! Виберіть свій домашній сервер і ввійдіть.",
-    "appIntro": "За допомогою FluffyChat ви можете спілкуватися зі своїми друзями. Це безпечний децентралізований месенджер [matrix]! Дізнайтеся більше на сайті https://matrix.org або просто зареєструйтеся.",
     "theProcessWasCanceled": "Процес скасовано.",
     "join": "Приєднатись",
     "searchOrEnterHomeserverAddress": "Знайдіть або введіть адресу домашнього сервера",
@@ -2752,17 +2745,55 @@
     "support": "Підтримка",
     "setLowPriority": "Встановити низький пріоритет",
     "unsetLowPriority": "Скинути низький пріоритет",
-    "removeCallFromChat": "Видалити виклик з чату",
-    "removeCallFromChatDescription": "Видалити виклик із чату для всіх учасників?",
-    "removeCallForEveryone": "Видалити виклик для всіх",
-    "startVoiceCall": "Почати голосовий дзвінок",
-    "startVideoCall": "Почати відеодзвінок",
-    "joinVoiceCall": "Приєднатись до голосового дзвінку",
-    "joinVideoCall": "Приєднатись до відеодзвінку",
-    "live": "Наживо",
     "playSoundOnNotification": "Відтворити звук при сповіщенні",
     "addTag": "Додати тег",
     "removeTag": "Видалити тег",
     "tagName": "Назва тегу",
-    "createNewTag": "Створити новий тег"
+    "createNewTag": "Створити новий тег",
+    "discardEdits": "У вас є незбережені зміни. Відхилити?",
+    "@discardEdits": {
+        "type": "String",
+        "placeholders": {}
+    },
+    "hideRoomsInSpaces": "Приховати чати, що належать просторам",
+    "possibleByYou": "Цей реліз став можливим лише завдяки вашій підтримці. FluffyChat залишається безкоштовним, з відкритим джерельним кодом й цілком підтримуваний спільнотою.",
+    "showThumbnailsInTimeline": "Показувати мініатюри зображень та відео",
+    "appSubtitle": "Безпечні чати [matrix]",
+    "appDescription": "Спілкуйтеся зашифровано через децентралізовану мережу [matrix] простим та доступним кожному способом.",
+    "interactiveVerification": "Інтерактивна перевірка",
+    "interactiveVerificationDescription": "Якщо ви перебуваєте поруч або спілкуєтеся через захищений канал, ви можете перевірити всі пристрої одночасно, порівнявши секретний номер або емодзі.",
+    "countUnverifiedDevices": "{count} неперевірених пристроїв в чаті.",
+    "@countUnverifiedDevices": {
+        "type": "int",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "check": "Перевірити",
+    "encryptedMessage": "Зашифроване повідомлення",
+    "unencryptedMessage": "Незашифроване повідомлення",
+    "allow": "Дозволити",
+    "allowEncryptedCommunicationWith": "Дозволити зашифроване спілкування з {name}?",
+    "@allowEncryptedCommunicationWith": {
+        "type": "String",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "publicKey": "Публічний ключ: {key}",
+    "@publicKey": {
+        "type": "String",
+        "placeholders": {
+            "key": {
+                "type": "String"
+            }
+        }
+    },
+    "deviceIdentityKey": "Ключ пристрою",
+    "showMore": "Показати ще",
+    "showLess": "Показати менше"
 }
