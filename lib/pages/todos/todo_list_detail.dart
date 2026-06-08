@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../services/backend_session_service.dart';
+import '../../services/messie_realtime_service.dart';
 import '../../services/messie_todo_service.dart';
 import '../../services/messie_workspace_refresh.dart';
 import '../../widgets/matrix.dart';
@@ -31,14 +34,44 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
   Future<TodoListDetailData>? _loadFuture;
   TodoListDetailData? _data;
   bool showCompletedItems = false;
+  StreamSubscription<MessieRealtimeEvent>? _realtimeSubscription;
 
   Future<TodoListDetailData> get loadFuture => _loadFuture!;
   TodoListDetailData? get currentData => _data;
 
   @override
+  void initState() {
+    super.initState();
+    _realtimeSubscription = MessieRealtimeService.instance.events.listen((event) {
+      if (!mounted || event.listId != widget.listId) return;
+      switch (event.type) {
+        case MessieRealtimeEventType.todoItemCreated:
+        case MessieRealtimeEventType.todoItemUpdated:
+        case MessieRealtimeEventType.todoItemDeleted:
+        case MessieRealtimeEventType.todoListUpdated:
+        case MessieRealtimeEventType.todoListDeleted:
+        case MessieRealtimeEventType.collaboratorAdded:
+        case MessieRealtimeEventType.collaboratorRemoved:
+          refresh();
+        case MessieRealtimeEventType.workspaceRefresh:
+        case MessieRealtimeEventType.todoListCreated:
+        case MessieRealtimeEventType.todoListPinChanged:
+        case MessieRealtimeEventType.unknown:
+          break;
+      }
+    });
+  }
+
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     _loadFuture ??= load(context);
+    final matrix = Matrix.of(context);
+    MessieRealtimeService.instance.start(
+      client: matrix.client,
+      store: matrix.store,
+      apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+    );
   }
 
   @override
@@ -54,6 +87,12 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
     setState(() {
       _loadFuture = load(context);
     });
+  }
+
+  @override
+  void dispose() {
+    _realtimeSubscription?.cancel();
+    super.dispose();
   }
 
   void setShowCompletedItems(bool value) {
