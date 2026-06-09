@@ -8,6 +8,7 @@ import 'package:fluffychat/pages/image_viewer/video_player.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/widgets/hover_builder.dart';
 import 'package:fluffychat/widgets/mxc_image.dart';
+import 'package:fluffychat/widgets/zoomable_media_view.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
@@ -99,7 +100,7 @@ class ImageViewerView extends StatelessWidget {
                       case MessageTypes.Image:
                       case MessageTypes.Sticker:
                       default:
-                        return InteractiveViewer(
+                        return ZoomableMediaView(
                           minScale: 1.0,
                           maxScale: 10.0,
                           onInteractionEnd: controller.onInteractionEnds,

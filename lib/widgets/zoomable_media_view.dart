@@ -1,0 +1,84 @@
+// SPDX-FileCopyrightText: 2019-Present Christian Kußowski
+// SPDX-FileCopyrightText: 2019-Present Contributors to FluffyChat
+//
+// SPDX-License-Identifier: AGPL-3.0-or-later
+
+import 'dart:math' as math;
+
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+
+class ZoomableMediaView extends StatefulWidget {
+  const ZoomableMediaView({
+    required this.child,
+    this.minScale = 1.0,
+    this.maxScale = 10.0,
+    this.onInteractionEnd,
+    super.key,
+  });
+
+  final Widget child;
+  final double minScale;
+  final double maxScale;
+  final GestureScaleEndCallback? onInteractionEnd;
+
+  @override
+  State<ZoomableMediaView> createState() => _ZoomableMediaViewState();
+}
+
+class _ZoomableMediaViewState extends State<ZoomableMediaView> {
+  static const _mouseWheelScaleStep = 0.0015;
+
+  final TransformationController _transformationController =
+      TransformationController();
+
+  @override
+  void dispose() {
+    _transformationController.dispose();
+    super.dispose();
+  }
+
+  double get _currentScale => _transformationController.value.getMaxScaleOnAxis();
+
+  void _handlePointerSignal(PointerSignalEvent event) {
+    if (event is! PointerScrollEvent) return;
+
+    final kind = event.kind;
+    if (kind != PointerDeviceKind.mouse && kind != PointerDeviceKind.trackpad) {
+      return;
+    }
+
+    final scaleDelta = math.exp(-event.scrollDelta.dy * _mouseWheelScaleStep);
+    final nextScale = (_currentScale * scaleDelta).clamp(
+      widget.minScale,
+      widget.maxScale,
+    );
+    if ((nextScale - _currentScale).abs() < 0.0001) return;
+
+    final focalPoint = event.localPosition;
+    final matrix = _transformationController.value.clone();
+    final scenePoint = _transformationController.toScene(focalPoint);
+
+    matrix
+      ..translateByDouble(focalPoint.dx, focalPoint.dy, 0, 1)
+      ..scaleByDouble(nextScale / _currentScale, nextScale / _currentScale, 1, 1)
+      ..translateByDouble(-scenePoint.dx, -scenePoint.dy, 0, 1);
+
+    _transformationController.value = matrix;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerSignal: _handlePointerSignal,
+      child: InteractiveViewer(
+        transformationController: _transformationController,
+        minScale: widget.minScale,
+        maxScale: widget.maxScale,
+        trackpadScrollCausesScale: true,
+        onInteractionEnd: widget.onInteractionEnd,
+        child: widget.child,
+      ),
+    );
+  }
+}

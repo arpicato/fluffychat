@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/widgets/zoomable_media_view.dart';
 import 'package:flutter/material.dart';
 
 import 'mxc_image.dart';
@@ -35,7 +36,7 @@ class MxcImageViewer extends StatelessWidget {
           ),
           backgroundColor: Colors.transparent,
         ),
-        body: InteractiveViewer(
+        body: ZoomableMediaView(
           minScale: 1.0,
           maxScale: 10.0,
           onInteractionEnd: (endDetails) {
