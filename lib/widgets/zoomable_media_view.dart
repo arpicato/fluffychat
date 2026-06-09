@@ -5,6 +5,7 @@
 
 import 'dart:math' as math;
 
+import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
@@ -28,6 +29,7 @@ class ZoomableMediaView extends StatefulWidget {
 
 class _ZoomableMediaViewState extends State<ZoomableMediaView> {
   static const _mouseWheelScaleStep = 0.0007;
+  static const _webWheelDeltaFactor = 0.2;
 
   final TransformationController _transformationController =
       TransformationController();
@@ -50,8 +52,10 @@ class _ZoomableMediaViewState extends State<ZoomableMediaView> {
 
     GestureBinding.instance.pointerSignalResolver.register(event, (event) {
       final scrollEvent = event as PointerScrollEvent;
+      final normalizedDelta = scrollEvent.scrollDelta.dy *
+          (PlatformInfos.isWeb ? _webWheelDeltaFactor : 1.0);
       final scaleDelta = math.exp(
-        -scrollEvent.scrollDelta.dy * _mouseWheelScaleStep,
+        -normalizedDelta * _mouseWheelScaleStep,
       );
       final currentScale = _currentScale;
       final nextScale = (currentScale * scaleDelta).clamp(
