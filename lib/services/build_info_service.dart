@@ -7,10 +7,26 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'backend_session_service.dart';
 
 class FrontendBuildInfo {
-  const FrontendBuildInfo({required this.version});
+  const FrontendBuildInfo({
+    required this.version,
+    required this.commit,
+    required this.buildDate,
+  });
 
   final String version;
+  final String commit;
+  final String buildDate;
 }
+
+const String _frontendCommit = String.fromEnvironment(
+  'FLUFFY_FRONTEND_COMMIT',
+  defaultValue: 'unknown',
+);
+
+const String _frontendBuildDate = String.fromEnvironment(
+  'FLUFFY_FRONTEND_BUILD_DATE',
+  defaultValue: 'unknown',
+);
 
 class BackendBuildInfo {
   const BackendBuildInfo({
@@ -32,7 +48,11 @@ class BuildInfoService {
 
   Future<FrontendBuildInfo> frontendInfo() async {
     final packageInfo = await PackageInfo.fromPlatform();
-    return FrontendBuildInfo(version: packageInfo.version);
+    return FrontendBuildInfo(
+      version: packageInfo.version,
+      commit: _frontendCommit,
+      buildDate: _frontendBuildDate,
+    );
   }
 
   Future<BackendBuildInfo> backendInfo({String? apiBaseUrl}) async {

@@ -53,27 +53,26 @@ class _ZoomableMediaViewState extends State<ZoomableMediaView> {
       final scaleDelta = math.exp(
         -scrollEvent.scrollDelta.dy * _mouseWheelScaleStep,
       );
-      final nextScale = (_currentScale * scaleDelta).clamp(
+      final currentScale = _currentScale;
+      final nextScale = (currentScale * scaleDelta).clamp(
         widget.minScale,
         widget.maxScale,
       );
-      if ((nextScale - _currentScale).abs() < 0.0001) return;
+      if ((nextScale - currentScale).abs() < 0.0001) return;
 
       final focalPoint = scrollEvent.localPosition;
-      final matrix = _transformationController.value.clone();
-      final scenePoint = _transformationController.toScene(focalPoint);
-
-      matrix
+      final sceneBefore = _transformationController.toScene(focalPoint);
+      final zoomFactor = nextScale / currentScale;
+      final matrix = Matrix4.identity()
         ..translateByDouble(focalPoint.dx, focalPoint.dy, 0, 1)
-        ..scaleByDouble(
-          nextScale / _currentScale,
-          nextScale / _currentScale,
-          1,
-          1,
-        )
-        ..translateByDouble(-scenePoint.dx, -scenePoint.dy, 0, 1);
-
+        ..scaleByDouble(zoomFactor, zoomFactor, 1, 1)
+        ..translateByDouble(-focalPoint.dx, -focalPoint.dy, 0, 1)
+        ..multiply(_transformationController.value);
       _transformationController.value = matrix;
+      final sceneAfter = _transformationController.toScene(focalPoint);
+      final correction = sceneAfter - sceneBefore;
+      _transformationController.value = _transformationController.value.clone()
+        ..translateByDouble(correction.dx, correction.dy, 0, 1);
     });
   }
 

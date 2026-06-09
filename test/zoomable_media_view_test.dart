@@ -34,4 +34,38 @@ void main() {
 
     expect(controller.value.getMaxScaleOnAxis(), greaterThan(1.0));
   });
+
+  testWidgets('mouse wheel zoom keeps pointer scene point stable', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ZoomableMediaView(
+            child: SizedBox(width: 600, height: 400, child: Placeholder()),
+          ),
+        ),
+      ),
+    );
+
+    final interactiveViewer = tester.widget<InteractiveViewer>(
+      find.byType(InteractiveViewer),
+    );
+    final controller = interactiveViewer.transformationController!;
+
+    final topLeft = tester.getTopLeft(find.byType(InteractiveViewer));
+    final pointer = topLeft + const Offset(80, 60);
+    final sceneBefore = controller.toScene(pointer);
+
+    final binding = TestWidgetsFlutterBinding.ensureInitialized();
+    binding.handlePointerEvent(
+      PointerScrollEvent(
+        position: pointer,
+        scrollDelta: const Offset(0, -80),
+        kind: PointerDeviceKind.mouse,
+      ),
+    );
+    await tester.pump();
+
+    final sceneAfter = controller.toScene(pointer);
+    expect((sceneAfter - sceneBefore).distance, lessThan(0.01));
+  });
 }
