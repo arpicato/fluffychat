@@ -17,8 +17,10 @@ MessieTodoItem _item({
   position: id,
 );
 
-Color? _tileColor(WidgetTester tester, Finder finder) =>
-    tester.widget<ListTile>(finder).tileColor;
+Color? _tileCardColor(WidgetTester tester, Finder finder) =>
+    tester.widget<Card>(
+      find.ancestor(of: finder, matching: find.byType(Card)).first,
+    ).color;
 
 Widget _focusedCard(BuildContext context, TodoShortcutBindings bindings, MessieTodoItem item) =>
     TodoShortcutFocusItem(
@@ -88,7 +90,7 @@ void main() {
 
     final theme = Theme.of(tester.element(find.byType(Scaffold)));
     expect(
-      _tileColor(tester, find.byKey(const ValueKey('todo-add-item-row'))),
+      _tileCardColor(tester, find.byKey(const ValueKey('todo-add-item-row'))),
       theme.colorScheme.secondaryContainer,
     );
     await tester.sendKeyEvent(LogicalKeyboardKey.keyN);
@@ -97,7 +99,7 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
     await tester.pump();
     expect(
-      _tileColor(tester, find.byKey(const ValueKey('todo-add-item-row'))),
+      _tileCardColor(tester, find.byKey(const ValueKey('todo-add-item-row'))),
       isNull,
     );
     expect(

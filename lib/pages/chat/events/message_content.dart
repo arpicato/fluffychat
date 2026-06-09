@@ -110,8 +110,7 @@ class MessageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fontSize =
-        AppConfig.messageFontSize * AppSettings.fontSizeFactor.value;
+    const fontSize = AppConfig.messageFontSize;
     final buttonTextColor = textColor;
     switch (event.type) {
       case EventTypes.Message:
@@ -282,16 +281,10 @@ class MessageContent extends StatelessWidget {
                 html: html,
                 textColor: textColor,
                 room: event.room,
-                fontSize:
-                    AppSettings.fontSizeFactor.value *
-                    AppConfig.messageFontSize *
-                    (bigEmotes ? 5 : 1),
-                limitHeight: !selected,
+                fontSize: AppConfig.messageFontSize * (bigEmotes ? 5 : 1),
                 linkStyle: TextStyle(
                   color: linkColor,
-                  fontSize:
-                      AppSettings.fontSizeFactor.value *
-                      AppConfig.messageFontSize,
+                  fontSize: AppConfig.messageFontSize,
                   decoration: TextDecoration.underline,
                   decorationColor: linkColor,
                 ),

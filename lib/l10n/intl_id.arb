@@ -2272,11 +2272,6 @@
             }
         }
     },
-    "presencesToggle": "Tampilkan pesan status dari pengguna lain",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
     "publicSpaces": "Space publik",
     "commandHint_sendraw": "Kirim JSON mentah",
     "sendReadReceiptsDescription": "Anggota lain dalam percakapan dapat melihat ketika kamu membaca sebuah pesan.",
@@ -2284,7 +2279,6 @@
     "blockedUsers": "Pengguna yang terblokir",
     "blockListDescription": "Kamu bisa memblokir pengguna yang sedang menganggumu. Kamu tidak akan mendapatkan pesan atau undangan ruangan dari pengguna dalam daftar blokiran pribadimu.",
     "blockUsername": "Abaikan nama pengguna",
-    "hidePresences": "Sembunyikan Daftar Status?",
     "transparent": "Transparan",
     "stickers": "Stiker",
     "discover": "Jelajahi",
@@ -2728,7 +2722,6 @@
     "createNewAccount": "Buat akun baru",
     "signUpGreeting": "FluffyChat terdesentralisasi! Pilih server tempat Anda ingin membuat akun dan mari kita mulai!",
     "signInGreeting": "Anda sudah memiliki akun di Matrix? Selamat datang kembali! Pilih homeserver Anda dan masuk.",
-    "appIntro": "Dengan FluffyChat Anda dapat mengobrol dengan teman-teman Anda. Ini adalah messenger [matrix] terdesentralisasi yang aman! Pelajari lebih lanjut di https://matrix.org jika Anda suka atau cukup daftar.",
     "theProcessWasCanceled": "Proses dibatalkan.",
     "join": "Bergabung",
     "searchOrEnterHomeserverAddress": "Cari atau masukkan alamat homeserver",
@@ -2751,14 +2744,6 @@
     "support": "Dukungan",
     "setLowPriority": "Atur prioritas rendah",
     "unsetLowPriority": "Batalkan prioritas rendah",
-    "removeCallFromChat": "Hapus panggilan dari obrolan",
-    "removeCallFromChatDescription": "Apakah Anda ingin menghapus panggilan dari obrolan untuk semua anggota?",
-    "removeCallForEveryone": "Hapus panggilan untuk semua orang",
-    "startVoiceCall": "Mulai panggilan suara",
-    "startVideoCall": "Mulai panggilan video",
-    "joinVoiceCall": "Bergabung ke panggilan suara",
-    "joinVideoCall": "Bergabung ke panggilan video",
-    "live": "Langsung",
     "playSoundOnNotification": "Putar suara saat notifikasi",
     "addTag": "Tambah tag",
     "removeTag": "Hapus tag",

@@ -23,6 +23,7 @@ extension ChatFlows on FluffyChatTester {
     await tapOn('New chat');
     await tapOn('Create group');
     await enterText(TextField, groupChatName);
+    await scrollUntilVisible('Create a group and invite users');
     await tapOn('Create a group and invite users');
     await waitFor(find.byTooltip('Back'));
     await goBack();

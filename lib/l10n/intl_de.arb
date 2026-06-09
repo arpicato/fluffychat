@@ -2305,16 +2305,10 @@
         }
     },
     "verifyOtherDeviceDescription": "Wenn du ein anderes Gerät verifizierst, können diese Geräte Schlüssel austauschen, was die Sicherheit insgesamt erhöht. 💪Sobald du eine Verifizierung startest, erscheint ein Pop-up in der App auf beiden Geräten. Dort siehst du dann eine Reihe von Emojis oder Zahlen, die du miteinander vergleichen musst. Am besten hältst du beide Geräte bereit, bevor du die Verifizierung startest. 🤳",
-    "presencesToggle": "Status-Nachrichten anderer Benutzer anzeigen",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
     "incomingMessages": "Eingehende Nachrichten",
     "commandHint_unignore": "Angegebene Matrix-ID nicht mehr ignorieren",
     "commandHint_ignore": "Angegebene Matrix-ID ignorieren",
     "noDatabaseEncryption": "Datenbankverschlüsselung wird auf dieser Plattform nicht unterstützt",
-    "hidePresences": "Status-Liste verbergen?",
     "stickers": "Sticker",
     "discover": "Entdecken",
     "unreadChatsInApp": "{appname}: {unread} ungelesene Chats",
@@ -2735,7 +2729,6 @@
     "createNewAccount": "Neues Konto erstellen",
     "signUpGreeting": "FluffyChat ist dezentral! Wähle einen Server, auf dem du dein Konto erstellen möchtest, und los geht's!",
     "signInGreeting": "Du hast bereits ein Konto bei Matrix? Willkommen zurück! Wähle deinen Homeserver aus und melde dich an.",
-    "appIntro": "Mit FluffyChat kannst du mit deinen Freunden chatten. Es ist ein sicherer, dezentralisierter [Matrix]-Messenger! Erfahre mehr auf https://matrix.org wenn du möchtest, oder melde dich einfach an.",
     "theProcessWasCanceled": "Der Vorgang wurde abgebrochen.",
     "federationBaseUrl": "Basis-URL der Föderation",
     "clientWellKnownInformation": "Bekannte Informationen zum Client:",
@@ -2758,8 +2751,12 @@
     "createNewChat": "Neuen Chat erstellen",
     "supportFluffyChat": "FluffyChat unterstützen",
     "support": "Unterstützen",
-    "startVoiceCall": "Sprachanruf starten",
-    "joinVoiceCall": "Sprachanruf beitreten",
-    "startVideoCall": "Videoanruf starten",
-    "joinVideoCall": "Videoanruf beitreten"
+    "createNewTag": "",
+    "tagName": "",
+    "addTag": "",
+    "playSoundOnNotification": "",
+    "unsetLowPriority": "",
+    "setLowPriority": "",
+    "removeTag": "",
+    "appDescription": "Schreibe mir anderen mithilfe des dezentralisierten [matrix] Netzwerks auf eine einfache und zugängliche Art für jeden."
 }

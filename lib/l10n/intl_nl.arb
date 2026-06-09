@@ -2196,7 +2196,6 @@
     "passwordRecoverySettings": "Wachtwoordherstel-instellingen",
     "knock": "Klop",
     "overview": "Overzicht",
-    "hidePresences": "Verberg statuslijst?",
     "noOneCanJoin": "Niemand kan deelnemen",
     "yourGlobalUserIdIs": "Je Matrix-ID is: ",
     "appLockDescription": "Vergendel de app wanneer het niet gebruikt wordt met een pincode",
@@ -2317,11 +2316,6 @@
                 "type": "int"
             }
         }
-    },
-    "presencesToggle": "Statusberichten van andere personen tonen",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
     },
     "website": "Website",
     "usersMustKnock": "Personen moeten kloppen",
@@ -2728,7 +2722,6 @@
     "createNewAccount": "Registreer nieuw account",
     "signUpGreeting": "FluffyChat is decentraal! Kies een server waar je wil voor jouw account en laten we gaan!",
     "signInGreeting": "Heb je al een Matrix account? Welkom terug! Kies jouw server en log in.",
-    "appIntro": "Met FluffyChat kan je chatten met je vrienden. Het is een veilige en decentrale [matrix] app! Lees meer op https://matrix.org als je wilt of kies registreren.",
     "theProcessWasCanceled": "Het proces is geannuleerd.",
     "join": "Deelnemen",
     "searchOrEnterHomeserverAddress": "Zoek of voer serveradres in",
@@ -2751,17 +2744,55 @@
     "support": "Steunen",
     "setLowPriority": "Lage prioriteit instellen",
     "unsetLowPriority": "Lage prioriteit uitschakelen",
-    "removeCallFromChat": "Verwijder oproep van chat",
-    "removeCallFromChatDescription": "Wil je de oproep voor iedereen in de chat verwijderen?",
-    "removeCallForEveryone": "Verwijder oproep voor iedereen",
-    "live": "Live",
-    "startVoiceCall": "Start audio-gesprek",
-    "startVideoCall": "Start video-gesprek",
-    "joinVoiceCall": "Audio-gesprek opnemen",
-    "joinVideoCall": "Deelnemen aan video-gesprek",
     "playSoundOnNotification": "Meldingsgeluid afspelen",
     "addTag": "Tag toevoegen",
     "removeTag": "Tag verwijderen",
     "tagName": "Tagnaam",
-    "createNewTag": "Nieuwe tag maken"
+    "createNewTag": "Nieuwe tag maken",
+    "discardEdits": "Je hebt wijzigingen die nog niet zijn opgeslagen. Wil je de wijzigingen ongedaan maken?",
+    "@discardEdits": {
+        "type": "String",
+        "placeholders": {}
+    },
+    "hideRoomsInSpaces": "Kamers in een space verbergen",
+    "possibleByYou": "Deze versie was alleen mogelijk dankzij jullie steun. FluffyChat blijft gratis, open source en volledig door de community gedreven.",
+    "showThumbnailsInTimeline": "Miniatuurafbeeldingen van foto’s en video’s weergeven",
+    "appSubtitle": "Veilige [matrix]-communicatie",
+    "appDescription": "Communiceer op een eenvoudige en voor iedereen toegankelijke manier via het gedecentraliseerde [matrix]-netwerk.",
+    "interactiveVerification": "Interactieve verificatie",
+    "interactiveVerificationDescription": "Als jullie naast elkaar zitten of via een beveiligd kanaal communiceren, kun je alle apparaten in één keer verifiëren door een beveiligingscode of emoji’s te vergelijken.",
+    "countUnverifiedDevices": "{count} niet-geverifieerde apparaten in de chat.",
+    "@countUnverifiedDevices": {
+        "type": "int",
+        "placeholders": {
+            "count": {
+                "type": "int"
+            }
+        }
+    },
+    "check": "Controleer",
+    "encryptedMessage": "Versleuteld bericht",
+    "unencryptedMessage": "Niet-versleuteld bericht",
+    "allow": "Toestaan",
+    "allowEncryptedCommunicationWith": "Versleutelde communicatie met {name} toestaan?",
+    "@allowEncryptedCommunicationWith": {
+        "type": "String",
+        "placeholders": {
+            "name": {
+                "type": "String"
+            }
+        }
+    },
+    "publicKey": "Publieke sleutel: {key}",
+    "@publicKey": {
+        "type": "String",
+        "placeholders": {
+            "key": {
+                "type": "String"
+            }
+        }
+    },
+    "deviceIdentityKey": "Apparaatidentificatiesleutel",
+    "showMore": "Toon meer",
+    "showLess": "Toon minder"
 }

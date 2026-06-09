@@ -11,12 +11,12 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_secure_storage_linux
   flutter_webrtc
   handy_window
+  open_file_linux
   pasteboard
   record_linux
   screen_retriever_linux
   sqlcipher_flutter_libs
   url_launcher_linux
-  webcrypto
   window_manager
   window_to_front
 )

@@ -8,6 +8,7 @@ void main() {
       ownerId: 'user-1',
       title: 'Daily list',
       description: 'Check current work',
+      pinned: false,
       createdAt: DateTime.utc(2026, 5, 20, 8),
       updatedAt: DateTime.utc(2026, 5, 21, 9),
       lastActivityAt: DateTime.utc(2026, 5, 24, 7, 45),
@@ -22,6 +23,7 @@ void main() {
       ownerId: 'user-1',
       title: 'Updated only',
       description: '',
+      pinned: false,
       createdAt: DateTime.utc(2026, 5, 20, 8),
       updatedAt: DateTime.utc(2026, 5, 21, 9),
     );
@@ -30,6 +32,7 @@ void main() {
       ownerId: 'user-1',
       title: 'Created only',
       description: '',
+      pinned: false,
       createdAt: DateTime.utc(2026, 5, 20, 8),
     );
 

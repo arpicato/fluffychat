@@ -6,7 +6,6 @@
 import 'dart:ui' as ui;
 
 import 'package:badges/badges.dart';
-import 'package:collection/collection.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/config/themes.dart';
@@ -15,14 +14,11 @@ import 'package:fluffychat/pages/chat/chat.dart';
 import 'package:fluffychat/pages/chat/chat_app_bar_list_tile.dart';
 import 'package:fluffychat/pages/chat/chat_app_bar_title.dart';
 import 'package:fluffychat/pages/chat/chat_event_list.dart';
-import 'package:fluffychat/pages/chat/encryption_button.dart';
-import 'package:fluffychat/pages/chat/jitsi_popup_button.dart';
 import 'package:fluffychat/pages/chat/pinned_events.dart';
 import 'package:fluffychat/pages/chat/reply_display.dart';
 import 'package:fluffychat/utils/account_config.dart';
 import 'package:fluffychat/pages/chat/chat_keyboard_actions.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
-import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
 import 'package:fluffychat/widgets/chat_settings_popup_menu.dart';
 import 'package:fluffychat/widgets/chat_back_button.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
@@ -241,10 +237,7 @@ class ChatView extends StatelessWidget {
                         onPressed: controller.onPhoneButtonTap,
                         icon: const Icon(Icons.call_outlined),
                         tooltip: L10n.of(context).placeCall,
-                      )
-                    else if (AppSettings.jitsiFeature.value)
-                      JitsiPopupButton(controller.room),
-                    EncryptionButton(controller.room),
+                      ),
                     ChatSettingsPopupMenu(controller.room, true),
                   ],
                 ],

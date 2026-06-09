@@ -1291,11 +1291,6 @@
         "type": "String",
         "placeholders": {}
     },
-    "presencesToggle": "Паказваць паведамленні статусаў іншых карыстальнікаў",
-    "@presencesToggle": {
-        "type": "String",
-        "placeholders": {}
-    },
     "skip": "Прапусціць",
     "@skip": {
         "type": "String",
@@ -1600,7 +1595,6 @@
     "newGroup": "Новая група",
     "newSpace": "Новая прастора",
     "allSpaces": "Усе прасторы",
-    "hidePresences": "Хаваць спіс статусаў?",
     "doNotShowAgain": "Не паказваць зноў",
     "wasDirectChatDisplayName": "Пусты чат (быў {oldDisplayName})",
     "@wasDirectChatDisplayName": {
@@ -2716,7 +2710,6 @@
     "createNewAccount": "Стварыць новы ўліковы запіс",
     "signUpGreeting": "FluffyChat дэцэнтралізаваны! Выберыце свой сервер, дзе вы хаціце стварыць уліковы запіс і прайягвайце!",
     "signInGreeting": "Вы ўжо маеце ўліковы запіс у Matrix? З вяртаннем! Выберыце свой хатні сервер і аўтарызуйцеся.",
-    "appIntro": "З дапамогай FluffyChat вы можаце размаўляць з вашымі сябрамі. Гэта бяспечны дэцэнтралізаваны [matrix] мэнэджэр! Даведайцеся больш на https://matrix.org, калі хаціце ці проста ўвайдзіце.",
     "theProcessWasCanceled": "Працэс быў скасаваны.",
     "join": "Далучыцца",
     "searchOrEnterHomeserverAddress": "Пашукайце ці ўвядзіце адрас хатняга сервера",
@@ -2739,14 +2732,6 @@
     "support": "Падтрымаць",
     "setLowPriority": "Прызначыць нізкі прыярытэт",
     "unsetLowPriority": "Скасаваць нізкі прыярытэт",
-    "removeCallFromChat": "Прыбраць выклік з чату",
-    "removeCallFromChatDescription": "Вы хаціце прыбраць выклік з чату для ўсіх удзельнікаў?",
-    "removeCallForEveryone": "Прыбраць выклікі для ўсіх",
-    "startVoiceCall": "Пачаць галасавы выклік",
-    "startVideoCall": "Пачаць відэа-выклік",
-    "joinVoiceCall": "Далучыцца да галасавога выкліка",
-    "joinVideoCall": "Далучыцца да відэа-выкліка",
-    "live": "Трансляцыя",
     "playSoundOnNotification": "Прайграваць гук апавяшчэння",
     "addTag": "Дадаць тэг",
     "removeTag": "Выдаліць тэг",
