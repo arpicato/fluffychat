@@ -27,7 +27,7 @@ class ZoomableMediaView extends StatefulWidget {
 }
 
 class _ZoomableMediaViewState extends State<ZoomableMediaView> {
-  static const _mouseWheelScaleStep = 0.0015;
+  static const _mouseWheelScaleStep = 0.0007;
 
   final TransformationController _transformationController =
       TransformationController();
@@ -48,34 +48,45 @@ class _ZoomableMediaViewState extends State<ZoomableMediaView> {
       return;
     }
 
-    final scaleDelta = math.exp(-event.scrollDelta.dy * _mouseWheelScaleStep);
-    final nextScale = (_currentScale * scaleDelta).clamp(
-      widget.minScale,
-      widget.maxScale,
-    );
-    if ((nextScale - _currentScale).abs() < 0.0001) return;
+    GestureBinding.instance.pointerSignalResolver.register(event, (event) {
+      final scrollEvent = event as PointerScrollEvent;
+      final scaleDelta = math.exp(
+        -scrollEvent.scrollDelta.dy * _mouseWheelScaleStep,
+      );
+      final nextScale = (_currentScale * scaleDelta).clamp(
+        widget.minScale,
+        widget.maxScale,
+      );
+      if ((nextScale - _currentScale).abs() < 0.0001) return;
 
-    final focalPoint = event.localPosition;
-    final matrix = _transformationController.value.clone();
-    final scenePoint = _transformationController.toScene(focalPoint);
+      final focalPoint = scrollEvent.localPosition;
+      final matrix = _transformationController.value.clone();
+      final scenePoint = _transformationController.toScene(focalPoint);
 
-    matrix
-      ..translateByDouble(focalPoint.dx, focalPoint.dy, 0, 1)
-      ..scaleByDouble(nextScale / _currentScale, nextScale / _currentScale, 1, 1)
-      ..translateByDouble(-scenePoint.dx, -scenePoint.dy, 0, 1);
+      matrix
+        ..translateByDouble(focalPoint.dx, focalPoint.dy, 0, 1)
+        ..scaleByDouble(
+          nextScale / _currentScale,
+          nextScale / _currentScale,
+          1,
+          1,
+        )
+        ..translateByDouble(-scenePoint.dx, -scenePoint.dy, 0, 1);
 
-    _transformationController.value = matrix;
+      _transformationController.value = matrix;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Listener(
+      behavior: HitTestBehavior.opaque,
       onPointerSignal: _handlePointerSignal,
       child: InteractiveViewer(
         transformationController: _transformationController,
         minScale: widget.minScale,
         maxScale: widget.maxScale,
-        trackpadScrollCausesScale: true,
+        trackpadScrollCausesScale: false,
         onInteractionEnd: widget.onInteractionEnd,
         child: widget.child,
       ),
