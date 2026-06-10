@@ -29,7 +29,7 @@ class ZoomableMediaView extends StatefulWidget {
 
 class _ZoomableMediaViewState extends State<ZoomableMediaView> {
   static const _mouseWheelScaleStep = 0.0007;
-  static const _webWheelDeltaFactor = 0.12;
+  static const _webWheelDeltaFactor = 0.2;
 
   final TransformationController _transformationController =
       TransformationController();
