@@ -82,6 +82,9 @@ class ImageViewerView extends StatelessWidget {
                 child: PageView.builder(
                   scrollDirection: Axis.vertical,
                   controller: controller.pageController,
+                  physics: PlatformInfos.isMobile
+                      ? null
+                      : const NeverScrollableScrollPhysics(),
                   itemCount: controller.allEvents.length,
                   itemBuilder: (context, i) {
                     final event = controller.allEvents[i];
