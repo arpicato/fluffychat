@@ -57,7 +57,7 @@ class ImageViewerView extends StatelessWidget {
               tooltip: L10n.of(context).downloadFile,
             ),
             const SizedBox(width: 8),
-            if (ImageViewerPolicy.pageViewPhysics() is PageScrollPhysics)
+            if (ImageViewerPolicy.showsMobileShareAction)
               // Use builder context to correctly position the share dialog on iPad
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),

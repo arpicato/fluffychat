@@ -6,11 +6,34 @@
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:flutter/material.dart';
 
-class ImageViewerPolicy {
-  static bool get usesCustomZoomGestures =>
-      PlatformInfos.isWeb || PlatformInfos.isDesktop;
+class ImageViewerPlatformOverride {
+  const ImageViewerPlatformOverride({
+    required this.isWeb,
+    required this.isDesktop,
+    required this.isMobile,
+  });
 
-  static ScrollPhysics pageViewPhysics() => PlatformInfos.isMobile
+  final bool isWeb;
+  final bool isDesktop;
+  final bool isMobile;
+}
+
+class ImageViewerPolicy {
+  static ImageViewerPlatformOverride? debugPlatformOverride;
+
+  static bool get _isWeb => debugPlatformOverride?.isWeb ?? PlatformInfos.isWeb;
+
+  static bool get _isDesktop =>
+      debugPlatformOverride?.isDesktop ?? PlatformInfos.isDesktop;
+
+  static bool get _isMobile =>
+      debugPlatformOverride?.isMobile ?? PlatformInfos.isMobile;
+
+  static bool get usesCustomZoomGestures => _isWeb || _isDesktop;
+
+  static bool get showsMobileShareAction => _isMobile;
+
+  static ScrollPhysics pageViewPhysics() => _isMobile
       ? const PageScrollPhysics()
       : const NeverScrollableScrollPhysics();
 }
