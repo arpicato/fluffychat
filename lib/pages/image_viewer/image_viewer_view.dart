@@ -25,12 +25,10 @@ class ImageViewerView extends StatelessWidget {
       backgroundColor: Colors.black.withAlpha(200),
       foregroundColor: Colors.white,
     );
-    return GestureDetector(
-      onTap: () => Navigator.of(context).pop(),
-      child: Scaffold(
-        backgroundColor: Colors.black.withAlpha(128),
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
+    return Scaffold(
+      backgroundColor: Colors.black.withAlpha(128),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
           elevation: 0,
           leading: IconButton(
             style: iconButtonStyle,
@@ -73,10 +71,16 @@ class ImageViewerView extends StatelessWidget {
               ),
           ],
         ),
-        body: HoverBuilder(
-          builder: (context, hovered) => Stack(
-            children: [
-              KeyboardListener(
+      body: HoverBuilder(
+        builder: (context, hovered) => Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.of(context).pop(),
+              ),
+            ),
+            KeyboardListener(
                 focusNode: controller.focusNode,
                 onKeyEvent: controller.onKeyEvent,
                 child: PageView.builder(
@@ -93,11 +97,7 @@ class ImageViewerView extends StatelessWidget {
                         return Padding(
                           padding: const EdgeInsets.only(top: 52.0),
                           child: Center(
-                            child: GestureDetector(
-                              // Ignore taps to not go back here:
-                              onTap: () {},
-                              child: EventVideoPlayer(event),
-                            ),
+                            child: EventVideoPlayer(event),
                           ),
                         );
                       case MessageTypes.Image:
@@ -110,16 +110,12 @@ class ImageViewerView extends StatelessWidget {
                           child: Center(
                             child: Hero(
                               tag: event.eventId,
-                              child: GestureDetector(
-                                // Ignore taps to not go back here:
-                                onTap: () {},
-                                child: MxcImage(
-                                  key: ValueKey(event.eventId),
-                                  event: event,
-                                  fit: BoxFit.contain,
-                                  isThumbnail: false,
-                                  animated: true,
-                                ),
+                              child: MxcImage(
+                                key: ValueKey(event.eventId),
+                                event: event,
+                                fit: BoxFit.contain,
+                                isThumbnail: false,
+                                animated: true,
                               ),
                             ),
                           ),
@@ -128,37 +124,36 @@ class ImageViewerView extends StatelessWidget {
                   },
                 ),
               ),
-              if (hovered)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Column(
-                    mainAxisSize: .min,
-                    children: [
-                      if (controller.canGoBack)
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: IconButton(
-                            style: iconButtonStyle,
-                            tooltip: L10n.of(context).previous,
-                            icon: const Icon(Icons.arrow_upward_outlined),
-                            onPressed: controller.prevImage,
-                          ),
+            if (hovered)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Column(
+                  mainAxisSize: .min,
+                  children: [
+                    if (controller.canGoBack)
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: IconButton(
+                          style: iconButtonStyle,
+                          tooltip: L10n.of(context).previous,
+                          icon: const Icon(Icons.arrow_upward_outlined),
+                          onPressed: controller.prevImage,
                         ),
-                      if (controller.canGoNext)
-                        Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: IconButton(
-                            style: iconButtonStyle,
-                            tooltip: L10n.of(context).next,
-                            icon: const Icon(Icons.arrow_downward_outlined),
-                            onPressed: controller.nextImage,
-                          ),
+                      ),
+                    if (controller.canGoNext)
+                      Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: IconButton(
+                          style: iconButtonStyle,
+                          tooltip: L10n.of(context).next,
+                          icon: const Icon(Icons.arrow_downward_outlined),
+                          onPressed: controller.nextImage,
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
