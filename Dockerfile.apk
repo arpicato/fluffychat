@@ -3,6 +3,8 @@
 FROM ghcr.io/cirruslabs/flutter:3.41.6
 
 ARG APK_SIGNING_MODE=release
+ARG APK_DEV_VERSION_CODE=
+ARG APK_DEV_VERSION_NAME=
 
 # Install Rust toolchain for native crypto (Vodozemac) — arm64 only
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
@@ -42,11 +44,14 @@ RUN if [ "$APK_SIGNING_MODE" = "release" ] && [ ! -f android/key.properties ]; t
       exit 1; \
     fi
 
+
 # Build APK — arm64 only (--target-platform)
 RUN --mount=type=cache,target=/root/.pub-cache \
     --mount=type=cache,target=/root/.gradle \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
+    FLUFFY_DEV_VERSION_CODE="$APK_DEV_VERSION_CODE" \
+    FLUFFY_DEV_VERSION_NAME="$APK_DEV_VERSION_NAME" \
     flutter build apk --release --target-platform android-arm64 -v 2>&1 | tee /tmp/build.log; \
     if [ ! -f /app/build/app/outputs/flutter-apk/app-release.apk ]; then \
       cat /tmp/build.log; exit 1; \
