@@ -43,7 +43,11 @@ void main() {
 
     expect(find.byType(Placeholder), findsOneWidget);
     final pageView = tester.widget<PageView>(find.byType(PageView));
-    expect(pageView.physics, isA<PageScrollPhysics>());
+    expect(pageView.physics, isA<ImageViewerMobilePageScrollPhysics>());
+    expect(
+      pageView.physics!.dragStartDistanceMotionThreshold,
+      ImageViewerMobilePageScrollPhysics.dragStartThreshold,
+    );
     expect(find.text('Second page'), findsNothing);
 
     await tester.drag(find.byType(PageView), const Offset(0, -400));

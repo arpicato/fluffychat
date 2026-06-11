@@ -6,6 +6,20 @@
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:flutter/material.dart';
 
+class ImageViewerMobilePageScrollPhysics extends PageScrollPhysics {
+  const ImageViewerMobilePageScrollPhysics({super.parent});
+
+  static const dragStartThreshold = 24.0;
+
+  @override
+  ImageViewerMobilePageScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return ImageViewerMobilePageScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  double? get dragStartDistanceMotionThreshold => dragStartThreshold;
+}
+
 class ImageViewerPlatformOverride {
   const ImageViewerPlatformOverride({
     required this.isWeb,
@@ -46,6 +60,6 @@ class ImageViewerPolicy {
       _isWeb ? webWheelStepMultiplier : desktopWheelStepMultiplier;
 
   static ScrollPhysics pageViewPhysics() => _isMobile
-      ? const PageScrollPhysics()
+      ? const ImageViewerMobilePageScrollPhysics()
       : const NeverScrollableScrollPhysics();
 }

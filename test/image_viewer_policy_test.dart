@@ -19,7 +19,7 @@ void main() {
     final physics = ImageViewerPolicy.pageViewPhysics();
 
     if (PlatformInfos.isMobile) {
-      expect(physics, isA<PageScrollPhysics>());
+      expect(physics, isA<ImageViewerMobilePageScrollPhysics>());
     } else {
       expect(physics, isA<NeverScrollableScrollPhysics>());
     }
@@ -33,7 +33,26 @@ void main() {
     );
 
     expect(ImageViewerPolicy.usesCustomZoomGestures, isFalse);
-    expect(ImageViewerPolicy.pageViewPhysics(), isA<PageScrollPhysics>());
+    expect(
+      ImageViewerPolicy.pageViewPhysics(),
+      isA<ImageViewerMobilePageScrollPhysics>(),
+    );
     expect(ImageViewerPolicy.showsMobileShareAction, isTrue);
+  });
+
+  test('mobile paging uses a higher drag start threshold', () {
+    ImageViewerPolicy.debugPlatformOverride = const ImageViewerPlatformOverride(
+      isWeb: false,
+      isDesktop: false,
+      isMobile: true,
+    );
+
+    final physics =
+        ImageViewerPolicy.pageViewPhysics() as ImageViewerMobilePageScrollPhysics;
+
+    expect(
+      physics.dragStartDistanceMotionThreshold,
+      ImageViewerMobilePageScrollPhysics.dragStartThreshold,
+    );
   });
 }
