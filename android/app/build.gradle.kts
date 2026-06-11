@@ -1,8 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
 
-fun stringEnv(name: String): String? = System.getenv(name)?.takeIf { it.isNotBlank() }
-
 plugins {
     id("com.android.application")
     id("kotlin-android")
@@ -72,14 +70,11 @@ android {
     }
 
     defaultConfig {
-        val devVersionCode = stringEnv("FLUFFY_DEV_VERSION_CODE")?.toIntOrNull()
-        val devVersionName = stringEnv("FLUFFY_DEV_VERSION_NAME")
-
         applicationId = "chat.fluffy.fluffychat"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = devVersionCode ?: flutter.versionCode
-        versionName = devVersionName ?: flutter.versionName
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
         ndk { // Workaround for https://github.com/flutter/flutter/issues/162153#issuecomment-2612443642
             abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86_64", "x86")
         }
