@@ -34,6 +34,8 @@ class _ZoomableMediaViewState extends State<ZoomableMediaView> {
 
   final TransformationController _transformationController =
       TransformationController();
+  Matrix4? _gestureStartMatrix;
+  double? _gestureStartScale;
 
   @override
   void dispose() {
@@ -69,6 +71,30 @@ class _ZoomableMediaViewState extends State<ZoomableMediaView> {
     controller.dispose();
   }
 
+  void _handleScaleStart(ScaleStartDetails details) {
+    _gestureStartMatrix = _transformationController.value.clone();
+    _gestureStartScale = _currentScale;
+  }
+
+  void _handleScaleUpdate(ScaleUpdateDetails details) {
+    if (details.pointerCount < 2) return;
+    final startMatrix = _gestureStartMatrix;
+    final startScale = _gestureStartScale;
+    if (startMatrix == null || startScale == null) return;
+    _zoomAround(
+      details.localFocalPoint,
+      targetScale: startScale * details.scale,
+      baseMatrix: startMatrix,
+      baseScale: startScale,
+    );
+  }
+
+  void _handleScaleEnd(ScaleEndDetails details) {
+    _gestureStartMatrix = null;
+    _gestureStartScale = null;
+    widget.onInteractionEnd?.call(details);
+  }
+
   void _handlePointerSignal(PointerSignalEvent event) {
     if (event is! PointerScrollEvent) return;
 
@@ -95,18 +121,23 @@ class _ZoomableMediaViewState extends State<ZoomableMediaView> {
 
   @override
   Widget build(BuildContext context) {
-    final useCustomScale = PlatformInfos.isWeb || PlatformInfos.isDesktop;
-    return Listener(
+    return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onPointerSignal: _handlePointerSignal,
-      child: InteractiveViewer(
-        transformationController: _transformationController,
-        minScale: widget.minScale,
-        maxScale: widget.maxScale,
-        scaleEnabled: !useCustomScale,
-        trackpadScrollCausesScale: false,
-        onInteractionEnd: widget.onInteractionEnd,
-        child: widget.child,
+      onScaleStart: _handleScaleStart,
+      onScaleUpdate: _handleScaleUpdate,
+      onScaleEnd: _handleScaleEnd,
+      child: Listener(
+        behavior: HitTestBehavior.opaque,
+        onPointerSignal: _handlePointerSignal,
+        child: InteractiveViewer(
+          transformationController: _transformationController,
+          minScale: widget.minScale,
+          maxScale: widget.maxScale,
+          scaleEnabled: false,
+          trackpadScrollCausesScale: false,
+          onInteractionEnd: widget.onInteractionEnd,
+          child: widget.child,
+        ),
       ),
     );
   }
