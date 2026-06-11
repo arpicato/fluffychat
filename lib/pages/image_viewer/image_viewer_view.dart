@@ -6,6 +6,7 @@
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/image_viewer/video_player.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
+import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/widgets/hover_builder.dart';
 import 'package:fluffychat/widgets/mxc_image.dart';
 import 'package:fluffychat/widgets/zoomable_media_view.dart';
@@ -81,49 +82,19 @@ class ImageViewerView extends StatelessWidget {
               ),
             ),
             KeyboardListener(
-                focusNode: controller.focusNode,
-                onKeyEvent: controller.onKeyEvent,
-                child: PageView.builder(
-                  scrollDirection: Axis.vertical,
-                  controller: controller.pageController,
-                  physics: PlatformInfos.isMobile
-                      ? null
-                      : const NeverScrollableScrollPhysics(),
-                  itemCount: controller.allEvents.length,
-                  itemBuilder: (context, i) {
-                    final event = controller.allEvents[i];
-                    switch (event.messageType) {
-                      case MessageTypes.Video:
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 52.0),
-                          child: Center(
-                            child: EventVideoPlayer(event),
-                          ),
-                        );
-                      case MessageTypes.Image:
-                      case MessageTypes.Sticker:
-                      default:
-                        return ZoomableMediaView(
-                          minScale: 1.0,
-                          maxScale: 10.0,
-                          onInteractionEnd: controller.onInteractionEnds,
-                          child: Center(
-                            child: Hero(
-                              tag: event.eventId,
-                              child: MxcImage(
-                                key: ValueKey(event.eventId),
-                                event: event,
-                                fit: BoxFit.contain,
-                                isThumbnail: false,
-                                animated: true,
-                              ),
-                            ),
-                          ),
-                        );
-                    }
-                  },
+              focusNode: controller.focusNode,
+              onKeyEvent: controller.onKeyEvent,
+              child: AnimatedSwitcher(
+                duration: FluffyThemes.animationDuration,
+                switchInCurve: FluffyThemes.animationCurve,
+                switchOutCurve: FluffyThemes.animationCurve,
+                child: _ImageViewerContent(
+                  key: ValueKey(controller.currentEvent.eventId),
+                  event: controller.currentEvent,
+                  onInteractionEnd: controller.onInteractionEnds,
                 ),
               ),
+            ),
             if (hovered)
               Align(
                 alignment: Alignment.centerRight,
@@ -157,5 +128,49 @@ class ImageViewerView extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ImageViewerContent extends StatelessWidget {
+  const _ImageViewerContent({
+    required this.event,
+    required this.onInteractionEnd,
+    super.key,
+  });
+
+  final Event event;
+  final GestureScaleEndCallback onInteractionEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (event.messageType) {
+      case MessageTypes.Video:
+        return Padding(
+          padding: const EdgeInsets.only(top: 52.0),
+          child: Center(
+            child: EventVideoPlayer(event),
+          ),
+        );
+      case MessageTypes.Image:
+      case MessageTypes.Sticker:
+      default:
+        return ZoomableMediaView(
+          minScale: 1.0,
+          maxScale: 10.0,
+          onInteractionEnd: onInteractionEnd,
+          child: Center(
+            child: Hero(
+              tag: event.eventId,
+              child: MxcImage(
+                key: ValueKey(event.eventId),
+                event: event,
+                fit: BoxFit.contain,
+                isThumbnail: false,
+                animated: true,
+              ),
+            ),
+          ),
+        );
+    }
   }
 }
