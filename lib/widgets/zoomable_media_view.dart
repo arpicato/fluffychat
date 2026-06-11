@@ -29,10 +29,6 @@ class ZoomableMediaView extends StatefulWidget {
 }
 
 class _ZoomableMediaViewState extends State<ZoomableMediaView> {
-  static const _mouseWheelScaleStep = 0.0007;
-  static const _webWheelPixelsPerStep = 120.0;
-  static const _webWheelStepMultiplier = 1.18;
-
   final TransformationController _transformationController =
       TransformationController();
 
@@ -80,13 +76,10 @@ class _ZoomableMediaViewState extends State<ZoomableMediaView> {
 
     GestureBinding.instance.pointerSignalResolver.register(event, (event) {
       final scrollEvent = event as PointerScrollEvent;
-      final scaleDelta = PlatformInfos.isWeb
-          ? math.pow(
-                  _webWheelStepMultiplier,
-                  -scrollEvent.scrollDelta.dy / _webWheelPixelsPerStep,
-                )
-                .toDouble()
-          : math.exp(-scrollEvent.scrollDelta.dy * _mouseWheelScaleStep);
+      final scaleDelta = math.pow(
+        ImageViewerPolicy.wheelStepMultiplier,
+        -scrollEvent.scrollDelta.dy / ImageViewerPolicy.wheelPixelsPerStep,
+      ).toDouble();
       _zoomAround(
         scrollEvent.localPosition,
         targetScale: _currentScale * scaleDelta,

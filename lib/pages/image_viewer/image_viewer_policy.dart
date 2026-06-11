@@ -20,6 +20,10 @@ class ImageViewerPlatformOverride {
 
 class ImageViewerPolicy {
   static ImageViewerPlatformOverride? debugPlatformOverride;
+  static const webWheelPixelsPerStep = 120.0;
+  static const webWheelStepMultiplier = 1.18;
+  static const desktopWheelPixelsPerStep = 120.0;
+  static const desktopWheelStepMultiplier = 1.32;
 
   static bool get _isWeb => debugPlatformOverride?.isWeb ?? PlatformInfos.isWeb;
 
@@ -32,6 +36,14 @@ class ImageViewerPolicy {
   static bool get usesCustomZoomGestures => _isWeb || _isDesktop;
 
   static bool get showsMobileShareAction => _isMobile;
+
+  static bool get isWeb => _isWeb;
+
+  static double get wheelPixelsPerStep =>
+      _isWeb ? webWheelPixelsPerStep : desktopWheelPixelsPerStep;
+
+  static double get wheelStepMultiplier =>
+      _isWeb ? webWheelStepMultiplier : desktopWheelStepMultiplier;
 
   static ScrollPhysics pageViewPhysics() => _isMobile
       ? const PageScrollPhysics()
