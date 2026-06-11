@@ -57,10 +57,10 @@ if [[ "$signing_mode" == "dev" && ! -f "$local_dev_keyprops_path" ]]; then
       >/tmp/opencode/build_apk_local_dev_keytool.log 2>&1
   fi
   cat >"$local_dev_keyprops_path" <<EOF
-storePassword=${local_dev_password}
-keyPassword=${local_dev_password}
-keyAlias=${local_dev_alias}
-storeFile=${local_dev_store_file}
+  storePassword=${local_dev_password}
+  keyPassword=${local_dev_password}
+  keyAlias=${local_dev_alias}
+  storeFile=${local_dev_store_file}
 EOF
 fi
 
