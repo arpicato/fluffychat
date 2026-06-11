@@ -5,7 +5,6 @@
 
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/image_viewer/video_player.dart';
-import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/widgets/hover_builder.dart';
 import 'package:fluffychat/widgets/mxc_image.dart';
 import 'package:fluffychat/widgets/zoomable_media_view.dart';
@@ -13,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
 import 'image_viewer.dart';
+import 'image_viewer_policy.dart';
 
 class ImageViewerView extends StatelessWidget {
   final ImageViewerController controller;
@@ -57,7 +57,7 @@ class ImageViewerView extends StatelessWidget {
               tooltip: L10n.of(context).downloadFile,
             ),
             const SizedBox(width: 8),
-            if (PlatformInfos.isMobile)
+            if (ImageViewerPolicy.pageViewPhysics() is PageScrollPhysics)
               // Use builder context to correctly position the share dialog on iPad
               Padding(
                 padding: const EdgeInsets.only(right: 8.0),
@@ -82,9 +82,7 @@ class ImageViewerView extends StatelessWidget {
                 child: PageView.builder(
                   scrollDirection: Axis.vertical,
                   controller: controller.pageController,
-                  physics: PlatformInfos.isMobile
-                      ? null
-                      : const NeverScrollableScrollPhysics(),
+                  physics: ImageViewerPolicy.pageViewPhysics(),
                   itemCount: controller.allEvents.length,
                   itemBuilder: (context, i) {
                     final event = controller.allEvents[i];

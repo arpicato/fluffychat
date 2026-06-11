@@ -5,6 +5,7 @@
 
 import 'dart:math' as math;
 
+import 'package:fluffychat/pages/image_viewer/image_viewer_policy.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -95,8 +96,6 @@ class _ZoomableMediaViewState extends State<ZoomableMediaView> {
 
   @override
   Widget build(BuildContext context) {
-    final useCustomScale = PlatformInfos.isWeb || PlatformInfos.isDesktop;
-
     return Listener(
       behavior: HitTestBehavior.opaque,
       onPointerSignal: _handlePointerSignal,
@@ -104,7 +103,7 @@ class _ZoomableMediaViewState extends State<ZoomableMediaView> {
         transformationController: _transformationController,
         minScale: widget.minScale,
         maxScale: widget.maxScale,
-        scaleEnabled: !useCustomScale,
+        scaleEnabled: !ImageViewerPolicy.usesCustomZoomGestures,
         trackpadScrollCausesScale: false,
         onInteractionEnd: widget.onInteractionEnd,
         child: widget.child,
