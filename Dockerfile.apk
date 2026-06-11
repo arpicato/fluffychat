@@ -36,9 +36,15 @@ RUN perl -0pi -e 's/\r\n/\n/g' android/gradlew \
     && sed -i '1s|^#!.*|#!/usr/bin/env bash|' android/gradlew \
     && chmod +x android/gradlew
 
-RUN if [ "$APK_SIGNING_MODE" = "release" ] && [ ! -f android/key.properties ]; then \
+RUN if [ "$APK_SIGNING_MODE" = "dev" ]; then \
+      keytool -genkeypair -v -keystore android/app/dummy.keystore \
+        -alias dummyAlias -keyalg RSA -keysize 2048 -validity 10000 \
+        -storepass dummyStorePassword -keypass dummyPassword \
+        -storetype JKS \
+        -dname "CN=Dummy, OU=Dummy, O=Dummy, L=Dummy, ST=Dummy, C=US"; \
+    elif [ ! -f android/key.properties ]; then \
       echo "ERROR: android/key.properties is required for upgrade-compatible APK builds." >&2; \
-      echo "Use APK_SIGNING_MODE=dev only for persistent local-dev signing or disposable test installs." >&2; \
+      echo "Use APK_SIGNING_MODE=dev only for disposable local installs." >&2; \
       exit 1; \
     fi
 
