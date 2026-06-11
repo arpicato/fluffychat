@@ -97,6 +97,13 @@ class ImageViewerController extends State<ImageViewer> {
 
   bool get canGoBack => _index > 0;
 
+  @override
+  void dispose() {
+    focusNode.dispose();
+    pageController.dispose();
+    super.dispose();
+  }
+
   /// Forward this image to another room.
   void forwardAction() => showScaffoldDialog(
     context: context,

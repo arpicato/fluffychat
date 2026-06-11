@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 class ImageViewerMobilePageScrollPhysics extends PageScrollPhysics {
   const ImageViewerMobilePageScrollPhysics({super.parent});
 
-  static const dragStartThreshold = 24.0;
+  static const dragStartThreshold = 72.0;
 
   @override
   ImageViewerMobilePageScrollPhysics applyTo(ScrollPhysics? ancestor) {
