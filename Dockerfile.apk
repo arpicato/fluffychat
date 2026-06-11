@@ -2,8 +2,6 @@
 # syntax=docker/dockerfile:1.7
 FROM ghcr.io/cirruslabs/flutter:3.41.6
 
-ARG APK_SIGNING_MODE=release
-
 # Install Rust toolchain for native crypto (Vodozemac) — arm64 only
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && . "$HOME/.cargo/env" \
@@ -36,17 +34,12 @@ RUN perl -0pi -e 's/\r\n/\n/g' android/gradlew \
     && sed -i '1s|^#!.*|#!/usr/bin/env bash|' android/gradlew \
     && chmod +x android/gradlew
 
-RUN if [ "$APK_SIGNING_MODE" = "dev" ]; then \
-      keytool -genkeypair -v -keystore android/app/dummy.keystore \
-        -alias dummyAlias -keyalg RSA -keysize 2048 -validity 10000 \
-        -storepass dummyStorePassword -keypass dummyPassword \
-        -storetype JKS \
-        -dname "CN=Dummy, OU=Dummy, O=Dummy, L=Dummy, ST=Dummy, C=US"; \
-    elif [ ! -f android/key.properties ]; then \
-      echo "ERROR: android/key.properties is required for upgrade-compatible APK builds." >&2; \
-      echo "Use APK_SIGNING_MODE=dev only for disposable local installs." >&2; \
-      exit 1; \
-    fi
+# Generate signing keystore
+RUN keytool -genkeypair -v -keystore android/app/dummy.keystore \
+    -alias dummyAlias -keyalg RSA -keysize 2048 -validity 10000 \
+    -storepass dummyStorePassword -keypass dummyPassword \
+    -storetype JKS \
+    -dname "CN=Dummy, OU=Dummy, O=Dummy, L=Dummy, ST=Dummy, C=US"
 
 # Build APK — arm64 only (--target-platform)
 RUN --mount=type=cache,target=/root/.pub-cache \
