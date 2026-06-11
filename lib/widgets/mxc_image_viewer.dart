@@ -20,10 +20,12 @@ class MxcImageViewer extends StatelessWidget {
       backgroundColor: Colors.black.withAlpha(200),
       foregroundColor: Colors.white,
     );
-    return Scaffold(
-      backgroundColor: Colors.black.withAlpha(128),
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
+    return GestureDetector(
+      onTap: () => Navigator.of(context).pop(),
+      child: Scaffold(
+        backgroundColor: Colors.black.withAlpha(128),
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
           elevation: 0,
           leading: IconButton(
             style: iconButtonStyle,
@@ -34,24 +36,19 @@ class MxcImageViewer extends StatelessWidget {
           ),
           backgroundColor: Colors.transparent,
         ),
-      body: Stack(
-        children: [
-          Positioned.fill(
+        body: ZoomableMediaView(
+          minScale: 1.0,
+          maxScale: 10.0,
+          onInteractionEnd: (endDetails) {
+            if (endDetails.velocity.pixelsPerSecond.dy >
+                MediaQuery.sizeOf(context).height * 1.5) {
+              Navigator.of(context, rootNavigator: false).pop();
+            }
+          },
+          child: Center(
             child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => Navigator.of(context).pop(),
-            ),
-          ),
-          ZoomableMediaView(
-            minScale: 1.0,
-            maxScale: 10.0,
-            onInteractionEnd: (endDetails) {
-              if (endDetails.velocity.pixelsPerSecond.dy >
-                  MediaQuery.sizeOf(context).height * 1.5) {
-                Navigator.of(context, rootNavigator: false).pop();
-              }
-            },
-            child: Center(
+              // Ignore taps to not go back here:
+              onTap: () {},
               child: MxcImage(
                 key: ValueKey(mxContent.toString()),
                 uri: mxContent,
@@ -61,7 +58,7 @@ class MxcImageViewer extends StatelessWidget {
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
