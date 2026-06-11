@@ -3,6 +3,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/pages/image_viewer/image_viewer_view.dart';
 import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/show_scaffold_dialog.dart';
@@ -52,12 +53,12 @@ class ImageViewerController extends State<ImageViewer> {
       (event) => event.eventId == widget.event.eventId,
     );
     if (index < 0) index = 0;
-    currentIndex = index;
+    pageController = PageController(initialPage: index);
   }
 
-  late final List<Event> allEvents;
+  late final PageController pageController;
 
-  late int currentIndex;
+  late final List<Event> allEvents;
 
   void onKeyEvent(KeyEvent event) {
     switch (event.logicalKey) {
@@ -71,20 +72,24 @@ class ImageViewerController extends State<ImageViewer> {
   }
 
   Future<void> prevImage() async {
-    if (!canGoBack) return;
-    currentIndex -= 1;
+    await pageController.previousPage(
+      duration: FluffyThemes.animationDuration,
+      curve: FluffyThemes.animationCurve,
+    );
     if (!mounted) return;
     setState(() {});
   }
 
   Future<void> nextImage() async {
-    if (!canGoNext) return;
-    currentIndex += 1;
+    await pageController.nextPage(
+      duration: FluffyThemes.animationDuration,
+      curve: FluffyThemes.animationCurve,
+    );
     if (!mounted) return;
     setState(() {});
   }
 
-  int get _index => currentIndex;
+  int get _index => pageController.page?.toInt() ?? 0;
 
   Event get currentEvent => allEvents[_index];
 
