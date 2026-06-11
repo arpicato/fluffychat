@@ -30,10 +30,11 @@ class ImageViewerView extends StatelessWidget {
       backgroundColor: Colors.black.withAlpha(128),
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-          elevation: 0,
-          leading: IconButton(
-            style: iconButtonStyle,
-            icon: const Icon(Icons.close),
+        elevation: 0,
+        title: const Text('DEBUG IMAGE VIEWER'),
+        leading: IconButton(
+          style: iconButtonStyle,
+          icon: const Icon(Icons.close),
             onPressed: Navigator.of(context).pop,
             color: Colors.white,
             tooltip: L10n.of(context).close,
