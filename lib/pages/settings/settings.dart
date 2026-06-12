@@ -102,15 +102,17 @@ class SettingsController extends State<Settings> {
       backendError = error;
     }
     if (!mounted) return;
-    await showOkAlertDialog(
-      context: context,
-      title: 'Build info',
-      message: [
-        'Frontend version: ${frontend.version}',
-        if (backend != null) ...[
-          'Backend version: ${backend.version}',
-          'Backend commit: ${backend.commit}',
-          'Backend build date: ${backend.buildDate}',
+      await showOkAlertDialog(
+        context: context,
+        title: 'Build info',
+        message: [
+          'Frontend version: ${frontend.version}',
+          'Frontend commit: ${frontend.commit}',
+          'Frontend build date: ${frontend.buildDate}',
+          if (backend != null) ...[
+            'Backend version: ${backend.version}',
+            'Backend commit: ${backend.commit}',
+            'Backend build date: ${backend.buildDate}',
         ] else
           'Backend info error: $backendError',
       ].join('\n'),

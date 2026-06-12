@@ -6,6 +6,9 @@
 # flutter:3.41.6 linux/amd64
 FROM ghcr.io/cirruslabs/flutter@sha256:7efb4cd5ef95687924a02cb932dcc27f08450cca92b34a36850dec5292b029d5 AS builder
 
+ARG FLUFFY_FRONTEND_COMMIT=unknown
+ARG FLUFFY_FRONTEND_BUILD_DATE=unknown
+
 # Install Rust toolchain and wasm-pack (cached across builds)
 RUN --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
@@ -66,7 +69,9 @@ RUN --mount=type=cache,target=/root/.cargo/registry \
 
 # Build Flutter web release
 RUN --mount=type=cache,target=/root/.pub-cache \
-    flutter build web --release --source-maps
+    flutter build web --release --source-maps \
+      --dart-define=FLUFFY_FRONTEND_COMMIT=${FLUFFY_FRONTEND_COMMIT} \
+      --dart-define=FLUFFY_FRONTEND_BUILD_DATE=${FLUFFY_FRONTEND_BUILD_DATE}
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
