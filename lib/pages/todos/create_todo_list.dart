@@ -1,4 +1,5 @@
 import 'package:fluffychat/services/backend_session_service.dart';
+import 'package:fluffychat/services/messie_error_presentation.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/services/messie_workspace_refresh.dart';
 import 'package:fluffychat/widgets/matrix.dart';
@@ -88,8 +89,12 @@ Future<void> showCreateTodoListFlow(
     );
   } catch (error) {
     if (!context.mounted) return;
+    final message = messieUserMessage(
+      error,
+      fallback: 'Could not create a todo list right now. Please try again.',
+    );
     ScaffoldMessenger.of(
       context,
-    ).showSnackBar(SnackBar(content: Text('Could not create todo list: $error')));
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }

@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:fluffychat/config/themes.dart';
+import 'package:fluffychat/services/messie_error_presentation.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
-import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/widgets/avatar.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
 import 'package:flutter/material.dart';
@@ -16,9 +16,10 @@ import 'todo_list_detail.dart';
 import 'todo_list_detail_logic.dart';
 
 void _showTodoError(BuildContext context, String message, Object error) {
+  final text = messieUserMessage(error, fallback: message);
   ScaffoldMessenger.of(
     context,
-  ).showSnackBar(SnackBar(content: Text('$message: $error')));
+  ).showSnackBar(SnackBar(content: Text(text)));
 }
 
 const double _todoItemDialogTargetWidth = 520;
@@ -603,7 +604,10 @@ class _TodoListDetailPageViewState extends State<TodoListDetailPageView> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '${snapshot.error}',
+                      messieUserMessage(
+                        snapshot.error,
+                        fallback: 'Please try again in a moment.',
+                      ),
                       style: theme.textTheme.bodyMedium,
                       textAlign: TextAlign.center,
                     ),
@@ -1690,7 +1694,12 @@ class _CollaboratorsDialogState extends State<_CollaboratorsDialog> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: Align(
               alignment: Alignment.topLeft,
-              child: Text(snapshot.error!.toLocalizedString(context)),
+              child: Text(
+                messieUserMessage(
+                  snapshot.error,
+                  fallback: 'Unable to search for collaborators right now.',
+                ),
+              ),
             ),
           );
         }

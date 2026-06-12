@@ -1,6 +1,7 @@
 import 'package:cross_file/cross_file.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
+import 'package:fluffychat/services/messie_error_presentation.dart';
 import 'package:fluffychat/services/messie_workspace_refresh.dart';
 import 'package:fluffychat/utils/adaptive_bottom_sheet.dart';
 import 'package:fluffychat/utils/file_selector.dart';
@@ -1206,9 +1207,14 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       );
     } catch (error) {
       if (!context.mounted) return;
+      final message = messieUserMessage(
+        error,
+        fallback:
+            'Could not complete that calendar action right now. Please try again.',
+      );
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('$error')));
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -1467,7 +1473,13 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
-                      Text('${snapshot.error}', textAlign: TextAlign.center),
+                      Text(
+                        messieUserMessage(
+                          snapshot.error,
+                          fallback: 'Please try again in a moment.',
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
                       const SizedBox(height: 16),
                       FilledButton(
                         onPressed: _refreshPage,

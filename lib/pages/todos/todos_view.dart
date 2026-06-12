@@ -1,5 +1,6 @@
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
+import 'package:fluffychat/services/messie_error_presentation.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
 import 'package:fluffychat/widgets/matrix.dart';
@@ -68,7 +69,10 @@ class TodosPageView extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${snapshot.error}',
+                        messieUserMessage(
+                          snapshot.error,
+                          fallback: 'Please try again in a moment.',
+                        ),
                         style: theme.textTheme.bodyMedium,
                         textAlign: TextAlign.center,
                       ),

@@ -1,6 +1,5 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:messie_api/messie_api.dart' as api;
 
@@ -386,33 +385,7 @@ class MessieTodoService {
     : _sdkFactory = sdkFactory ?? GeneratedMessieTodoSdk.new;
 
   final MessieTodoSdkFactory _sdkFactory;
-
-  Exception _requestException(String message, DioException error) {
-    final statusCode = error.response?.statusCode?.toString() ?? 'unknown';
-    final data = error.response?.data;
-    final body = data == null
-        ? ''
-        : data is String
-        ? data
-        : jsonEncode(data);
-    final fallbackDetail = [
-      if (error.error != null) error.error.toString(),
-      if (body.isEmpty && error.message != null && error.message!.isNotEmpty)
-        error.message!,
-      if (body.isEmpty && error.type != DioExceptionType.unknown)
-        'dio type=${error.type.name}',
-    ].where((part) => part.isNotEmpty).join(' | ');
-    final detail = body.isNotEmpty ? body : fallbackDetail;
-    return Exception('$message ($statusCode): $detail');
-  }
-
-  Exception _genericException(String message, Object error) {
-    final text = error.toString();
-    if (text.startsWith('Exception: ')) {
-      return Exception(text.substring('Exception: '.length));
-    }
-    return Exception('$message: $text');
-  }
+  final MessieErrorService _errorService = const MessieErrorService();
 
   Future<T> _wrapRequest<T>(
     String message,
@@ -435,13 +408,18 @@ class MessieTodoService {
         'type=${error.type.name}',
         error,
       );
-      throw _requestException(message, error);
-    } catch (error) {
+      throw await _errorService.fromDio('messie/todo', message, error);
+    } catch (error, stackTrace) {
       Logs().w(
         '[messie/todo] fail $message elapsed=${stopwatch.elapsedMilliseconds}ms',
         error,
       );
-      throw _genericException(message, error);
+      throw await _errorService.fromGeneric(
+        'messie/todo',
+        message,
+        error,
+        stackTrace,
+      );
     }
   }
 
@@ -452,8 +430,10 @@ class MessieTodoService {
   }) async {
     final normalizedUserId = userId.trim();
     if (normalizedUserId.isEmpty) {
-      throw Exception(
-        'Failed to load todos: backend session is missing userId',
+      throw MessieUserException(
+        kind: MessieErrorKind.unauthorized,
+        operation: 'Failed to load todos',
+        userMessage: 'Your Messie session is incomplete. Please sign in again.',
       );
     }
 
@@ -646,13 +626,22 @@ class MessieTodoService {
         '[messie/todo] dio Failed to reposition todo items elapsed=${stopwatch.elapsedMilliseconds}ms type=${error.type.name}',
         error,
       );
-      throw _requestException('Failed to reposition todo items', error);
-    } catch (error) {
+      throw await _errorService.fromDio(
+        'messie/todo',
+        'Failed to reposition todo items',
+        error,
+      );
+    } catch (error, stackTrace) {
       Logs().w(
         '[messie/todo] fail Failed to reposition todo items elapsed=${stopwatch.elapsedMilliseconds}ms',
         error,
       );
-      throw _genericException('Failed to reposition todo items', error);
+      throw await _errorService.fromGeneric(
+        'messie/todo',
+        'Failed to reposition todo items',
+        error,
+        stackTrace,
+      );
     } finally {
       dio.close();
     }
@@ -706,7 +695,11 @@ class MessieTodoService {
       if (user == null) return null;
       return MessieUser.fromApi(user);
     } on DioException catch (error) {
-      throw _requestException('Failed to look up user', error);
+      throw await _errorService.fromDio(
+        'messie/todo',
+        'Failed to look up user',
+        error,
+      );
     }
   }
 }

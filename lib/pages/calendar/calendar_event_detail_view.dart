@@ -2,6 +2,7 @@ import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/pages/calendar/calendar_event_detail.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
+import 'package:fluffychat/services/messie_error_presentation.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
@@ -128,7 +129,10 @@ class _CalendarEventDetailPageViewState
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        '${snapshot.error}',
+                        messieUserMessage(
+                          snapshot.error,
+                          fallback: 'Please try again in a moment.',
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
