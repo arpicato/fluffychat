@@ -55,4 +55,28 @@ void main() {
       ImageViewerMobilePageScrollPhysics.dragStartThreshold,
     );
   });
+
+  test('mobile paging uses a snappier page spring', () {
+    ImageViewerPolicy.debugPlatformOverride = const ImageViewerPlatformOverride(
+      isWeb: false,
+      isDesktop: false,
+      isMobile: true,
+    );
+
+    final physics =
+        ImageViewerPolicy.pageViewPhysics() as ImageViewerMobilePageScrollPhysics;
+
+    expect(
+      physics.spring.mass,
+      ImageViewerMobilePageScrollPhysics.pageSpring.mass,
+    );
+    expect(
+      physics.spring.stiffness,
+      ImageViewerMobilePageScrollPhysics.pageSpring.stiffness,
+    );
+    expect(
+      physics.spring.damping,
+      ImageViewerMobilePageScrollPhysics.pageSpring.damping,
+    );
+  });
 }
