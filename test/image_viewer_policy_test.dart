@@ -79,4 +79,29 @@ void main() {
       ImageViewerMobilePageScrollPhysics.pageSpring.damping,
     );
   });
+
+  test('mobile paging uses a looser settle tolerance', () {
+    ImageViewerPolicy.debugPlatformOverride = const ImageViewerPlatformOverride(
+      isWeb: false,
+      isDesktop: false,
+      isMobile: true,
+    );
+
+    final physics =
+        ImageViewerPolicy.pageViewPhysics() as ImageViewerMobilePageScrollPhysics;
+
+    expect(
+      physics.toleranceFor(
+        FixedScrollMetrics(
+          minScrollExtent: 0,
+          maxScrollExtent: 100,
+          pixels: 0,
+          viewportDimension: 100,
+          axisDirection: AxisDirection.down,
+          devicePixelRatio: 1,
+        ),
+      ),
+      ImageViewerMobilePageScrollPhysics.pageTolerance,
+    );
+  });
 }

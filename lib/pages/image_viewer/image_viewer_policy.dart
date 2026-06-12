@@ -11,9 +11,13 @@ class ImageViewerMobilePageScrollPhysics extends PageScrollPhysics {
 
   static const dragStartThreshold = 72.0;
   static const pageSpring = SpringDescription(
-    mass: 0.5,
-    stiffness: 220.0,
-    damping: 26.0,
+    mass: 0.35,
+    stiffness: 420.0,
+    damping: 34.0,
+  );
+  static const pageTolerance = Tolerance(
+    velocity: 2.0,
+    distance: 1.2,
   );
 
   @override
@@ -26,6 +30,9 @@ class ImageViewerMobilePageScrollPhysics extends PageScrollPhysics {
 
   @override
   SpringDescription get spring => ImageViewerMobilePageScrollPhysics.pageSpring;
+
+  @override
+  Tolerance toleranceFor(ScrollMetrics metrics) => pageTolerance;
 }
 
 class ImageViewerPlatformOverride {
