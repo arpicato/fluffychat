@@ -97,6 +97,11 @@ class ImageViewerController extends State<ImageViewer> {
 
   bool get canGoBack => _index > 0;
 
+  void onPageChanged(int index) {
+    if (!mounted) return;
+    setState(() {});
+  }
+
   @override
   void dispose() {
     focusNode.dispose();
