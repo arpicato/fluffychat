@@ -62,6 +62,17 @@ class BridgeProviderCatalog {
     return null;
   }
 
+  bool isBridgeBotParticipantForDirectChat(String participantUserId, Room room) {
+    final directChatMatrixId = room.directChatMatrixID;
+    if (directChatMatrixId == null) return false;
+    final provider = providerForRemoteUserId(directChatMatrixId);
+    if (provider == null) return false;
+    return provider.matchesBridgeBotId(
+      participantUserId,
+      bridgeBotId: bridgeBotIdFor(provider.provider),
+    );
+  }
+
   factory BridgeProviderCatalog.fromStates(
     Iterable<MessieBridgeState> states,
   ) {
