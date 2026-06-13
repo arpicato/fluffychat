@@ -14,18 +14,29 @@ class LoadedMessieBridgeCatalog {
 }
 
 class MessieBridgeCatalogLoader {
-  MessieBridgeCatalogLoader({
-    MessieBridgeService? bridgeService,
-  }) : _bridgeService = bridgeService ?? MessieBridgeService();
+  MessieBridgeCatalogLoader._internal({
+    required MessieBridgeService bridgeService,
+    required Iterable<String> providers,
+  }) : _bridgeService = bridgeService,
+       _providers = providers;
 
   final MessieBridgeService _bridgeService;
   final MessieErrorService _errorService = const MessieErrorService();
+  final Iterable<String> _providers;
+
+  factory MessieBridgeCatalogLoader({
+    MessieBridgeService? bridgeService,
+    Iterable<String>? providers,
+  }) => MessieBridgeCatalogLoader._internal(
+    bridgeService: bridgeService ?? MessieBridgeService(),
+    providers: providers ?? BridgeProviderCatalog.supportedProviders.keys,
+  );
 
   Future<LoadedMessieBridgeCatalog> load(Client client) async {
     final stopwatch = Stopwatch()..start();
     Logs().d('[messie/bridge] start load provider catalog');
     final states = <MessieBridgeState>[];
-    for (final provider in BridgeProviderCatalog.supportedProviders.keys) {
+    for (final provider in _providers) {
       try {
         states.add(await _bridgeService.loadState(client, provider: provider));
       } catch (error, stackTrace) {
