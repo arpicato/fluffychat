@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -85,7 +85,13 @@ class MessieLogService {
           ..write(stackTrace);
       }
       buffer.write('\n');
-      await file.writeAsString(buffer.toString(), mode: FileMode.append);
+      final line = buffer.toString();
+      if (kIsWeb) {
+        // Mirror retained Messie diagnostics to the browser console so web
+        // debugging sees the same service-specific signal as the persisted log.
+        Logs().w(line.trimRight());
+      }
+      await file.writeAsString(line, mode: FileMode.append);
     } catch (e, s) {
       Logs().w('[messie/log] failed to write client log', e, s);
     }

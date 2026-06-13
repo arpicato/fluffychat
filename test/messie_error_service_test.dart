@@ -74,6 +74,7 @@ void main() {
     expect(await file.exists(), isTrue);
     final contents = await file.readAsString();
     expect(contents, contains('[messie/test] Synthetic failure | error=detail'));
+    expect(contents, endsWith('\n'));
   });
 
   test('maps generic IO failures to a network message', () async {
