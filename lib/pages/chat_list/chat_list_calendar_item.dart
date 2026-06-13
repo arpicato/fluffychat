@@ -17,7 +17,37 @@ class ChatListCalendarItem extends StatelessWidget {
   final VoidCallback onTap;
   final bool active;
 
-  String _timeLabel(BuildContext context) {
+  static String previewDateLabel(
+    MessieCalendarEvent event, {
+    DateTime? now,
+  }) {
+    final localStart = event.startsAt.toLocal();
+    final nowLocal = (now ?? DateTime.now()).toLocal();
+    final today = DateTime(nowLocal.year, nowLocal.month, nowLocal.day);
+    final startDay = DateTime(localStart.year, localStart.month, localStart.day);
+    final dayDelta = startDay.difference(today).inDays;
+
+    if (dayDelta == 0) {
+      final minuteDelta = localStart.difference(nowLocal).inMinutes;
+      if (minuteDelta > 0 && minuteDelta < 60) {
+        return 'in $minuteDelta minutes';
+      }
+      final hourDelta = localStart.difference(nowLocal).inHours;
+      if (hourDelta == 1) {
+        return 'in 1 hour';
+      }
+    }
+
+    if (dayDelta == 1) return 'tomorrow';
+    if (dayDelta == 2) return 'in 2 days';
+
+    final month = localStart.month.toString().padLeft(2, '0');
+    final day = localStart.day.toString().padLeft(2, '0');
+    if (event.allDay) return '$month/$day';
+    return '$month/$day · ${previewTimeLabel(event)}';
+  }
+
+  static String previewTimeLabel(MessieCalendarEvent event) {
     final localStart = event.startsAt.toLocal();
     if (event.allDay) return 'All day';
     final hour = localStart.hour % 12 == 0 ? 12 : localStart.hour % 12;
@@ -26,11 +56,12 @@ class ChatListCalendarItem extends StatelessWidget {
     return '$hour:$minute $period';
   }
 
+  String _timeLabel() {
+    return previewTimeLabel(event);
+  }
+
   String _dateLabel() {
-    final localStart = event.startsAt.toLocal();
-    final month = localStart.month.toString().padLeft(2, '0');
-    final day = localStart.day.toString().padLeft(2, '0');
-    return '$month/$day';
+    return previewDateLabel(event);
   }
 
   @override
@@ -81,10 +112,10 @@ class ChatListCalendarItem extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
-                  child: Text(
-                    _timeLabel(context),
-                    style: theme.textTheme.bodySmall,
-                  ),
+                    child: Text(
+                      _timeLabel(),
+                      style: theme.textTheme.bodySmall,
+                    ),
                 ),
               ],
             ),
