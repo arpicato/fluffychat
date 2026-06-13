@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/services/messie_error_presentation.dart';
 import 'package:fluffychat/utils/localized_exception_extension.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_ok_cancel_alert_dialog.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_text_input_dialog.dart';
@@ -161,7 +162,10 @@ class MessieLoginController extends State<MessieLogin> {
     } catch (e) {
       widget.client.homeserver = oldHomeserver;
       if (!mounted) return;
-      usernameError = e.toLocalizedString(context);
+      usernameError = messieUserMessage(
+        e,
+        fallback: e.toLocalizedString(context),
+      );
       if (mounted) setState(() {});
     }
   }

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/services/messie_bridge_service.dart';
+import 'package:fluffychat/services/messie_error_presentation.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_ok_cancel_alert_dialog.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_text_input_dialog.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
@@ -322,8 +323,11 @@ class _BridgeConnectionsPageState extends State<BridgeConnectionsPage> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 12),
-                      SelectableText(
-                        snapshot.error.toString(),
+                      Text(
+                        messieUserMessage(
+                          snapshot.error,
+                          fallback: 'Please try again in a moment.',
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
