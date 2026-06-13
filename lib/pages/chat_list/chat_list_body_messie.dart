@@ -151,7 +151,7 @@ class ChatListViewBody extends StatelessWidget {
         });
         final calendarEntries = <ChatListEntry>[
           ...visibleCalendarEvents.map(ChatListEntry.calendar),
-        ]..sort((a, b) => b.sortTime.compareTo(a.sortTime));
+        ]..sort((a, b) => a.sortTime.compareTo(b.sortTime));
         final entries = <ChatListEntry>[
           ...calendarEntries,
           if (calendarEntries.isNotEmpty && timelineEntries.isNotEmpty)
