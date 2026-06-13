@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:dio/dio.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:messie_api/messie_api.dart' as api;
 import 'package:matrix/matrix.dart';
 
@@ -337,6 +338,7 @@ class MessieCalendarService {
     : _sdkFactory = sdkFactory ?? GeneratedMessieCalendarSdk.new;
 
   final MessieCalendarSdkFactory _sdkFactory;
+  final MessieErrorService _errorService = const MessieErrorService();
 
   Object? _decodeErrorPayload(Object? data) {
     if (data == null) return null;
@@ -376,43 +378,6 @@ class MessieCalendarService {
     return null;
   }
 
-  Exception _requestException(String message, DioException error) {
-    final statusCode = error.response?.statusCode?.toString() ?? 'unknown';
-    final serverMessage =
-        _extractServerMessage(error.response?.data) ??
-        _extractServerMessage(error.error);
-    if (serverMessage != null && serverMessage.isNotEmpty) {
-      return Exception(serverMessage);
-    }
-    final data = error.response?.data;
-    final body = data == null
-        ? ''
-        : data is String
-        ? data
-        : jsonEncode(_decodeErrorPayload(data));
-    final fallbackDetail = [
-      if (error.error != null) error.error.toString(),
-      if (body.isEmpty && error.message != null && error.message!.isNotEmpty)
-        error.message!,
-      if (body.isEmpty && error.type != DioExceptionType.unknown)
-        'dio type=${error.type.name}',
-    ].where((part) => part.isNotEmpty).join(' | ');
-    final detail = body.isNotEmpty ? body : fallbackDetail;
-    return Exception('$message ($statusCode): $detail');
-  }
-
-  Exception _genericException(String message, Object error) {
-    final serverMessage = _extractServerMessage(error);
-    if (serverMessage != null && serverMessage.isNotEmpty) {
-      return Exception(serverMessage);
-    }
-    final text = error.toString();
-    if (text.startsWith('Exception: ')) {
-      return Exception(text.substring('Exception: '.length));
-    }
-    return Exception('$message: $text');
-  }
-
   Future<T> _wrapRequest<T>(
     String message,
     Future<T> Function(MessieCalendarSdk sdk) callback, {
@@ -434,13 +399,18 @@ class MessieCalendarService {
         'type=${error.type.name}',
         error,
       );
-      throw _requestException(message, error);
-    } catch (error) {
+      throw await _errorService.fromDio('messie/calendar', message, error);
+    } catch (error, stackTrace) {
       Logs().w(
         '[messie/calendar] fail $message elapsed=${stopwatch.elapsedMilliseconds}ms',
         error,
       );
-      throw _genericException(message, error);
+      throw await _errorService.fromGeneric(
+        'messie/calendar',
+        message,
+        error,
+        stackTrace,
+      );
     }
   }
 

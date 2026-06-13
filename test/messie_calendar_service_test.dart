@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:cross_file/cross_file.dart';
 import 'package:dio/dio.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:messie_api/messie_api.dart' as api;
@@ -599,9 +600,9 @@ void main() {
           ),
         ),
         throwsA(
-          isA<Exception>().having(
-            (error) => error.toString(),
-            'message',
+          isA<MessieUserException>().having(
+            (error) => error.userMessage,
+            'userMessage',
             contains('calendar file contains no VEVENT entries'),
           ),
         ),
@@ -625,9 +626,9 @@ void main() {
           ),
         ),
         throwsA(
-          isA<Exception>().having(
-            (error) => error.toString(),
-            'message',
+          isA<MessieUserException>().having(
+            (error) => error.userMessage,
+            'userMessage',
             contains('calendar file contains no VEVENT entries'),
           ),
         ),
@@ -656,12 +657,10 @@ void main() {
           limit: 25,
         ),
         throwsA(
-          isA<Exception>().having(
-            (error) => error.toString(),
-            'message',
-            contains(
-              'Failed to load upcoming calendar events (unknown): TimeoutException: Future not completed',
-            ),
+          isA<MessieUserException>().having(
+            (error) => error.userMessage,
+            'userMessage',
+            'Unable to reach Messie right now. Check your connection and try again.',
           ),
         ),
       );

@@ -1,5 +1,6 @@
 import 'package:built_collection/built_collection.dart';
 import 'package:fluffychat/services/messie_bridge_service.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:messie_api/messie_api.dart' as api;
 import 'package:one_of/one_of.dart';
@@ -148,6 +149,43 @@ void main() {
 
       expect(step.dataType, isNull);
       expect(step.isCodeDisplay, isTrue);
+    });
+
+    test('throws a stable state error when login start returns no step', () {
+      expect(
+        () => MessieBridgeProvisioningStep.fromApi(
+          _wrapStep(
+            api.LoginStepComplete((b) {
+              b
+                ..type = api.LoginStepCompleteTypeEnum.complete
+                ..complete.userLoginId = 'login-1';
+            }),
+            [
+              api.LoginStepComplete,
+              api.LoginStepCookies,
+              api.LoginStepDisplayAndWait,
+              api.LoginStepUserInput,
+            ],
+          ),
+        ),
+        returnsNormally,
+      );
+    });
+  });
+
+  group('Messie error contracts', () {
+    test('MessieUserException renders the user-safe message', () {
+      final exception = MessieUserException(
+        kind: MessieErrorKind.server,
+        operation: 'Failed to load bridge account state',
+        userMessage:
+            'Messie had a problem handling that request. Please try again shortly.',
+      );
+
+      expect(
+        exception.toString(),
+        'Messie had a problem handling that request. Please try again shortly.',
+      );
     });
   });
 }

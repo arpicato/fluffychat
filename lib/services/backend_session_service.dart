@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:fluffychat/config/setting_keys.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:fluffychat/utils/custom_http_client.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -53,6 +56,7 @@ class BackendSessionService {
     : _httpClient = httpClient ?? CustomHttpClient.createHTTPClient();
 
   final http.Client _httpClient;
+  final MessieErrorService _errorService = const MessieErrorService();
 
   Future<BackendSession> ensureSession(
     Client client,
@@ -62,7 +66,11 @@ class BackendSessionService {
     apiBaseUrl ??= defaultApiBaseUrl;
     final userId = client.userID;
     if (userId == null || userId.isEmpty) {
-      throw Exception('Matrix user is not logged in.');
+      throw MessieUserException(
+        kind: MessieErrorKind.unauthorized,
+        operation: 'Backend session',
+        userMessage: 'Your Matrix session is not active right now.',
+      );
     }
 
     final cached = _readStoredSession(store);
@@ -73,31 +81,66 @@ class BackendSessionService {
       return cached;
     }
 
-    final openId = await client.requestOpenIdToken(userId, const {});
-    final response = await _httpClient.post(
-      Uri.parse('$apiBaseUrl/auth/matrix/openid'),
-      headers: {'content-type': 'application/json'},
-      body: jsonEncode({
-        'access_token': openId.accessToken,
-        'matrix_server_name': openId.matrixServerName,
-      }),
-    );
+    try {
+      final openId = await client.requestOpenIdToken(userId, const {});
+      final response = await _httpClient
+          .post(
+            Uri.parse('$apiBaseUrl/auth/matrix/openid'),
+            headers: {'content-type': 'application/json'},
+            body: jsonEncode({
+              'access_token': openId.accessToken,
+              'matrix_server_name': openId.matrixServerName,
+            }),
+          )
+          .timeout(const Duration(seconds: 20));
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception(
-        'Backend auth failed (${response.statusCode}): ${response.body}',
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        await MessieLogService.instance.write(
+          'messie/session',
+          'Backend auth failed',
+          error:
+              'status=${response.statusCode} body=${response.body.substring(0, response.body.length.clamp(0, 1000))}',
+        );
+        throw _errorService.httpFailure(
+          'Backend session',
+          response.statusCode,
+          response.body,
+        );
+      }
+
+      final json = jsonDecode(response.body) as Map<String, Object?>;
+      final session = BackendSession(
+        token: json['token'] as String,
+        mxid: json['mxid'] as String? ?? userId,
+        userId: json['userId'] as String? ?? json['user_id'] as String? ?? '',
+        expiresAt: _decodeJwtExpiry(json['token'] as String),
+      );
+      await store.setString(_sessionStoreKey, jsonEncode(session.toJson()));
+      return session;
+    } on MessieUserException {
+      rethrow;
+    } on TimeoutException catch (error, stackTrace) {
+      throw await _errorService.fromGeneric(
+        'messie/session',
+        'Backend session',
+        error,
+        stackTrace,
+      );
+    } on IOException catch (error, stackTrace) {
+      throw await _errorService.fromGeneric(
+        'messie/session',
+        'Backend session',
+        error,
+        stackTrace,
+      );
+    } catch (error, stackTrace) {
+      throw await _errorService.fromGeneric(
+        'messie/session',
+        'Backend session',
+        error,
+        stackTrace,
       );
     }
-
-    final json = jsonDecode(response.body) as Map<String, Object?>;
-    final session = BackendSession(
-      token: json['token'] as String,
-      mxid: json['mxid'] as String? ?? userId,
-      userId: json['userId'] as String? ?? json['user_id'] as String? ?? '',
-      expiresAt: _decodeJwtExpiry(json['token'] as String),
-    );
-    await store.setString(_sessionStoreKey, jsonEncode(session.toJson()));
-    return session;
   }
 
   Future<void> clearSession(SharedPreferences store) =>

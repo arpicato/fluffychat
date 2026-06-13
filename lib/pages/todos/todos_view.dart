@@ -3,6 +3,7 @@ import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
 import 'package:fluffychat/widgets/matrix.dart';
+import 'package:fluffychat/widgets/messie_error_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -53,33 +54,12 @@ class TodosPageView extends StatelessWidget {
           }
           if (snapshot.hasError) {
             return MaxWidthBody(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.cloud_off_outlined, size: 48),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Could not load todos from Messie.',
-                        style: theme.textTheme.titleMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${snapshot.error}',
-                        style: theme.textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: controller.refresh,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
+              child: MessieErrorPanel(
+                title: 'Could not load todos from Messie.',
+                icon: Icons.cloud_off_outlined,
+                error: snapshot.error,
+                onRetry: controller.refresh,
+                titleStyle: theme.textTheme.titleMedium,
               ),
             );
           }

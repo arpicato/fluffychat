@@ -4,10 +4,12 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/services/messie_bridge_service.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_ok_cancel_alert_dialog.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_text_input_dialog.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
 import 'package:fluffychat/widgets/matrix.dart';
+import 'package:fluffychat/widgets/messie_error_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:messie_api/messie_api.dart' as api;
@@ -308,32 +310,14 @@ class _BridgeConnectionsPageState extends State<BridgeConnectionsPage> {
               centerTitle: FluffyThemes.isColumnMode(context),
             ),
             body: MaxWidthBody(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.link_off_outlined, size: 56),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Could not load bridge connections.',
-                        style: TextStyle(fontSize: 18),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      SelectableText(
-                        snapshot.error.toString(),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: _refresh,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
+              child: MessieErrorPanel(
+                title: 'Could not load bridge connections.',
+                icon: Icons.link_off_outlined,
+                iconSize: 56,
+                messageSpacing: 12,
+                error: snapshot.error,
+                onRetry: _refresh,
+                titleStyle: const TextStyle(fontSize: 18),
               ),
             ),
           );
@@ -624,6 +608,9 @@ class _BridgeDisplayAndWaitDialogState
   }
 
   String _describeBridgeError(Object error) {
+    if (error is MessieUserException) {
+      return error.userMessage;
+    }
     if (error is DioException) {
       final data = error.response?.data;
       if (data is Map) {

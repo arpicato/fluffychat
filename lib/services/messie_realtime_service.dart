@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:fluffychat/utils/custom_http_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:matrix/matrix.dart';
@@ -69,6 +71,7 @@ class MessieRealtimeService {
 
   final BackendSessionService _sessionService = BackendSessionService();
   final http.Client _httpClient = CustomHttpClient.createHTTPClient();
+  final MessieErrorService _errorService = const MessieErrorService();
   final StreamController<MessieRealtimeEvent> _eventsController =
       StreamController<MessieRealtimeEvent>.broadcast();
 
@@ -124,7 +127,13 @@ class MessieRealtimeService {
         jwt: session.token,
       );
       await _syncLoop;
-    } catch (_) {
+    } catch (error, stackTrace) {
+      await _errorService.fromGeneric(
+        'messie/realtime',
+        'Failed to start realtime sync',
+        error,
+        stackTrace,
+      );
       _scheduleReconnect(client: client, store: store, apiBaseUrl: apiBaseUrl);
     }
   }
@@ -136,36 +145,76 @@ class MessieRealtimeService {
     required String jwt,
   }) async {
     while (_running && _activeMxid == client.userID) {
-      final response = await _httpClient.get(
-        Uri.parse('$apiBaseUrl/sync?since=$_since&timeout_ms=25000'),
-        headers: {'Authorization': 'Bearer $jwt'},
-      );
-      if (response.statusCode == 401) {
-        await _sessionService.clearSession(store);
-        _scheduleReconnect(client: client, store: store, apiBaseUrl: apiBaseUrl);
-        return;
-      }
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        _scheduleReconnect(client: client, store: store, apiBaseUrl: apiBaseUrl);
-        return;
-      }
+      try {
+        final response = await _httpClient
+            .get(
+              Uri.parse('$apiBaseUrl/sync?since=$_since&timeout_ms=25000'),
+              headers: {'Authorization': 'Bearer $jwt'},
+            )
+            .timeout(const Duration(seconds: 35));
+        if (response.statusCode == 401) {
+          await MessieLogService.instance.write(
+            'messie/realtime',
+            'Realtime sync unauthorized; clearing session',
+          );
+          await _sessionService.clearSession(store);
+          _scheduleReconnect(client: client, store: store, apiBaseUrl: apiBaseUrl);
+          return;
+        }
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+          await MessieLogService.instance.write(
+            'messie/realtime',
+            'Realtime sync returned non-success status',
+            error: 'status=${response.statusCode} body=${response.body.substring(0, response.body.length.clamp(0, 1000))}',
+          );
+          _scheduleReconnect(client: client, store: store, apiBaseUrl: apiBaseUrl);
+          return;
+        }
 
-	    final json = jsonDecode(response.body) as Map<String, Object?>;
-	    final nextBatch = json['next_batch'];
-	    if (nextBatch is int) {
-	      _since = nextBatch;
-	    } else if (nextBatch is num) {
-	      _since = nextBatch.toInt();
-	    }
-	    final rawEvents = (json['events'] as List?) ?? const [];
-	    for (final rawEvent in rawEvents) {
-	      final event = MessieRealtimeEvent.fromJson(
-	        (rawEvent as Map).cast<String, Object?>(),
-	      );
-	      _eventsController.add(event);
-	      _applyWorkspaceRefresh(event);
-	    }
-	  }
+        final json = jsonDecode(response.body) as Map<String, Object?>;
+        final nextBatch = json['next_batch'];
+        if (nextBatch is int) {
+          _since = nextBatch;
+        } else if (nextBatch is num) {
+          _since = nextBatch.toInt();
+        }
+        final rawEvents = (json['events'] as List?) ?? const [];
+        for (final rawEvent in rawEvents) {
+          final event = MessieRealtimeEvent.fromJson(
+            (rawEvent as Map).cast<String, Object?>(),
+          );
+          _eventsController.add(event);
+          _applyWorkspaceRefresh(event);
+        }
+      } on TimeoutException catch (error, stackTrace) {
+        await _errorService.fromGeneric(
+          'messie/realtime',
+          'Realtime sync timed out',
+          error,
+          stackTrace,
+        );
+        _scheduleReconnect(client: client, store: store, apiBaseUrl: apiBaseUrl);
+        return;
+      } on IOException catch (error, stackTrace) {
+        await _errorService.fromGeneric(
+          'messie/realtime',
+          'Realtime sync lost network connectivity',
+          error,
+          stackTrace,
+        );
+        _scheduleReconnect(client: client, store: store, apiBaseUrl: apiBaseUrl);
+        return;
+      } catch (error, stackTrace) {
+        await _errorService.fromGeneric(
+          'messie/realtime',
+          'Realtime sync failed',
+          error,
+          stackTrace,
+        );
+        _scheduleReconnect(client: client, store: store, apiBaseUrl: apiBaseUrl);
+        return;
+      }
+    }
   }
 
   void _applyWorkspaceRefresh(MessieRealtimeEvent event) {

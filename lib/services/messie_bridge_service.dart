@@ -2,6 +2,7 @@ import 'package:built_collection/built_collection.dart';
 import 'package:built_value/json_object.dart';
 import 'package:dio/dio.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:messie_api/messie_api.dart' as api;
 import 'package:one_of/one_of.dart';
@@ -186,6 +187,25 @@ class MessieBridgeService {
 
   final BackendSessionService _sessionService;
   final String apiBaseUrl;
+  final MessieErrorService _errorService = const MessieErrorService();
+
+  Future<T> _run<T>(
+    String operation,
+    Future<T> action,
+  ) async {
+    try {
+      return await action;
+    } on DioException catch (error) {
+      throw await _errorService.fromDio('messie/bridge', operation, error);
+    } catch (error, stackTrace) {
+      throw await _errorService.fromGeneric(
+        'messie/bridge',
+        operation,
+        error,
+        stackTrace,
+      );
+    }
+  }
 
   Future<MessieBridgeState> loadState(
     Client client, {
@@ -193,13 +213,20 @@ class MessieBridgeService {
   }) async {
     final apiClient = await _createApiClient(client);
     try {
-      final connectionsResponse = await apiClient.defaultApi.getConnections();
-      final whoamiResponse = await apiClient.defaultApi.bridgeWhoami(
-        provider: provider,
+      final connectionsResponse = await _run(
+        'Failed to load bridge connections',
+        apiClient.defaultApi.getConnections(),
+      );
+      final whoamiResponse = await _run(
+        'Failed to load bridge account state',
+        apiClient.defaultApi.bridgeWhoami(provider: provider),
       );
       final flows =
           whoamiResponse.data?.loginFlows?.toList() ??
-          (await apiClient.defaultApi.bridgeGetLoginFlows(provider: provider)).data
+          (await _run(
+            'Failed to load bridge login flows',
+            apiClient.defaultApi.bridgeGetLoginFlows(provider: provider),
+          )).data
                   ?.flows
                   ?.toList() ??
           const <api.BridgeLoginFlow>[];
@@ -221,9 +248,9 @@ class MessieBridgeService {
   }) async {
     final apiClient = await _createApiClient(client);
     try {
-      final response = await apiClient.defaultApi.bridgeStartLogin(
-        flow: flow,
-        provider: provider,
+      final response = await _run(
+        'Failed to start bridge login',
+        apiClient.defaultApi.bridgeStartLogin(flow: flow, provider: provider),
       );
       final step = response.data;
       if (step == null) {
@@ -276,12 +303,15 @@ class MessieBridgeService {
           value: value,
         );
       });
-      final response = await apiClient.defaultApi.bridgeSubmitLoginStep(
-        processId: processId,
-        stepId: stepId,
-        action: action,
-        provider: provider,
-        bridgeSubmitLoginStepRequest: requestBody,
+      final response = await _run(
+        'Failed to continue bridge login',
+        apiClient.defaultApi.bridgeSubmitLoginStep(
+          processId: processId,
+          stepId: stepId,
+          action: action,
+          provider: provider,
+          bridgeSubmitLoginStepRequest: requestBody,
+        ),
       );
       final step = response.data;
       if (step == null) {
@@ -300,9 +330,12 @@ class MessieBridgeService {
   }) async {
     final apiClient = await _createApiClient(client);
     try {
-      await apiClient.defaultApi.bridgeLogout(
-        loginId: loginId,
-        provider: provider,
+      await _run(
+        'Failed to disconnect bridge account',
+        apiClient.defaultApi.bridgeLogout(
+          loginId: loginId,
+          provider: provider,
+        ),
       );
     } finally {
       apiClient.dispose();

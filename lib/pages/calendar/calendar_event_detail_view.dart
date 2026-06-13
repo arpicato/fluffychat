@@ -4,6 +4,7 @@ import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
 import 'package:fluffychat/widgets/matrix.dart';
+import 'package:fluffychat/widgets/messie_error_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -113,32 +114,12 @@ class _CalendarEventDetailPageViewState
           }
           if (snapshot.hasError) {
             return MaxWidthBody(
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.event_busy_outlined, size: 48),
-                      const SizedBox(height: 16),
-                      Text(
-                        'Could not load calendar event.',
-                        style: theme.textTheme.titleMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${snapshot.error}',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      FilledButton(
-                        onPressed: () => setState(() => _future = _load()),
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                ),
+              child: MessieErrorPanel(
+                title: 'Could not load calendar event.',
+                icon: Icons.event_busy_outlined,
+                error: snapshot.error,
+                onRetry: () => setState(() => _future = _load()),
+                titleStyle: theme.textTheme.titleMedium,
               ),
             );
           }
