@@ -1,5 +1,6 @@
 import 'package:fluffychat/services/bridge_room_presentation.dart';
 import 'package:fluffychat/services/messie_bridge_service.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:matrix/matrix.dart';
 
 class LoadedMessieBridgeCatalog {
@@ -18,15 +19,24 @@ class MessieBridgeCatalogLoader {
   }) : _bridgeService = bridgeService ?? MessieBridgeService();
 
   final MessieBridgeService _bridgeService;
+  final MessieErrorService _errorService = const MessieErrorService();
 
   Future<LoadedMessieBridgeCatalog> load(Client client) async {
     final stopwatch = Stopwatch()..start();
     Logs().d('[messie/bridge] start load provider catalog');
-    final states = await Future.wait(
-      BridgeProviderCatalog.supportedProviders.keys.map(
-        (provider) => _bridgeService.loadState(client, provider: provider),
-      ),
-    );
+    final states = <MessieBridgeState>[];
+    for (final provider in BridgeProviderCatalog.supportedProviders.keys) {
+      try {
+        states.add(await _bridgeService.loadState(client, provider: provider));
+      } catch (error, stackTrace) {
+        await _errorService.fromGeneric(
+          'messie/bridge-catalog',
+          'Failed to load bridge provider catalog for $provider',
+          error,
+          stackTrace,
+        );
+      }
+    }
 
     final loginNumbersByProvider = <String, Map<String, int>>{};
     for (final state in states) {
