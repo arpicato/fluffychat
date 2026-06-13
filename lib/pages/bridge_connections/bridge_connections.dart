@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/services/messie_bridge_service.dart';
 import 'package:fluffychat/services/messie_error_presentation.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_ok_cancel_alert_dialog.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_text_input_dialog.dart';
 import 'package:fluffychat/widgets/layouts/max_width_body.dart';
@@ -628,6 +629,9 @@ class _BridgeDisplayAndWaitDialogState
   }
 
   String _describeBridgeError(Object error) {
+    if (error is MessieUserException) {
+      return error.userMessage;
+    }
     if (error is DioException) {
       final data = error.response?.data;
       if (data is Map) {
