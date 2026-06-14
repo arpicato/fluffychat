@@ -37,6 +37,7 @@ import 'package:fluffychat/widgets/adaptive_dialogs/show_text_input_dialog.dart'
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/widgets/share_scaffold_dialog.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -179,6 +180,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
       selectedEvents.single.saveFile(context);
 
   List<Event> selectedEvents = [];
+  Timer? _pendingSingleTapSelection;
 
   final Set<String> unfolded = {};
 
@@ -599,6 +601,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   @override
   void dispose() {
     ShortcutDispatcher.instance.unregisterChatHandler(_keyboardHandler);
+    _pendingSingleTapSelection?.cancel();
     timeline?.cancelSubscriptions();
     timeline = null;
     inputFocus.removeListener(_inputFocusListener);
@@ -1243,6 +1246,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   }
 
   void clearSelectedEvents() => setState(() {
+    _pendingSingleTapSelection?.cancel();
     selectedEvents.clear();
     showEmojiPicker = false;
   });
@@ -1338,6 +1342,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   }
 
   void onSelectMessage(Event event) {
+    _pendingSingleTapSelection?.cancel();
     if (!event.redacted) {
       if (selectedEvents.contains(event)) {
         setState(() => selectedEvents.remove(event));
@@ -1348,6 +1353,19 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
         (a, b) => a.originServerTs.compareTo(b.originServerTs),
       );
     }
+  }
+
+  void onMessageSurfaceTap(Event event) {
+    _pendingSingleTapSelection?.cancel();
+    _pendingSingleTapSelection = Timer(kDoubleTapTimeout, () {
+      if (!mounted) return;
+      onSelectMessage(event);
+    });
+  }
+
+  void onMessageSurfaceDoubleTap(Event event) {
+    _pendingSingleTapSelection?.cancel();
+    replyAction(replyTo: event);
   }
 
   int? findChildIndexCallback(Key key, Map<String, int> thisEventsKeyMap) {

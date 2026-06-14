@@ -159,6 +159,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
     this.composerSuggestionsOpen = false,
     this.composerCaretOnTopVisualLine = false,
     this.messageFocusActive = false,
+    this.jumpToRecentResult = false,
     this.messageFocusUpResult = false,
     this.messageFocusDownResult = false,
     this.messagePageUpResult = false,
@@ -183,6 +184,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
   @override
   final bool messageFocusActive;
 
+  final bool jumpToRecentResult;
   final bool messageFocusUpResult;
   final bool messageFocusDownResult;
   final bool messagePageUpResult;
@@ -196,6 +198,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
 
   int messageFocusUpCalls = 0;
   int messageFocusDownCalls = 0;
+  int jumpToRecentCalls = 0;
   int messagePageUpCalls = 0;
   int messagePageDownCalls = 0;
   int toggleFocusedMessageSelectionCalls = 0;
@@ -221,6 +224,12 @@ class _FakeChatHandler implements KeyboardChatHandler {
   bool handleEscape() {
     handleEscapeCalls++;
     return handleEscapeResult;
+  }
+
+  @override
+  bool jumpToRecent() {
+    jumpToRecentCalls++;
+    return jumpToRecentResult;
   }
 
   @override

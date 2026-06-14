@@ -5,6 +5,7 @@ enum ShortcutCommand {
   search,
   escape,
   openFocusedChat,
+  jumpToRecent,
   toggleFocusedMessageSelection,
   forwardFocusedMessage,
   replyFocusedMessage,
@@ -126,6 +127,18 @@ class AppShortcutRegistry {
         ),
       ],
       when: {ShortcutWhen.textFieldNotFocused, ShortcutWhen.chatListVisible},
+    ),
+    const ShortcutDefinition(
+      command: ShortcutCommand.jumpToRecent,
+      scope: ShortcutScope.chat,
+      label: 'Jump to recent messages',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.keyJ,
+          modifiers: {ShortcutModifier.alt},
+        ),
+      ],
+      when: {ShortcutWhen.chatVisible, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.toggleFocusedMessageSelection,

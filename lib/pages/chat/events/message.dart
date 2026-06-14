@@ -34,6 +34,7 @@ class Message extends StatelessWidget {
   final Event? previousEvent;
   final bool displayReadMarker;
   final void Function(Event) onSelect;
+  final void Function(Event) onDoubleTap;
   final void Function(Event) onInfoTab;
   final void Function(String) scrollToEventId;
   final void Function() onSwipe;
@@ -62,6 +63,7 @@ class Message extends StatelessWidget {
     this.longPressSelect = false,
     required this.bigEmojis,
     required this.onSelect,
+    required this.onDoubleTap,
     required this.onInfoTab,
     required this.scrollToEventId,
     required this.onSwipe,
@@ -280,6 +282,7 @@ class Message extends StatelessWidget {
                         hoverColor: longPressSelect ? Colors.transparent : null,
                         enableFeedback: !selected,
                         onTap: longPressSelect ? null : () => onSelect(event),
+                        onDoubleTap: () => onDoubleTap(event),
                         borderRadius: BorderRadius.circular(
                           AppConfig.borderRadius / 2,
                         ),
@@ -430,6 +433,9 @@ class Message extends StatelessWidget {
                                 alignment: alignment,
                                 padding: const EdgeInsets.only(left: 8),
                                 child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () => onSelect(event),
+                                  onDoubleTap: () => onDoubleTap(event),
                                   onLongPress: longPressSelect
                                       ? null
                                       : () {
