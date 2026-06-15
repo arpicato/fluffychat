@@ -285,6 +285,7 @@ class Message extends StatelessWidget {
                       right: 0,
                       child: MessageClickSurface(
                         onSelect: () => onSelect(event),
+                        onDeselect: () => onSelect(event),
                         onReply: () => onDoubleTap(event),
                         behavior: HitTestBehavior.opaque,
                         child: Material(
@@ -443,6 +444,7 @@ class Message extends StatelessWidget {
                                   child: MessageClickSurface(
                                     behavior: HitTestBehavior.opaque,
                                     onSelect: () => onSelect(event),
+                                    onDeselect: () => onSelect(event),
                                     onReply: () => onDoubleTap(event),
                                     child: AnimatedOpacity(
                                       duration: FluffyThemes.animationDuration,
