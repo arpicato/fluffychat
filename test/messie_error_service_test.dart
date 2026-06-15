@@ -24,6 +24,26 @@ void main() {
     expect(result.userMessage, 'Messie took too long to respond. Please try again.');
   });
 
+  test('maps Dio unknown failures with inner timeout to a network message', () async {
+    final error = DioException(
+      requestOptions: RequestOptions(path: '/calendar/events/upcoming'),
+      type: DioExceptionType.unknown,
+      error: TimeoutException('Future not completed'),
+    );
+
+    final result = await service.fromDio(
+      'messie/test',
+      'Load upcoming calendar events',
+      error,
+    );
+
+    expect(result.kind, MessieErrorKind.timeout);
+    expect(
+      result.userMessage,
+      'Unable to reach Messie right now. Check your connection and try again.',
+    );
+  });
+
   test('maps backend 401 failures to a sign-in-again message', () async {
     final error = DioException(
       requestOptions: RequestOptions(path: '/auth/matrix/openid'),

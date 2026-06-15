@@ -25,7 +25,6 @@ void main() {
               children: [
                 MessageFocusWrapper(
                   order: 1,
-                  onSelect: () {},
                   onFocused: () => focusedCalls++,
                   child: const SizedBox(width: 20, height: 20),
                 ),
@@ -62,13 +61,11 @@ void main() {
               children: [
                 MessageFocusWrapper(
                   order: 1,
-                  onSelect: () {},
                   onFocused: () => firstWrapperFocused++,
                   child: const SizedBox(width: 20, height: 20),
                 ),
                 MessageFocusWrapper(
                   order: 2,
-                  onSelect: () {},
                   onFocused: () => secondWrapperFocused++,
                   child: const SizedBox(width: 20, height: 20),
                 ),

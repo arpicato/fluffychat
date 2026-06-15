@@ -104,14 +104,14 @@ void main() {
       expect(chat.toggleFocusedMessageSelectionCalls, 1);
     });
 
-    test('Alt+J jumps to recent messages', () {
+    test('End jumps to recent messages', () {
       final chat = _FakeChatHandler(jumpToRecentResult: true);
 
       final handled = resolver.resolve(
         keyState: const ShortcutKeyState(
-          key: LogicalKeyboardKey.keyJ,
+          key: LogicalKeyboardKey.end,
           primaryPressed: false,
-          altPressed: true,
+          altPressed: false,
           shiftPressed: false,
         ),
         context: const ShortcutContext(

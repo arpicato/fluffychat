@@ -132,12 +132,7 @@ class AppShortcutRegistry {
       command: ShortcutCommand.jumpToRecent,
       scope: ShortcutScope.chat,
       label: 'Jump to recent messages',
-      bindings: [
-        ShortcutBinding(
-          key: LogicalKeyboardKey.keyJ,
-          modifiers: {ShortcutModifier.alt},
-        ),
-      ],
+      bindings: [ShortcutBinding(key: LogicalKeyboardKey.end)],
       when: {ShortcutWhen.chatVisible, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(

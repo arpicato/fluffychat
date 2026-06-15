@@ -34,6 +34,7 @@ class Message extends StatelessWidget {
   final Event? previousEvent;
   final bool displayReadMarker;
   final void Function(Event) onSelect;
+  final void Function(Event, TapDownDetails) onSelectTapDown;
   final void Function(Event) onDoubleTap;
   final void Function(Event) onInfoTab;
   final void Function(String) scrollToEventId;
@@ -63,6 +64,7 @@ class Message extends StatelessWidget {
     this.longPressSelect = false,
     required this.bigEmojis,
     required this.onSelect,
+    required this.onSelectTapDown,
     required this.onDoubleTap,
     required this.onInfoTab,
     required this.scrollToEventId,
@@ -281,8 +283,7 @@ class Message extends StatelessWidget {
                       child: InkWell(
                         hoverColor: longPressSelect ? Colors.transparent : null,
                         enableFeedback: !selected,
-                        onTap: longPressSelect ? null : () => onSelect(event),
-                        onDoubleTap: () => onDoubleTap(event),
+                        onTapDown: (details) => onSelectTapDown(event, details),
                         borderRadius: BorderRadius.circular(
                           AppConfig.borderRadius / 2,
                         ),
@@ -434,8 +435,8 @@ class Message extends StatelessWidget {
                                 padding: const EdgeInsets.only(left: 8),
                                 child: GestureDetector(
                                   behavior: HitTestBehavior.opaque,
-                                  onTap: () => onSelect(event),
-                                  onDoubleTap: () => onDoubleTap(event),
+                                  onTapDown: (details) =>
+                                      onSelectTapDown(event, details),
                                   onLongPress: longPressSelect
                                       ? null
                                       : () {

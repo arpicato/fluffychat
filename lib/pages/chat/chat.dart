@@ -107,6 +107,11 @@ class ChatPageWithRoom extends StatefulWidget {
 }
 
 class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver {
+  static const Duration _messageSelectionCommitDelay = Duration(
+    milliseconds: 24,
+  );
+  static const Duration _messageDoubleTapWindow = Duration(milliseconds: 260);
+
   Room get room => sendingClient.getRoomById(roomId) ?? widget.room;
 
   late Client sendingClient;
@@ -181,6 +186,9 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   List<Event> selectedEvents = [];
   Timer? _pendingSingleTapSelection;
+  Event? _pendingSingleTapEvent;
+  DateTime? _lastMessageTapAt;
+  String? _lastMessageTapEventId;
 
   final Set<String> unfolded = {};
 
@@ -1247,6 +1255,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   void clearSelectedEvents() => setState(() {
     _pendingSingleTapSelection?.cancel();
+    _pendingSingleTapEvent = null;
     selectedEvents.clear();
     showEmojiPicker = false;
   });
@@ -1343,6 +1352,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   void onSelectMessage(Event event) {
     _pendingSingleTapSelection?.cancel();
+    _pendingSingleTapEvent = null;
     if (!event.redacted) {
       if (selectedEvents.contains(event)) {
         setState(() => selectedEvents.remove(event));
@@ -1355,16 +1365,34 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     }
   }
 
-  void onMessageSurfaceTap(Event event) {
+  void onMessageSurfaceTapDown(Event event, TapDownDetails details) {
+    focusedEvent = event;
     _pendingSingleTapSelection?.cancel();
-    _pendingSingleTapSelection = Timer(kDoubleTapTimeout, () {
+    final now = DateTime.now();
+    final isDoubleTap =
+        _lastMessageTapEventId == event.eventId &&
+        _lastMessageTapAt != null &&
+        now.difference(_lastMessageTapAt!) <= _messageDoubleTapWindow;
+    _lastMessageTapAt = now;
+    _lastMessageTapEventId = event.eventId;
+
+    if (isDoubleTap) {
+      _pendingSingleTapEvent = null;
+      onMessageSurfaceDoubleTap(event);
+      return;
+    }
+
+    _pendingSingleTapEvent = event;
+    _pendingSingleTapSelection = Timer(_messageSelectionCommitDelay, () {
       if (!mounted) return;
+      if (_pendingSingleTapEvent?.eventId != event.eventId) return;
       onSelectMessage(event);
     });
   }
 
   void onMessageSurfaceDoubleTap(Event event) {
     _pendingSingleTapSelection?.cancel();
+    _pendingSingleTapEvent = null;
     replyAction(replyTo: event);
   }
 
