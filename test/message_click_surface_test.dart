@@ -28,7 +28,7 @@ void main() {
     );
   }
 
-  testWidgets('single click selects within 160ms', (tester) async {
+  testWidgets('single click selects within 170ms', (tester) async {
     var selectCalls = 0;
     var deselectCalls = 0;
     var replyCalls = 0;
@@ -42,7 +42,7 @@ void main() {
     );
 
     await tester.tap(find.byType(MessageClickSurface));
-    await tester.pump(const Duration(milliseconds: 160));
+    await tester.pump(const Duration(milliseconds: 170));
 
     expect(selectCalls, 1);
     expect(deselectCalls, 0);
@@ -62,9 +62,19 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byType(MessageClickSurface));
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byType(MessageClickSurface)),
+    );
+    await gesture.up();
     await tester.pump(const Duration(milliseconds: 40));
-    await tester.tap(find.byType(MessageClickSurface));
+
+    final secondGesture = await tester.startGesture(
+      tester.getCenter(find.byType(MessageClickSurface)),
+    );
+    await tester.pump(const Duration(milliseconds: 120));
+    expect(selectCalls, 0);
+
+    await secondGesture.up();
     await tester.pumpAndSettle();
 
     expect(selectCalls, 0);
@@ -72,7 +82,7 @@ void main() {
     expect(replyCalls, 1);
   });
 
-  testWidgets('second later click deselects after initial selection', (tester) async {
+  testWidgets('selected message deselects immediately on next click', (tester) async {
     var selected = false;
     var replyCalls = 0;
 
@@ -85,12 +95,37 @@ void main() {
     );
 
     await tester.tap(find.byType(MessageClickSurface));
-    await tester.pump(const Duration(milliseconds: 160));
+    await tester.pump(const Duration(milliseconds: 170));
     expect(selected, isTrue);
 
-    await tester.pump(kDoubleTapTimeout);
     await tester.tap(find.byType(MessageClickSurface));
-    await tester.pump(const Duration(milliseconds: 160));
+    await tester.pump();
+    await tester.pump(kDoubleTapTimeout);
+
+    expect(selected, isFalse);
+    expect(replyCalls, 0);
+  });
+
+  testWidgets('selected message does not wait for double click before deselecting', (tester) async {
+    var selected = false;
+    var replyCalls = 0;
+
+    await tester.pumpWidget(
+      buildHarness(
+        onSelect: () => selected = true,
+        onDeselect: () => selected = false,
+        onReply: () => replyCalls++,
+      ),
+    );
+
+    await tester.tap(find.byType(MessageClickSurface));
+    await tester.pump(const Duration(milliseconds: 170));
+    expect(selected, isTrue);
+
+    await tester.tap(find.byType(MessageClickSurface));
+    await tester.pump(const Duration(milliseconds: 40));
+    await tester.tap(find.byType(MessageClickSurface));
+    await tester.pumpAndSettle();
 
     expect(selected, isFalse);
     expect(replyCalls, 0);

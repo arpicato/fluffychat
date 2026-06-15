@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 
 class MessageClickSurface extends StatefulWidget {
   const MessageClickSurface({
@@ -23,10 +24,12 @@ class MessageClickSurface extends StatefulWidget {
 }
 
 class _MessageClickSurfaceState extends State<MessageClickSurface> {
-  static const Duration _selectionDelay = Duration(milliseconds: 140);
+  static const Duration _selectionDelay = Duration(milliseconds: 150);
 
   Timer? _pendingSelectTimer;
   bool _selectionCommitted = false;
+  DateTime? _lastTapUpAt;
+  bool _doubleTapInProgress = false;
 
   @override
   void dispose() {
@@ -34,31 +37,59 @@ class _MessageClickSurfaceState extends State<MessageClickSurface> {
     super.dispose();
   }
 
+  void _handlePointerDown(PointerDownEvent event) {
+    if (_selectionCommitted) {
+      return;
+    }
+
+    final lastTapUpAt = _lastTapUpAt;
+    if (lastTapUpAt == null) {
+      return;
+    }
+
+    if (DateTime.now().difference(lastTapUpAt) <= kDoubleTapTimeout) {
+      _pendingSelectTimer?.cancel();
+      _doubleTapInProgress = true;
+    }
+  }
+
   void _handleTapUp(TapUpDetails details) {
+    if (_selectionCommitted) {
+      _pendingSelectTimer?.cancel();
+      _doubleTapInProgress = false;
+      _lastTapUpAt = null;
+      widget.onDeselect();
+      _selectionCommitted = false;
+      return;
+    }
+
+    if (_doubleTapInProgress) {
+      _doubleTapInProgress = false;
+      _lastTapUpAt = null;
+      widget.onReply();
+      return;
+    }
+
     _pendingSelectTimer?.cancel();
+    _lastTapUpAt = DateTime.now();
     _pendingSelectTimer = Timer(_selectionDelay, () {
       _selectionCommitted = true;
+      _lastTapUpAt = null;
       widget.onSelect();
     });
   }
 
-  void _handleDoubleTap() {
-    _pendingSelectTimer?.cancel();
-    if (_selectionCommitted) {
-      widget.onDeselect();
-      _selectionCommitted = false;
-    }
-    widget.onReply();
-  }
-
   void _handleTapCancel() {
     _pendingSelectTimer?.cancel();
+    _doubleTapInProgress = false;
+    _lastTapUpAt = null;
   }
 
   @override
   Widget build(BuildContext context) {
     return Listener(
       behavior: widget.behavior,
+      onPointerDown: _handlePointerDown,
       onPointerUp: (event) => _handleTapUp(
         TapUpDetails(
           globalPosition: event.position,
@@ -67,11 +98,7 @@ class _MessageClickSurfaceState extends State<MessageClickSurface> {
         ),
       ),
       onPointerCancel: (_) => _handleTapCancel(),
-      child: GestureDetector(
-        behavior: widget.behavior,
-        onDoubleTap: _handleDoubleTap,
-        child: widget.child,
-      ),
+      child: widget.child,
     );
   }
 }
