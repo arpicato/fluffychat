@@ -7,13 +7,11 @@ class MessageFocusWrapper extends StatefulWidget {
   const MessageFocusWrapper({
     super.key,
     required this.order,
-    required this.onSelect,
     required this.onFocused,
     required this.child,
   });
 
   final int order;
-  final VoidCallback onSelect;
   final VoidCallback onFocused;
   final Widget child;
 

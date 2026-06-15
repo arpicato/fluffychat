@@ -11,6 +11,7 @@ abstract class KeyboardChatHandler {
   bool get composerCaretOnTopVisualLine;
   bool get composerSuggestionsOpen;
   bool get messageFocusActive;
+  bool jumpToRecent();
   bool messageFocusUp();
   bool messageFocusDown();
   bool messagePageUp();

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -43,8 +44,12 @@ class MessieLogService {
   static const _maxBytes = 512 * 1024;
   static const _maxRotatedFiles = 3;
 
+  bool get _isTestEnvironment =>
+      Platform.environment.containsKey('FLUTTER_TEST') ||
+      Platform.environment.containsKey('DART_TEST');
+
   Future<File> _logFile() async {
-    if (PlatformDispatcher.instance.implicitView == null) {
+    if (_isTestEnvironment || PlatformDispatcher.instance.implicitView == null) {
       final directory = Directory('/tmp/opencode');
       await directory.create(recursive: true);
       return File('${directory.path}/$_logFileName');
@@ -134,6 +139,13 @@ class MessieErrorService {
 
   String _extractServerMessage(Object? data) {
     if (data == null) return '';
+    if (data is List<int>) {
+      try {
+        return _extractServerMessage(utf8.decode(data));
+      } catch (_) {
+        return data.toString();
+      }
+    }
     if (data is String) {
       final trimmed = data.trim();
       if (trimmed.startsWith('<!DOCTYPE html>') || trimmed.startsWith('<html')) {
@@ -159,19 +171,30 @@ class MessieErrorService {
     }
   }
 
+  String _normalizeServerMessage(String message) {
+    const calendarImportPrefix = 'Failed to import calendar source: ';
+    if (message.startsWith(calendarImportPrefix)) {
+      return message.substring(calendarImportPrefix.length).trim();
+    }
+    return message;
+  }
+
   Future<MessieUserException> fromDio(
     String scope,
     String operation,
     DioException error,
   ) async {
     final statusCode = error.response?.statusCode;
-    final serverMessage = _extractServerMessage(error.response?.data);
+    final innerError = error.error;
+    final serverMessage = _normalizeServerMessage(
+      _extractServerMessage(error.response?.data),
+    );
     final detail = [
       if (statusCode != null) 'status=$statusCode',
       'type=${error.type.name}',
       if (serverMessage.isNotEmpty) 'server=$serverMessage',
       if (error.message?.isNotEmpty == true) 'dio=${error.message}',
-      if (error.error != null) 'inner=${error.error}',
+      if (innerError != null) 'inner=$innerError',
     ].join(' | ');
     await MessieLogService.instance.write(
       scope,
@@ -179,6 +202,13 @@ class MessieErrorService {
       error: detail,
       stackTrace: error.stackTrace,
     );
+    if (innerError is TimeoutException) {
+      return MessieUserException(
+        kind: MessieErrorKind.timeout,
+        operation: operation,
+        userMessage: 'Unable to reach Messie right now. Check your connection and try again.',
+      );
+    }
     return _mapError(operation, statusCode, error.type, serverMessage);
   }
 

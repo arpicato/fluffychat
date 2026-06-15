@@ -118,6 +118,9 @@ class ShortcutResolver {
       case ShortcutCommand.openFocusedChat:
         return chatList?.openFocused() ?? false;
 
+      case ShortcutCommand.jumpToRecent:
+        return chat?.jumpToRecent() ?? false;
+
       case ShortcutCommand.toggleFocusedMessageSelection:
         return chat?.toggleFocusedMessageSelection() ?? false;
 

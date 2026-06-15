@@ -104,6 +104,29 @@ void main() {
       expect(chat.toggleFocusedMessageSelectionCalls, 1);
     });
 
+    test('End jumps to recent messages', () {
+      final chat = _FakeChatHandler(jumpToRecentResult: true);
+
+      final handled = resolver.resolve(
+        keyState: const ShortcutKeyState(
+          key: LogicalKeyboardKey.end,
+          primaryPressed: false,
+          altPressed: false,
+          shiftPressed: false,
+        ),
+        context: const ShortcutContext(
+          hasOpenChat: true,
+          textFieldFocused: false,
+          messageFocused: false,
+          modalOpen: false,
+        ),
+        chat: chat,
+      );
+
+      expect(handled, isTrue);
+      expect(chat.jumpToRecentCalls, 1);
+    });
+
     test('Alt+F forwards highlighted message', () {
       final chat = _FakeChatHandler(forwardFocusedMessageResult: true);
 
@@ -610,6 +633,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
     this.composerCaretOnTopVisualLine = false,
     this.composerSuggestionsOpen = false,
     this.messageFocusActive = false,
+    this.jumpToRecentResult = false,
     this.messagePageUpResult = false,
     this.messagePageDownResult = false,
     this.toggleFocusedMessageSelectionResult = false,
@@ -633,6 +657,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
   @override
   final bool messageFocusActive;
 
+  final bool jumpToRecentResult;
   final bool messagePageUpResult;
   final bool messagePageDownResult;
   final bool toggleFocusedMessageSelectionResult;
@@ -645,6 +670,7 @@ class _FakeChatHandler implements KeyboardChatHandler {
 
   int messageFocusUpCalls = 0;
   int messageFocusDownCalls = 0;
+  int jumpToRecentCalls = 0;
   int messagePageUpCalls = 0;
   int messagePageDownCalls = 0;
   int toggleFocusedMessageSelectionCalls = 0;
@@ -670,6 +696,12 @@ class _FakeChatHandler implements KeyboardChatHandler {
   bool handleEscape() {
     handleEscapeCalls++;
     return handleEscapeResult;
+  }
+
+  @override
+  bool jumpToRecent() {
+    jumpToRecentCalls++;
+    return jumpToRecentResult;
   }
 
   @override

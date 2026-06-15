@@ -83,7 +83,7 @@ run_full_test_suite() {
 }
 
 run_widget_tests() {
-  run_in_test_container "$(maybe_pub_get_cmd); rm -rf build/unit_test_assets || true; flutter test test/shortcut_resolver_test.dart test/shortcut_help_model_test.dart test/shortcut_context_conditions_test.dart test/keyboard_navigation_state_test.dart test/message_focus_wrapper_test.dart"
+  run_in_test_container "$(maybe_pub_get_cmd); rm -rf build/unit_test_assets || true; flutter test test/shortcut_resolver_test.dart test/shortcut_help_model_test.dart test/shortcut_context_conditions_test.dart test/keyboard_navigation_state_test.dart test/message_focus_wrapper_test.dart test/message_click_surface_test.dart"
 }
 
 run_integration_tests_headless() {

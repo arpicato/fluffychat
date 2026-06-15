@@ -37,6 +37,7 @@ import 'package:fluffychat/widgets/adaptive_dialogs/show_text_input_dialog.dart'
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:fluffychat/widgets/share_scaffold_dialog.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1348,6 +1349,15 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
         (a, b) => a.originServerTs.compareTo(b.originServerTs),
       );
     }
+  }
+
+  void onMessageSurfaceTapDown(Event event, TapDownDetails details) {
+    focusedEvent = event;
+    onSelectMessage(event);
+  }
+
+  void onMessageSurfaceDoubleTap(Event event) {
+    replyAction(replyTo: event);
   }
 
   int? findChildIndexCallback(Key key, Map<String, int> thisEventsKeyMap) {

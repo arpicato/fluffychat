@@ -35,6 +35,12 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
   }
 
   @override
+  bool jumpToRecent() {
+    controller.scrollDown();
+    return true;
+  }
+
+  @override
   bool messageFocusUp() {
     final scope = controller.messageFocusScope;
     if (scope == null) return false;

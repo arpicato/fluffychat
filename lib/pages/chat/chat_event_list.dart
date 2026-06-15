@@ -148,7 +148,6 @@ class ChatEventList extends StatelessWidget {
               controller: controller.scrollController,
               child: MessageFocusWrapper(
                 order: events.length - i,
-                onSelect: () => controller.onSelectMessage(event),
                 onFocused: () {
                   controller.focusedEvent = event;
                   controller.focusedMessageIndex = i;
@@ -164,6 +163,8 @@ class ChatEventList extends StatelessWidget {
                 highlightMarker:
                     controller.scrollToEventIdMarker == event.eventId,
                 onSelect: controller.onSelectMessage,
+                onSelectTapDown: controller.onMessageSurfaceTapDown,
+                onDoubleTap: controller.onMessageSurfaceDoubleTap,
                 scrollToEventId: controller.scrollToEventId,
                 longPressSelect: controller.selectedEvents.isNotEmpty,
                 selected: controller.selectedEvents.any(
