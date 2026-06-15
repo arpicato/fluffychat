@@ -15,12 +15,6 @@ RUN --mount=type=cache,target=/root/.cargo/registry \
     curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
-RUN curl -L -o /usr/local/bin/linuxdeploy "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" \
-    && chmod +x /usr/local/bin/linuxdeploy
-
-RUN curl -L -o /usr/local/bin/appimagetool "https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage" \
-    && chmod +x /usr/local/bin/appimagetool
-
 WORKDIR /app
 
 COPY pubspec.yaml pubspec.lock ./

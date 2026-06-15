@@ -22,7 +22,7 @@ fi
 mkdir -p "$INSTALL_DIR" "$DESKTOP_DIR" "$ICON_DIR"
 cp "$APPIMAGE_PATH" "$TARGET_APPIMAGE"
 chmod +x "$TARGET_APPIMAGE"
-cp assets/logo/img/logo.png "$TARGET_ICON"
+cp assets/logo/img/logo_appimage_512.png "$TARGET_ICON"
 
 cat > "$TARGET_DESKTOP" <<EOF
 [Desktop Entry]
