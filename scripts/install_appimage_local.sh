@@ -9,6 +9,7 @@ ICON_DIR="${ICON_DIR:-$HOME/.local/share/icons/hicolor/512x512/apps}"
 TARGET_APPIMAGE="$INSTALL_DIR/FluffyChat.AppImage"
 TARGET_DESKTOP="$DESKTOP_DIR/fluffychat-appimage.desktop"
 TARGET_ICON="$ICON_DIR/fluffychat.png"
+TARGET_LAUNCHER="$INSTALL_DIR/FluffyChat.sh"
 
 if [[ -z "$APPIMAGE_PATH" ]]; then
   APPIMAGE_PATH="$(ls -1t build/appimage/*.AppImage 2>/dev/null | head -n 1 || true)"
@@ -23,13 +24,15 @@ mkdir -p "$INSTALL_DIR" "$DESKTOP_DIR" "$ICON_DIR"
 cp "$APPIMAGE_PATH" "$TARGET_APPIMAGE"
 chmod +x "$TARGET_APPIMAGE"
 cp assets/logo/img/logo_appimage_512.png "$TARGET_ICON"
+cp scripts/launch_appimage_local.sh "$TARGET_LAUNCHER"
+chmod +x "$TARGET_LAUNCHER"
 
 cat > "$TARGET_DESKTOP" <<EOF
 [Desktop Entry]
 Name=FluffyChat
 GenericName=Matrix Client
 Comment=Chat with your friends
-Exec=appimage-run $TARGET_APPIMAGE
+Exec=$TARGET_LAUNCHER
 Icon=$TARGET_ICON
 Terminal=false
 Type=Application
