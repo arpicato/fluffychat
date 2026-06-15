@@ -16,7 +16,6 @@ import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/chat_view.dart';
 import 'package:fluffychat/pages/chat/event_info_dialog.dart';
-import 'package:fluffychat/pages/chat/message_selection_coordinator.dart';
 import 'package:fluffychat/pages/chat/start_poll_bottom_sheet.dart';
 import 'package:fluffychat/pages/chat/trust_user_key_dialog.dart';
 import 'package:fluffychat/pages/chat/utils/web_file_to_x_file.dart';
@@ -181,7 +180,6 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
       selectedEvents.single.saveFile(context);
 
   List<Event> selectedEvents = [];
-  late final MessageSelectionCoordinator _messageSelectionCoordinator;
 
   final Set<String> unfolded = {};
 
@@ -395,18 +393,6 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     _keyboardHandler = ChatKeyboardHandlerAdapter(this);
     ShortcutDispatcher.instance.registerChatHandler(_keyboardHandler);
     inputFocus = FocusNode(onKeyEvent: _customEnterKeyHandling);
-    _messageSelectionCoordinator = MessageSelectionCoordinator(
-      scheduleSelection: (eventId) {
-        final event = timeline?.events.firstWhereOrNull((e) => e.eventId == eventId);
-        if (!mounted || event == null) return;
-        onSelectMessage(event);
-      },
-      onReply: (eventId) {
-        final event = timeline?.events.firstWhereOrNull((e) => e.eventId == eventId);
-        if (!mounted || event == null) return;
-        onMessageSurfaceDoubleTap(event);
-      },
-    );
 
     scrollController.addListener(_updateScrollController);
     inputFocus.addListener(_inputFocusListener);
@@ -614,7 +600,6 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   @override
   void dispose() {
     ShortcutDispatcher.instance.unregisterChatHandler(_keyboardHandler);
-    _messageSelectionCoordinator.dispose();
     timeline?.cancelSubscriptions();
     timeline = null;
     inputFocus.removeListener(_inputFocusListener);
@@ -1259,8 +1244,6 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   }
 
   void clearSelectedEvents() => setState(() {
-    _pendingSingleTapSelection?.cancel();
-    _pendingSingleTapEvent = null;
     selectedEvents.clear();
     showEmojiPicker = false;
   });
@@ -1370,7 +1353,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   void onMessageSurfaceTapDown(Event event, TapDownDetails details) {
     focusedEvent = event;
-    _messageSelectionCoordinator.handleTapDown(event.eventId);
+    onSelectMessage(event);
   }
 
   void onMessageSurfaceDoubleTap(Event event) {
