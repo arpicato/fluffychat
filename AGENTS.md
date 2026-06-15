@@ -171,3 +171,10 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
   - add a narrow fork-specific branch
   - avoid reshaping the whole widget tree
 - Use public extracted classes and helpers (not private `_` prefixed) so they can live in separate files
+
+### Known SDK Issues
+
+- Old Linux `SqfliteFfiException(database is locked)` errors during Matrix sync/key upload appear to come from the upstream `matrix` package transaction flow, not from FluffyChat chat UI changes
+- Likely root cause: `Client._innerSync` opens a database transaction, emits `onSync` before that transaction fully finishes, and `KeyManager.uploadInboundGroupSessions()` then performs separate DB reads on the same SQLite file
+- Treat this as an SDK-level re-entrant DB access issue unless new evidence points to app code
+- Current decision: document it and leave it alone locally rather than carrying a fork patch without a live repro or upstreamable fix
