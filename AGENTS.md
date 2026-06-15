@@ -75,7 +75,8 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - Preferred helper: `bash scripts/build_linux_docker.sh`
 - `run-linux.sh` launches `FLUFFYCHAT_LINUX_IMAGE` if set, otherwise `fluffychat-linux:latest`; when rebuilding Linux images for testing, also tag the build as `fluffychat-linux:latest` unless you intentionally want a side tag only, so desktop runs do not silently use a stale image
 - Build logs go to `/tmp/opencode/` for post-mortem
-- Preferred remote deploy helper: `bash scripts/deploy_web_remote.sh`
+- Preferred one-command build+deploy helper: `bash scripts/build_and_deploy_web_remote.sh`
+- Direct deploy helper when images are already built: `bash scripts/deploy_web_remote.sh`
 
 ### Git
 
