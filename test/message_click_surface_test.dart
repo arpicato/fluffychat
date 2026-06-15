@@ -28,7 +28,7 @@ void main() {
     );
   }
 
-  testWidgets('single click selects within 200ms', (tester) async {
+  testWidgets('single click selects within 250ms', (tester) async {
     var selectCalls = 0;
     var deselectCalls = 0;
     var replyCalls = 0;
@@ -42,7 +42,7 @@ void main() {
     );
 
     await tester.tap(find.byType(MessageClickSurface));
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 250));
 
     expect(selectCalls, 1);
     expect(deselectCalls, 0);
@@ -85,7 +85,7 @@ void main() {
     );
 
     await tester.tap(find.byType(MessageClickSurface));
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 250));
     expect(selected, isTrue);
 
     await tester.tap(find.byType(MessageClickSurface));
@@ -109,7 +109,7 @@ void main() {
     );
 
     await tester.tap(find.byType(MessageClickSurface));
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 250));
     expect(selected, isTrue);
 
     await tester.tap(find.byType(MessageClickSurface));

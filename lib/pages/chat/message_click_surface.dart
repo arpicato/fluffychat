@@ -23,7 +23,7 @@ class MessageClickSurface extends StatefulWidget {
 }
 
 class _MessageClickSurfaceState extends State<MessageClickSurface> {
-  static const Duration _selectionDelay = Duration(milliseconds: 180);
+  static const Duration _selectionDelay = Duration(milliseconds: 230);
 
   Timer? _pendingSelectTimer;
   bool _selectionCommitted = false;
