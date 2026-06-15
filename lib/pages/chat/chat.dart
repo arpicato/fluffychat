@@ -16,6 +16,7 @@ import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/chat_view.dart';
 import 'package:fluffychat/pages/chat/event_info_dialog.dart';
+import 'package:fluffychat/pages/chat/message_selection_coordinator.dart';
 import 'package:fluffychat/pages/chat/start_poll_bottom_sheet.dart';
 import 'package:fluffychat/pages/chat/trust_user_key_dialog.dart';
 import 'package:fluffychat/pages/chat/utils/web_file_to_x_file.dart';
@@ -107,11 +108,6 @@ class ChatPageWithRoom extends StatefulWidget {
 }
 
 class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver {
-  static const Duration _messageSelectionCommitDelay = Duration(
-    milliseconds: 24,
-  );
-  static const Duration _messageDoubleTapWindow = Duration(milliseconds: 260);
-
   Room get room => sendingClient.getRoomById(roomId) ?? widget.room;
 
   late Client sendingClient;
@@ -185,10 +181,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
       selectedEvents.single.saveFile(context);
 
   List<Event> selectedEvents = [];
-  Timer? _pendingSingleTapSelection;
-  Event? _pendingSingleTapEvent;
-  DateTime? _lastMessageTapAt;
-  String? _lastMessageTapEventId;
+  late final MessageSelectionCoordinator _messageSelectionCoordinator;
 
   final Set<String> unfolded = {};
 
@@ -402,6 +395,18 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
     _keyboardHandler = ChatKeyboardHandlerAdapter(this);
     ShortcutDispatcher.instance.registerChatHandler(_keyboardHandler);
     inputFocus = FocusNode(onKeyEvent: _customEnterKeyHandling);
+    _messageSelectionCoordinator = MessageSelectionCoordinator(
+      scheduleSelection: (eventId) {
+        final event = timeline?.events.firstWhereOrNull((e) => e.eventId == eventId);
+        if (!mounted || event == null) return;
+        onSelectMessage(event);
+      },
+      onReply: (eventId) {
+        final event = timeline?.events.firstWhereOrNull((e) => e.eventId == eventId);
+        if (!mounted || event == null) return;
+        onMessageSurfaceDoubleTap(event);
+      },
+    );
 
     scrollController.addListener(_updateScrollController);
     inputFocus.addListener(_inputFocusListener);
@@ -609,7 +614,7 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   @override
   void dispose() {
     ShortcutDispatcher.instance.unregisterChatHandler(_keyboardHandler);
-    _pendingSingleTapSelection?.cancel();
+    _messageSelectionCoordinator.dispose();
     timeline?.cancelSubscriptions();
     timeline = null;
     inputFocus.removeListener(_inputFocusListener);
@@ -1351,8 +1356,6 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   }
 
   void onSelectMessage(Event event) {
-    _pendingSingleTapSelection?.cancel();
-    _pendingSingleTapEvent = null;
     if (!event.redacted) {
       if (selectedEvents.contains(event)) {
         setState(() => selectedEvents.remove(event));
@@ -1367,32 +1370,10 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   void onMessageSurfaceTapDown(Event event, TapDownDetails details) {
     focusedEvent = event;
-    _pendingSingleTapSelection?.cancel();
-    final now = DateTime.now();
-    final isDoubleTap =
-        _lastMessageTapEventId == event.eventId &&
-        _lastMessageTapAt != null &&
-        now.difference(_lastMessageTapAt!) <= _messageDoubleTapWindow;
-    _lastMessageTapAt = now;
-    _lastMessageTapEventId = event.eventId;
-
-    if (isDoubleTap) {
-      _pendingSingleTapEvent = null;
-      onMessageSurfaceDoubleTap(event);
-      return;
-    }
-
-    _pendingSingleTapEvent = event;
-    _pendingSingleTapSelection = Timer(_messageSelectionCommitDelay, () {
-      if (!mounted) return;
-      if (_pendingSingleTapEvent?.eventId != event.eventId) return;
-      onSelectMessage(event);
-    });
+    _messageSelectionCoordinator.handleTapDown(event.eventId);
   }
 
   void onMessageSurfaceDoubleTap(Event event) {
-    _pendingSingleTapSelection?.cancel();
-    _pendingSingleTapEvent = null;
     replyAction(replyTo: event);
   }
 
