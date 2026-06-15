@@ -73,6 +73,7 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - Upgrade-compatible APK builds require local signing material in `android/key.properties`; use `APK_SIGNING_MODE=dev` only for disposable local installs that will conflict with an already-installed release-signed app
 - Linux desktop build: `Dockerfile.linux` + `run-linux.sh` (X11 forwarding)
 - Preferred helper: `bash scripts/build_linux_docker.sh`
+- AppImage daily-driver path on NixOS/KDE: build in Docker with `bash scripts/build_linux_appimage_docker.sh`, run with `bash scripts/run_appimage_local.sh`, install with `bash scripts/install_appimage_local.sh`
 - `run-linux.sh` launches `FLUFFYCHAT_LINUX_IMAGE` if set, otherwise `fluffychat-linux:latest`; when rebuilding Linux images for testing, also tag the build as `fluffychat-linux:latest` unless you intentionally want a side tag only, so desktop runs do not silently use a stale image
 - Build logs go to `/tmp/opencode/` for post-mortem
 - Preferred one-command build+deploy helper: `bash scripts/build_and_deploy_web_remote.sh`
