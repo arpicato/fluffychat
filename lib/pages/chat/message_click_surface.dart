@@ -23,10 +23,11 @@ class MessageClickSurface extends StatefulWidget {
 }
 
 class _MessageClickSurfaceState extends State<MessageClickSurface> {
-  static const Duration _selectionDelay = Duration(milliseconds: 140);
+  static const Duration _selectionDelay = Duration(milliseconds: 180);
 
   Timer? _pendingSelectTimer;
   bool _selectionCommitted = false;
+  bool _ignoreNextDoubleTap = false;
 
   @override
   void dispose() {
@@ -35,6 +36,14 @@ class _MessageClickSurfaceState extends State<MessageClickSurface> {
   }
 
   void _handleTapUp(TapUpDetails details) {
+    if (_selectionCommitted) {
+      _ignoreNextDoubleTap = true;
+      widget.onDeselect();
+      _selectionCommitted = false;
+      return;
+    }
+
+    _ignoreNextDoubleTap = false;
     _pendingSelectTimer?.cancel();
     _pendingSelectTimer = Timer(_selectionDelay, () {
       _selectionCommitted = true;
@@ -43,16 +52,22 @@ class _MessageClickSurfaceState extends State<MessageClickSurface> {
   }
 
   void _handleDoubleTap() {
-    _pendingSelectTimer?.cancel();
-    if (_selectionCommitted) {
-      widget.onDeselect();
-      _selectionCommitted = false;
+    if (_ignoreNextDoubleTap) {
+      _ignoreNextDoubleTap = false;
+      return;
     }
+
+    if (_selectionCommitted) {
+      return;
+    }
+
+    _pendingSelectTimer?.cancel();
     widget.onReply();
   }
 
   void _handleTapCancel() {
     _pendingSelectTimer?.cancel();
+    _ignoreNextDoubleTap = false;
   }
 
   @override
