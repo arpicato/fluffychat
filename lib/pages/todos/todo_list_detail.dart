@@ -56,6 +56,10 @@ class TodoListDetailPageController extends State<TodoListDetailPage> {
         case MessieRealtimeEventType.workspaceRefresh:
         case MessieRealtimeEventType.todoListCreated:
         case MessieRealtimeEventType.todoListPinChanged:
+        case MessieRealtimeEventType.calendarSourceCreated:
+        case MessieRealtimeEventType.calendarSourceUpdated:
+        case MessieRealtimeEventType.calendarSourceDeleted:
+        case MessieRealtimeEventType.calendarEventsSynced:
         case MessieRealtimeEventType.unknown:
           break;
       }

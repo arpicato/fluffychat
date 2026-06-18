@@ -220,6 +220,27 @@ class RecordingMessieCalendarSdk implements MessieCalendarSdk {
     deletedSource = true;
     deletedSourceId = sourceId;
   }
+
+  @override
+  Future<api.CalendarEvent> createCalendarEvent({
+    required api.NewCalendarEvent newCalendarEvent,
+  }) async {
+    return api.CalendarEvent(
+      (builder) => builder
+        ..id = 'new-event-1'
+        ..sourceId = newCalendarEvent.sourceId
+        ..externalUid = ''
+        ..title = newCalendarEvent.title
+        ..description = newCalendarEvent.description ?? ''
+        ..location = newCalendarEvent.location ?? ''
+        ..startsAt = newCalendarEvent.startTime
+        ..endsAt = newCalendarEvent.endTime
+        ..allDay = newCalendarEvent.allDay ?? false
+        ..status = 'CONFIRMED'
+        ..timezone = 'UTC'
+        ..sourceDisplayName = '',
+    );
+  }
 }
 
 class ThrowingMessieCalendarSdk implements MessieCalendarSdk {
@@ -301,6 +322,11 @@ class ThrowingMessieCalendarSdk implements MessieCalendarSdk {
     }
     throw UnimplementedError();
   }
+
+  @override
+  Future<api.CalendarEvent> createCalendarEvent({
+    required api.NewCalendarEvent newCalendarEvent,
+  }) => throw UnimplementedError();
 }
 
 class ThrowingBytesMessieCalendarSdk implements MessieCalendarSdk {
@@ -374,6 +400,11 @@ class ThrowingBytesMessieCalendarSdk implements MessieCalendarSdk {
   @override
   Future<List<api.CalendarEvent>> getUpcomingCalendarEvents({int? limit}) =>
       throw UnimplementedError();
+
+  @override
+  Future<api.CalendarEvent> createCalendarEvent({
+    required api.NewCalendarEvent newCalendarEvent,
+  }) => throw UnimplementedError();
 }
 
 void main() {

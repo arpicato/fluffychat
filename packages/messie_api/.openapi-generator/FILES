@@ -36,6 +36,7 @@ doc/LoginStepUserInputUserInput.md
 doc/LoginStepUserInputUserInputFieldsInner.md
 doc/MatrixAuthResponse.md
 doc/MatrixOpenIDRequest.md
+doc/NewCalendarEvent.md
 doc/NewCalendarLinkSource.md
 doc/NewCollaborator.md
 doc/NewTodoItem.md
@@ -96,6 +97,7 @@ lib/src/model/login_step_user_input_user_input.dart
 lib/src/model/login_step_user_input_user_input_fields_inner.dart
 lib/src/model/matrix_auth_response.dart
 lib/src/model/matrix_open_id_request.dart
+lib/src/model/new_calendar_event.dart
 lib/src/model/new_calendar_link_source.dart
 lib/src/model/new_collaborator.dart
 lib/src/model/new_todo_item.dart
@@ -113,4 +115,4 @@ lib/src/model/wa_status_response.dart
 lib/src/model/wa_status_response_account.dart
 lib/src/serializers.dart
 pubspec.yaml
-test/set_todo_list_pin_test.dart
+test/new_calendar_event_test.dart

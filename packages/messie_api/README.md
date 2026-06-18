@@ -71,6 +71,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**bridgeStartLogin**](doc/DefaultApi.md#bridgestartlogin) | **POST** /bridge/provision/v3/login/start/{flow} | Start a login process for a provider
 [*DefaultApi*](doc/DefaultApi.md) | [**bridgeSubmitLoginStep**](doc/DefaultApi.md#bridgesubmitloginstep) | **POST** /bridge/provision/v3/login/step/{process_id}/{step_id}/{action} | Submit a login step
 [*DefaultApi*](doc/DefaultApi.md) | [**bridgeWhoami**](doc/DefaultApi.md#bridgewhoami) | **GET** /bridge/provision/v3/whoami | Get provider-specific whoami with logins
+[*DefaultApi*](doc/DefaultApi.md) | [**createCalendarEvent**](doc/DefaultApi.md#createcalendarevent) | **POST** /calendar/events | Create a calendar event
 [*DefaultApi*](doc/DefaultApi.md) | [**createLinkedCalendarSource**](doc/DefaultApi.md#createlinkedcalendarsource) | **POST** /calendar/sources/link | Add a linked ICS calendar source
 [*DefaultApi*](doc/DefaultApi.md) | [**createTodoItem**](doc/DefaultApi.md#createtodoitem) | **POST** /todolists/{listId}/items | Create a new todo item in a list
 [*DefaultApi*](doc/DefaultApi.md) | [**createTodoList**](doc/DefaultApi.md#createtodolist) | **POST** /todolists | Create a new todo list
@@ -142,6 +143,7 @@ Class | Method | HTTP request | Description
  - [LoginStepUserInputUserInputFieldsInner](doc/LoginStepUserInputUserInputFieldsInner.md)
  - [MatrixAuthResponse](doc/MatrixAuthResponse.md)
  - [MatrixOpenIDRequest](doc/MatrixOpenIDRequest.md)
+ - [NewCalendarEvent](doc/NewCalendarEvent.md)
  - [NewCalendarLinkSource](doc/NewCalendarLinkSource.md)
  - [NewCollaborator](doc/NewCollaborator.md)
  - [NewTodoItem](doc/NewTodoItem.md)

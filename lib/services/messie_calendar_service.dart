@@ -195,6 +195,10 @@ abstract class MessieCalendarSdk {
   Future<api.CalendarEvent> getCalendarEventById({required String eventId});
 
   Future<List<api.CalendarEvent>> getUpcomingCalendarEvents({int? limit});
+
+  Future<api.CalendarEvent> createCalendarEvent({
+    required api.NewCalendarEvent newCalendarEvent,
+  });
 }
 
 class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
@@ -324,6 +328,16 @@ class GeneratedMessieCalendarSdk implements MessieCalendarSdk {
   }) async {
     final response = await _api.getUpcomingCalendarEvents(limit: limit);
     return response.data?.toList() ?? const [];
+  }
+
+  @override
+  Future<api.CalendarEvent> createCalendarEvent({
+    required api.NewCalendarEvent newCalendarEvent,
+  }) async {
+    final response = await _api.createCalendarEvent(
+      newCalendarEvent: newCalendarEvent,
+    );
+    return response.data!;
   }
 }
 
@@ -566,6 +580,39 @@ class MessieCalendarService {
     (sdk) async => (await sdk.getUpcomingCalendarEvents(
       limit: limit,
     )).map(MessieCalendarEvent.fromApi).toList(),
+    apiBaseUrl: apiBaseUrl,
+    jwt: jwt,
+  );
+
+  Future<MessieCalendarEvent> createCalendarEvent({
+    required String apiBaseUrl,
+    required String jwt,
+    required String sourceId,
+    required String title,
+    String? description,
+    String? location,
+    required DateTime startTime,
+    required DateTime endTime,
+    bool allDay = false,
+  }) async => _wrapRequest(
+    'Failed to create calendar event',
+    (sdk) async {
+      final request = api.NewCalendarEvent((b) => b
+        ..sourceId = sourceId
+        ..title = title
+        ..description = description ?? ''
+        ..location = location ?? ''
+        ..startTime = startTime.toUtc()
+        ..endTime = endTime.toUtc()
+        ..allDay = allDay,
+      );
+
+      final result = await sdk.createCalendarEvent(
+        newCalendarEvent: request,
+      );
+
+      return MessieCalendarEvent.fromApi(result);
+    },
     apiBaseUrl: apiBaseUrl,
     jwt: jwt,
   );

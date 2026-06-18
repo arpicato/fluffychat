@@ -46,6 +46,7 @@ export 'package:messie_api/src/model/login_step_user_input_user_input.dart';
 export 'package:messie_api/src/model/login_step_user_input_user_input_fields_inner.dart';
 export 'package:messie_api/src/model/matrix_auth_response.dart';
 export 'package:messie_api/src/model/matrix_open_id_request.dart';
+export 'package:messie_api/src/model/new_calendar_event.dart';
 export 'package:messie_api/src/model/new_calendar_link_source.dart';
 export 'package:messie_api/src/model/new_collaborator.dart';
 export 'package:messie_api/src/model/new_todo_item.dart';

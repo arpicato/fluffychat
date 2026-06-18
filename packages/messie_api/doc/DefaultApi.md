@@ -15,6 +15,7 @@ Method | HTTP request | Description
 [**bridgeStartLogin**](DefaultApi.md#bridgestartlogin) | **POST** /bridge/provision/v3/login/start/{flow} | Start a login process for a provider
 [**bridgeSubmitLoginStep**](DefaultApi.md#bridgesubmitloginstep) | **POST** /bridge/provision/v3/login/step/{process_id}/{step_id}/{action} | Submit a login step
 [**bridgeWhoami**](DefaultApi.md#bridgewhoami) | **GET** /bridge/provision/v3/whoami | Get provider-specific whoami with logins
+[**createCalendarEvent**](DefaultApi.md#createcalendarevent) | **POST** /calendar/events | Create a calendar event
 [**createLinkedCalendarSource**](DefaultApi.md#createlinkedcalendarsource) | **POST** /calendar/sources/link | Add a linked ICS calendar source
 [**createTodoItem**](DefaultApi.md#createtodoitem) | **POST** /todolists/{listId}/items | Create a new todo item in a list
 [**createTodoList**](DefaultApi.md#createtodolist) | **POST** /todolists | Create a new todo list
@@ -304,6 +305,47 @@ Name | Type | Description  | Notes
 ### HTTP request headers
 
  - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **createCalendarEvent**
+> CalendarEvent createCalendarEvent(newCalendarEvent)
+
+Create a calendar event
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final NewCalendarEvent newCalendarEvent = ; // NewCalendarEvent | 
+
+try {
+    final response = api.createCalendarEvent(newCalendarEvent);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->createCalendarEvent: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **newCalendarEvent** | [**NewCalendarEvent**](NewCalendarEvent.md)|  | 
+
+### Return type
+
+[**CalendarEvent**](CalendarEvent.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

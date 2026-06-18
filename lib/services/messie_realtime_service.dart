@@ -22,6 +22,10 @@ enum MessieRealtimeEventType {
   todoItemDeleted,
   collaboratorAdded,
   collaboratorRemoved,
+  calendarSourceCreated,
+  calendarSourceUpdated,
+  calendarSourceDeleted,
+  calendarEventsSynced,
   unknown,
 }
 
@@ -56,6 +60,10 @@ class MessieRealtimeEvent {
         'todo_item.deleted' => MessieRealtimeEventType.todoItemDeleted,
         'todo_list.collaborator_added' => MessieRealtimeEventType.collaboratorAdded,
         'todo_list.collaborator_removed' => MessieRealtimeEventType.collaboratorRemoved,
+        'calendar_source.created' => MessieRealtimeEventType.calendarSourceCreated,
+        'calendar_source.updated' => MessieRealtimeEventType.calendarSourceUpdated,
+        'calendar_source.deleted' => MessieRealtimeEventType.calendarSourceDeleted,
+        'calendar_events.synced' => MessieRealtimeEventType.calendarEventsSynced,
         _ => MessieRealtimeEventType.unknown,
       },
       userId: json['user_id'] as String? ?? '',
@@ -239,6 +247,16 @@ class MessieRealtimeService {
           MessieWorkspaceRefreshSignal(
             kind: MessieWorkspaceRefreshKind.todoItems,
             listId: event.listId,
+          ),
+        );
+        break;
+      case MessieRealtimeEventType.calendarSourceCreated:
+      case MessieRealtimeEventType.calendarSourceUpdated:
+      case MessieRealtimeEventType.calendarSourceDeleted:
+      case MessieRealtimeEventType.calendarEventsSynced:
+        MessieWorkspaceRefresh.instance.bump(
+          MessieWorkspaceRefreshSignal(
+            kind: MessieWorkspaceRefreshKind.calendar,
           ),
         );
         break;

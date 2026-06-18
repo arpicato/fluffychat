@@ -2,6 +2,7 @@ import 'package:cross_file/cross_file.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
 import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:fluffychat/services/messie_error_presentation.dart';
+import 'package:fluffychat/services/messie_google_calendar_oauth_service.dart';
 import 'package:fluffychat/services/messie_workspace_refresh.dart';
 import 'package:fluffychat/utils/adaptive_bottom_sheet.dart';
 import 'package:fluffychat/utils/file_selector.dart';
@@ -11,6 +12,7 @@ import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:matrix/matrix.dart' show Logs;
 
 import 'calendar.dart';
 import 'calendar_event_display.dart';
@@ -41,7 +43,7 @@ class _CalendarSourceDraft {
   final String? category;
 }
 
-enum _CalendarImportMode { link, file }
+enum _CalendarImportMode { link, file, googleOAuth }
 
 class _CalendarImportRequest {
   const _CalendarImportRequest.link({
@@ -57,6 +59,13 @@ class _CalendarImportRequest {
     required this.displayName,
   }) : mode = _CalendarImportMode.file,
        url = null;
+
+  const _CalendarImportRequest.googleOAuth()
+    : mode = _CalendarImportMode.googleOAuth,
+      url = null,
+      file = null,
+      category = null,
+      displayName = '';
 
   final _CalendarImportMode mode;
   final String? url;
@@ -156,6 +165,10 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
   }
 
   void _submit() {
+    if (_mode == _CalendarImportMode.googleOAuth) {
+      Navigator.of(context).pop(const _CalendarImportRequest.googleOAuth());
+      return;
+    }
     if (_mode == _CalendarImportMode.link) {
       Navigator.of(context).pop(
         _CalendarImportRequest.link(
@@ -187,8 +200,11 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
     return _normalizeCalendarCategory(_categoryController.text);
   }
 
-  String get _primaryButtonLabel =>
-      _mode == _CalendarImportMode.link ? 'Add calendar' : 'Import calendar';
+  String get _primaryButtonLabel => switch (_mode) {
+    _CalendarImportMode.link => 'Add calendar',
+    _CalendarImportMode.file => 'Import calendar',
+    _CalendarImportMode.googleOAuth => 'Connect Google Calendar',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +227,8 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'Start with an ICS link or upload a calendar file.',
+                        'Connect a Google account, paste an ICS link, or '
+                        'upload a calendar file.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -251,10 +268,48 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
                         icon: Icon(Icons.upload_file_outlined),
                         label: Text('From file'),
                       ),
+                      ButtonSegment(
+                        value: _CalendarImportMode.googleOAuth,
+                        icon: Icon(Icons.account_circle_outlined),
+                        label: Text('Google'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
-                  if (_mode == _CalendarImportMode.link) ...[
+                  if (_mode == _CalendarImportMode.googleOAuth) ...[
+                    Card(
+                      margin: EdgeInsets.zero,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.account_circle_outlined),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'Sign in with Google to sync your calendar.',
+                                    style: theme.textTheme.titleMedium,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'You will be redirected to Google to grant '
+                              'read-only access to your calendar. Events sync '
+                              'automatically and you can disconnect any time.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else if (_mode == _CalendarImportMode.link) ...[
                     TextField(
                       controller: _urlController,
                       autofocus: true,
@@ -321,40 +376,44 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
                     ),
                     const SizedBox(height: 12),
                   ],
-                  _CalendarSourceDraftFields(
-                    categoryController: _categoryController,
-                    nameController: _nameController,
-                    existingCategories: widget.existingCategories,
-                    defaultCategory: _defaultCalendarCategory,
-                    nameLabel: 'Calendar name',
-                    nameHint: _mode == _CalendarImportMode.link
-                        ? 'Imported calendar'
-                        : 'Name from the file',
-                    autofocusName: _mode != _CalendarImportMode.link,
-                    onSubmitted: _submit,
-                  ),
-                  const SizedBox(height: 28),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _showInstructions = !_showInstructions;
-                        });
-                      },
-                      icon: Icon(
-                        _showInstructions
-                            ? Icons.expand_less
-                            : Icons.help_outline,
-                      ),
-                      label: Text(
-                        _showInstructions
-                            ? 'Hide setup instructions'
-                            : 'Show setup instructions',
+                  if (_mode != _CalendarImportMode.googleOAuth)
+                    _CalendarSourceDraftFields(
+                      categoryController: _categoryController,
+                      nameController: _nameController,
+                      existingCategories: widget.existingCategories,
+                      defaultCategory: _defaultCalendarCategory,
+                      nameLabel: 'Calendar name',
+                      nameHint: _mode == _CalendarImportMode.link
+                          ? 'Imported calendar'
+                          : 'Name from the file',
+                      autofocusName: _mode != _CalendarImportMode.link,
+                      onSubmitted: _submit,
+                    ),
+                  if (_mode != _CalendarImportMode.googleOAuth)
+                    const SizedBox(height: 28),
+                  if (_mode != _CalendarImportMode.googleOAuth)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          setState(() {
+                            _showInstructions = !_showInstructions;
+                          });
+                        },
+                        icon: Icon(
+                          _showInstructions
+                              ? Icons.expand_less
+                              : Icons.help_outline,
+                        ),
+                        label: Text(
+                          _showInstructions
+                              ? 'Hide setup instructions'
+                              : 'Show setup instructions',
+                        ),
                       ),
                     ),
-                  ),
-                  if (_showInstructions) ...[
+                  if (_mode != _CalendarImportMode.googleOAuth &&
+                      _showInstructions) ...[
                     const SizedBox(height: 12),
                     _CalendarImportInstructions(
                       mode: _mode,
@@ -383,9 +442,12 @@ class _CalendarImportSheetState extends State<_CalendarImportSheet> {
                 FilledButton.icon(
                   onPressed: _submit,
                   icon: Icon(
-                    _mode == _CalendarImportMode.link
-                        ? Icons.link_outlined
-                        : Icons.upload_file_outlined,
+                    switch (_mode) {
+                      _CalendarImportMode.link => Icons.link_outlined,
+                      _CalendarImportMode.file => Icons.upload_file_outlined,
+                      _CalendarImportMode.googleOAuth =>
+                        Icons.account_circle_outlined,
+                    },
                   ),
                   label: Text(_primaryButtonLabel),
                 ),
@@ -561,6 +623,9 @@ class _CalendarImportInstructions extends StatelessWidget {
     _CalendarInstructionPlatform platform,
     _CalendarImportMode mode,
   ) {
+    if (mode == _CalendarImportMode.googleOAuth) {
+      return const [];
+    }
     switch ((platform, mode)) {
       case (_CalendarInstructionPlatform.google, _CalendarImportMode.link):
         return const [
@@ -604,6 +669,8 @@ class _CalendarImportInstructions extends StatelessWidget {
           'If you used public sharing only to download the file, turn public sharing back off afterward.',
           'Upload the .ics file here.',
         ];
+      case (_, _CalendarImportMode.googleOAuth):
+        return const [];
     }
   }
 }
@@ -653,10 +720,14 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     _mobileScheduleScrollController = ScrollController()
       ..addListener(_handleMobileScheduleScroll);
     _loadFuture = _load();
+    
+    // Listen for calendar sync events to refresh data
+    MessieWorkspaceRefresh.instance.addListener(_handleWorkspaceRefresh);
   }
 
   @override
   void dispose() {
+    MessieWorkspaceRefresh.instance.removeListener(_handleWorkspaceRefresh);
     _mobileScheduleScrollController
       ..removeListener(_handleMobileScheduleScroll)
       ..dispose();
@@ -664,6 +735,172 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     _selectedDayNotifier.dispose();
     _visibilityVersionNotifier.dispose();
     super.dispose();
+  }
+
+  void _handleWorkspaceRefresh() {
+    final signal = MessieWorkspaceRefresh.instance.signal;
+    if (signal.kind == MessieWorkspaceRefreshKind.calendar ||
+        signal.kind == MessieWorkspaceRefreshKind.full) {
+      if (mounted) {
+        setState(() {
+          _loadFuture = _load();
+        });
+      }
+    }
+  }
+
+  Future<void> _showCreateEventDialog() async {
+    if (_latestPageData?.sources.isEmpty ?? true) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No calendar sources available. Import a calendar first.'),
+        ),
+      );
+      return;
+    }
+
+    final googleSources = _latestPageData!.sources
+        .where((s) => s.kind == 'google_calendar' && s.importMode == 'oauth')
+        .toList();
+
+    if (googleSources.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connect Google Calendar to create events. Read-only calendars don\'t support event creation.'),
+        ),
+      );
+      return;
+    }
+
+    if (!mounted) return;
+    final request = await showAdaptiveBottomSheet<_CreateEventRequest>(
+      context: context,
+      builder: (context) => _CreateEventSheet(
+        sources: googleSources,
+        selectedDay: _selectedDay,
+      ),
+    );
+    if (!mounted || request == null) return;
+
+    try {
+      final matrix = Matrix.of(context);
+      final session = await BackendSessionService().ensureSession(
+        matrix.client,
+        matrix.store,
+      );
+
+      final calendarService = MessieCalendarService();
+      await calendarService.createCalendarEvent(
+        apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+        jwt: session.token,
+        sourceId: request.sourceId,
+        title: request.title,
+        description: request.description,
+        location: request.location,
+        startTime: request.startTime,
+        endTime: request.endTime,
+        allDay: request.allDay,
+      );
+
+      if (!mounted) return;
+      _refreshPage();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Event "${request.title}" created successfully')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create event: ${messieUserMessage(error, fallback: 'Please try again')}'),
+        ),
+      );
+    }
+  }
+
+  void _showDayEventsSheet(
+    DateTime day,
+    List<MessieCalendarEvent> events,
+    Map<String, Color> sourceColors,
+  ) {
+    final theme = Theme.of(context);
+    showAdaptiveBottomSheet(
+      context: context,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (context, scrollController) => Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      DateFormat.yMMMMEEEEd().format(day),
+                      style: theme.textTheme.titleMedium,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(
+              child: ListView.builder(
+                controller: scrollController,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: events.length,
+                itemBuilder: (context, index) {
+                  final event = events[index];
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: sourceColors[event.sourceId] ??
+                            theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    title: Text(
+                      event.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: Text(
+                      event.allDay
+                          ? 'All day'
+                          : '${_formatTime(context, event.startsAt)} – ${_formatTime(context, event.endsAt)}',
+                    ),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push('/rooms/calendar/events/${event.id}');
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _handleMobileScheduleScroll() {
@@ -918,6 +1155,31 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     if (!context.mounted || request == null) return;
 
     final matrix = Matrix.of(context);
+
+    if (request.mode == _CalendarImportMode.googleOAuth) {
+      try {
+        final result = await MessieGoogleCalendarOAuthService().connect(
+          matrix.client,
+          matrix.store,
+        );
+        if (!context.mounted) return;
+        MessieWorkspaceRefresh.instance.bump();
+        _refreshPage();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message)),
+        );
+      } catch (error) {
+        if (!context.mounted) return;
+        await showOkAlertDialog(
+          context: context,
+          title: 'Could not connect Google Calendar',
+          message: _formatErrorMessage(error),
+          okLabel: 'Close',
+        );
+      }
+      return;
+    }
+
     final session = await BackendSessionService().ensureSession(
       matrix.client,
       matrix.store,
@@ -1052,12 +1314,52 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       );
     } catch (error) {
       if (!context.mounted) return;
-      await showOkAlertDialog(
-        context: context,
-        title: 'Could not refresh calendar',
-        message: _formatErrorMessage(error),
-        okLabel: 'Close',
-      );
+      // Even on error the backend may have updated the source state
+      // (e.g. flipped to reauth_required when Google rejected the refresh
+      // token). Reload the source list so the user sees the new state and
+      // can act on it (e.g. tap Reconnect).
+      MessieWorkspaceRefresh.instance.bump();
+      _refreshPage();
+
+      // The error body from the backend is intentionally generic ("Failed to
+      // get calendar source"), so we re-fetch the source list and check
+      // whether THIS source flipped to reauth_required. If it did, offer
+      // an inline reconnect rather than dumping a confusing generic error.
+      MessieCalendarSource? refreshed;
+      try {
+        final sources = await _calendarService.getCalendarSources(
+          apiBaseUrl: BackendSessionService.defaultApiBaseUrl,
+          jwt: session.token,
+        );
+        refreshed = sources.where((s) => s.id == source.id).firstOrNull;
+      } catch (_) {
+        // Best-effort detection only; fall through to generic error.
+      }
+
+      if (refreshed != null &&
+          refreshed.importMode == 'oauth' &&
+          refreshed.refreshState == 'reauth_required' &&
+          context.mounted) {
+        final shouldReconnect = await showOkCancelAlertDialog(
+          context: context,
+          title: 'Google sign-in expired',
+          message:
+              'Google rejected the saved access for ${refreshed.displayName}. '
+              'Reconnect now to keep syncing this calendar?',
+          okLabel: 'Reconnect',
+          cancelLabel: 'Not now',
+        );
+        if (shouldReconnect == OkCancelResult.ok && context.mounted) {
+          await _reconnectGoogleSource(context, refreshed);
+        }
+      } else if (context.mounted) {
+        await showOkAlertDialog(
+          context: context,
+          title: 'Could not refresh calendar',
+          message: _formatErrorMessage(error),
+          okLabel: 'Close',
+        );
+      }
     }
   }
 
@@ -1431,8 +1733,55 @@ class _CalendarPageViewState extends State<CalendarPageView> {
         await _renameSource(context, source);
       case 'refresh':
         await _refreshSource(context, source);
+      case 'reconnect':
+        await _reconnectGoogleSource(context, source);
       case 'delete':
         await _deleteSource(context, source);
+    }
+  }
+
+  Future<void> _reconnectGoogleSource(
+    BuildContext context,
+    MessieCalendarSource source,
+  ) async {
+    final matrix = Matrix.of(context);
+    try {
+      final result = await MessieGoogleCalendarOAuthService().connect(
+        matrix.client,
+        matrix.store,
+      );
+      if (!context.mounted) return;
+      final messenger = ScaffoldMessenger.of(context);
+      if (result.success) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              result.message.isNotEmpty
+                  ? result.message
+                  : 'Reconnected your Google calendar.',
+            ),
+          ),
+        );
+        _refreshPage();
+      } else {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Google reconnect failed: '
+              '${result.message.isNotEmpty ? result.message : 'unknown error'}',
+            ),
+          ),
+        );
+      }
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Failed to start Google reconnect: ${_formatErrorMessage(error)}',
+          ),
+        ),
+      );
     }
   }
 
@@ -1735,7 +2084,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                                       ),
                                                 ),
                                               ),
-                                              if (source.importMode == 'link')
+                                              if (source.importMode == 'link' ||
+                                                  source.importMode == 'oauth')
                                                 IconButton(
                                                   tooltip: 'Refresh calendar',
                                                   visualDensity:
@@ -1765,10 +2115,21 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                                     child: Text('Rename'),
                                                   ),
                                                   if (source.importMode ==
-                                                      'link')
+                                                          'link' ||
+                                                      source.importMode ==
+                                                          'oauth')
                                                     const PopupMenuItem(
                                                       value: 'refresh',
                                                       child: Text('Refresh'),
+                                                    ),
+                                                  if (source.importMode ==
+                                                          'oauth' &&
+                                                      source.refreshState ==
+                                                          'reauth_required')
+                                                    const PopupMenuItem(
+                                                      value: 'reconnect',
+                                                      child: Text(
+                                                          'Reconnect Google account'),
                                                     ),
                                                   const PopupMenuItem(
                                                     value: 'delete',
@@ -1946,76 +2307,110 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final dayEvents = _eventsForDay(eventsByDay, _selectedDay);
     return Card(
       margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              DateFormat.yMMMMEEEEd().format(_selectedDay),
-              style: theme.textTheme.titleMedium,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  DateFormat.yMMMMEEEEd().format(_selectedDay),
+                  style: theme.textTheme.titleMedium,
+                ),
+                const SizedBox(height: 12),
+                FilledButton.tonalIcon(
+                  onPressed: _showCreateEventDialog,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create event'),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            FilledButton.tonalIcon(
-              onPressed: null,
-              icon: const Icon(Icons.add),
-              label: const Text('Create event'),
-            ),
-            const SizedBox(height: 12),
-            if (dayEvents.isEmpty)
-              Text(
+          ),
+          if (dayEvents.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: Text(
                 'No visible events on this day.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
-            ...dayEvents
-                .take(3)
-                .map(
-                  (event) => ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    leading: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color:
-                            sourceColors[event.sourceId] ??
-                            theme.colorScheme.primary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    title: Text(
-                      event.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Text(
-                      event.allDay
-                          ? 'All day'
-                          : _formatTime(context, event.startsAt),
-                    ),
-                    onTap: () => context.push(
-                      '/rooms/calendar/events/${event.id}',
-                      extra: <String, Object?>{
-                        'title': event.title,
-                        'sourceDisplayName': event.sourceDisplayName,
-                      },
-                    ),
-                  ),
-                ),
-            if (dayEvents.length > 3)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '+${dayEvents.length - 3} more',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: theme.colorScheme.primary,
+            ),
+          if (dayEvents.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxHeight: 240),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.all(4),
+                    itemCount: dayEvents.length,
+                    itemBuilder: (context, index) {
+                      final event = dayEvents[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Material(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: () => context.push(
+                              '/rooms/calendar/events/${event.id}',
+                              extra: <String, Object?>{
+                                'title': event.title,
+                                'sourceDisplayName': event.sourceDisplayName,
+                              },
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 10,
+                                    height: 10,
+                                    decoration: BoxDecoration(
+                                      color: sourceColors[event.sourceId] ?? theme.colorScheme.primary,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          event.title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: theme.textTheme.bodyMedium,
+                                        ),
+                                        Text(
+                                          event.allDay
+                                              ? 'All day'
+                                              : '${_formatTime(context, event.startsAt)} – ${_formatTime(context, event.endsAt)}',
+                                          style: theme.textTheme.bodySmall?.copyWith(
+                                            color: theme.colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
   }
@@ -2164,14 +2559,14 @@ class _CalendarPageViewState extends State<CalendarPageView> {
           ),
           Divider(height: 1, thickness: 1, color: theme.dividerColor),
           Expanded(
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                  ),
-                ),
-                Padding(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () {
+                _selectDay(day);
+                _showCreateEventDialog();
+              },
+              child: SizedBox.expand(
+                child: Padding(
                   padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2190,17 +2585,29 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                         ),
                       ),
                       if (overflowCount > 0)
-                        Text(
-                          '+$overflowCount more',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _showDayEventsSheet(day, dayEvents, sourceColors),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            margin: const EdgeInsets.only(top: 2),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.primaryContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '+$overflowCount more',
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.onPrimaryContainer,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ],
@@ -2434,6 +2841,18 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                                                 nextEvent.sourceDisplayName,
                                           },
                                         ),
+                                ),
+                                const SizedBox(width: 12),
+                                _buildMobileQuickActionCard(
+                                  context,
+                                  theme,
+                                  width:
+                                      MediaQuery.sizeOf(context).width * 0.42,
+                                  icon: Icons.add_circle_outline,
+                                  label: 'Create',
+                                  value: 'Event',
+                                  compactValue: false,
+                                  onTap: _showCreateEventDialog,
                                 ),
                               ],
                             ),
@@ -2967,10 +3386,17 @@ class _CalendarPageViewState extends State<CalendarPageView> {
                           value: 'rename',
                           child: Text('Rename'),
                         ),
-                        if (source.importMode == 'link')
+                        if (source.importMode == 'link' ||
+                            source.importMode == 'oauth')
                           const PopupMenuItem(
                             value: 'refresh',
                             child: Text('Refresh'),
+                          ),
+                        if (source.importMode == 'oauth' &&
+                            source.refreshState == 'reauth_required')
+                          const PopupMenuItem(
+                            value: 'reconnect',
+                            child: Text('Reconnect Google account'),
                           ),
                         const PopupMenuItem(
                           value: 'delete',
@@ -3216,9 +3642,19 @@ class _CalendarPageViewState extends State<CalendarPageView> {
   }
 
   String _formatSourceSubtitle(MessieCalendarSource source) {
-    final parts = <String>[source.importMode == 'link' ? 'linked' : 'uploaded'];
+    final parts = <String>[
+      switch (source.importMode) {
+        'link' => 'linked',
+        'oauth' => 'Google',
+        _ => 'uploaded',
+      },
+    ];
 
-    if (source.refreshState.isNotEmpty) {
+    if (source.refreshState == 'reauth_required') {
+      parts.add('reconnect required');
+    } else if (source.refreshState.isNotEmpty &&
+        source.refreshState != 'imported' &&
+        source.refreshState != 'synced') {
       parts.add(source.refreshState);
     }
     if (source.lastSyncedAt != null) {
@@ -3227,7 +3663,8 @@ class _CalendarPageViewState extends State<CalendarPageView> {
       parts.add('checked ${_formatDateTime(source.lastRefreshAttemptAt!)}');
     }
     if (source.lastRefreshError != null &&
-        source.lastRefreshError!.isNotEmpty) {
+        source.lastRefreshError!.isNotEmpty &&
+        source.refreshState != 'reauth_required') {
       parts.add(source.lastRefreshError!);
     } else if (source.sourceUrl != null && source.sourceUrl!.isNotEmpty) {
       parts.add(_formatSourceUrl(source.sourceUrl!));
@@ -3261,5 +3698,283 @@ class _CalendarPageViewState extends State<CalendarPageView> {
     final minute = local.minute.toString().padLeft(2, '0');
     final period = local.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $period';
+  }
+}
+
+class _CreateEventSheet extends StatefulWidget {
+  const _CreateEventSheet({
+    required this.sources,
+    required this.selectedDay,
+  });
+
+  final List<MessieCalendarSource> sources;
+  final DateTime selectedDay;
+
+  @override
+  State<_CreateEventSheet> createState() => _CreateEventSheetState();
+}
+
+class _CreateEventRequest {
+  const _CreateEventRequest({
+    required this.sourceId,
+    required this.title,
+    required this.description,
+    required this.location,
+    required this.startTime,
+    required this.endTime,
+    required this.allDay,
+  });
+
+  final String sourceId;
+  final String title;
+  final String description;
+  final String location;
+  final DateTime startTime;
+  final DateTime endTime;
+  final bool allDay;
+}
+
+class _CreateEventSheetState extends State<_CreateEventSheet> {
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _locationController = TextEditingController();
+  
+  MessieCalendarSource? _selectedSource;
+  DateTime? _startDateTime;
+  DateTime? _endDateTime;
+  bool _allDay = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedSource = widget.sources.first;
+    
+    // Default to selected day at 9 AM - 10 AM
+    final selectedDay = DateTime(
+      widget.selectedDay.year,
+      widget.selectedDay.month,
+      widget.selectedDay.day,
+    );
+    _startDateTime = selectedDay.add(const Duration(hours: 9));
+    _endDateTime = selectedDay.add(const Duration(hours: 10));
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Event title is required')),
+      );
+      return;
+    }
+
+    if (_selectedSource == null || _startDateTime == null || _endDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a source and set start/end times')),
+      );
+      return;
+    }
+
+    Navigator.of(context).pop(
+      _CreateEventRequest(
+        sourceId: _selectedSource!.id,
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        location: _locationController.text.trim(),
+        startTime: _startDateTime!,
+        endTime: _endDateTime!,
+        allDay: _allDay,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Create Event',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 16),
+          
+          // Source picker
+          DropdownButtonFormField<MessieCalendarSource>(
+            value: _selectedSource,
+            decoration: const InputDecoration(
+              labelText: 'Calendar',
+              border: OutlineInputBorder(),
+            ),
+            items: widget.sources.map((source) {
+              return DropdownMenuItem(
+                value: source,
+                child: Text(source.displayName),
+              );
+            }).toList(),
+            onChanged: (source) => setState(() => _selectedSource = source),
+          ),
+          const SizedBox(height: 16),
+
+          // Title
+          TextFormField(
+            controller: _titleController,
+            decoration: const InputDecoration(
+              labelText: 'Title',
+              border: OutlineInputBorder(),
+            ),
+            textCapitalization: TextCapitalization.words,
+          ),
+          const SizedBox(height: 16),
+
+          // All-day toggle
+          SwitchListTile(
+            title: const Text('All day'),
+            value: _allDay,
+            onChanged: (value) {
+              setState(() {
+                _allDay = value;
+                if (value) {
+                  // Set to start/end of selected day
+                  final day = DateTime(
+                    widget.selectedDay.year,
+                    widget.selectedDay.month,
+                    widget.selectedDay.day,
+                  );
+                  _startDateTime = day;
+                  _endDateTime = day.add(const Duration(days: 1));
+                }
+              });
+            },
+          ),
+          const SizedBox(height: 8),
+
+          // Start time
+          ListTile(
+            leading: const Icon(Icons.schedule),
+            title: Text(_allDay ? 'Start date' : 'Start time'),
+            subtitle: Text(_startDateTime != null
+                ? (_allDay 
+                    ? DateFormat.yMMMMEEEEd().format(_startDateTime!)
+                    : DateFormat.yMMMMEEEEd().add_jm().format(_startDateTime!))
+                : 'Not set'),
+            onTap: () async {
+              final date = await showDatePicker(
+                context: context,
+                initialDate: _startDateTime ?? DateTime.now(),
+                firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+              );
+              if (date == null) return;
+
+              if (_allDay) {
+                setState(() {
+                  _startDateTime = date;
+                  _endDateTime = date.add(const Duration(days: 1));
+                });
+              } else {
+                if (!mounted) return;
+                final time = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay.fromDateTime(_startDateTime ?? DateTime.now()),
+                );
+                if (time == null) return;
+
+                setState(() {
+                  _startDateTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                  // Auto-adjust end time to be 1 hour after start
+                  _endDateTime = _startDateTime!.add(const Duration(hours: 1));
+                });
+              }
+            },
+          ),
+
+          // End time
+          ListTile(
+            leading: const Icon(Icons.schedule),
+            title: Text(_allDay ? 'End date' : 'End time'),
+            subtitle: Text(_endDateTime != null
+                ? (_allDay 
+                    ? DateFormat.yMMMMEEEEd().format(_endDateTime!)
+                    : DateFormat.yMMMMEEEEd().add_jm().format(_endDateTime!))
+                : 'Not set'),
+            onTap: () async {
+              final date = await showDatePicker(
+                context: context,
+                initialDate: _endDateTime ?? DateTime.now(),
+                firstDate: _startDateTime ?? DateTime.now(),
+                lastDate: DateTime.now().add(const Duration(days: 365 * 2)),
+              );
+              if (date == null) return;
+
+              if (_allDay) {
+                setState(() => _endDateTime = date);
+              } else {
+                if (!mounted) return;
+                final time = await showTimePicker(
+                  context: context,
+                  initialTime: TimeOfDay.fromDateTime(_endDateTime ?? DateTime.now()),
+                );
+                if (time == null) return;
+
+                setState(() {
+                  _endDateTime = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                });
+              }
+            },
+          ),
+          const SizedBox(height: 16),
+
+          // Location
+          TextFormField(
+            controller: _locationController,
+            decoration: const InputDecoration(
+              labelText: 'Location (optional)',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.location_on),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Description
+          TextFormField(
+            controller: _descriptionController,
+            decoration: const InputDecoration(
+              labelText: 'Description (optional)',
+              border: OutlineInputBorder(),
+            ),
+            maxLines: 3,
+          ),
+          const SizedBox(height: 24),
+
+          // Actions
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 12),
+              FilledButton(
+                onPressed: _submit,
+                child: const Text('Create'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
   }
 }

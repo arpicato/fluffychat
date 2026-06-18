@@ -57,6 +57,7 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - This agent runs on the NixOS host, NOT inside the /workspace VM. Flutter is not available directly here.
 - Web prod builds use `Dockerfile.web` which has Flutter + Rust toolchain baked in.
 - Build: `cd /home/arpin/code/fluffychat && docker build -f Dockerfile.web -t fluffychat-web:prod .`
+- Preferred helper: `bash scripts/build_web_prod.sh`
 - The build takes ~15-25 min first time (Rust/WASM compile), but Docker layer caching makes subsequent builds fast if only Dart code changed.
 - Deploy target: `arpin-hp.local` (Windows host running Docker Desktop)
 - Cannot pull images there; must `docker save | gzip | ssh arpin-hp.local "docker load"`
@@ -71,8 +72,12 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - `scripts/build_apk_docker.sh` exports the artifact to `build/android/app-release.apk` by default instead of leaving it inside the image
 - Upgrade-compatible APK builds require local signing material in `android/key.properties`; use `APK_SIGNING_MODE=dev` only for disposable local installs that will conflict with an already-installed release-signed app
 - Linux desktop build: `Dockerfile.linux` + `run-linux.sh` (X11 forwarding)
+- Preferred helper: `bash scripts/build_linux_docker.sh`
+- AppImage daily-driver path on NixOS/KDE: build and package fully inside Docker with `bash scripts/build_linux_appimage_docker.sh`, run with `bash scripts/run_appimage_local.sh`, install with `bash scripts/install_appimage_local.sh`; the installed launcher clears `GIO_EXTRA_MODULES` to avoid host GVFS module mismatch warnings against the bundled GTK stack
 - `run-linux.sh` launches `FLUFFYCHAT_LINUX_IMAGE` if set, otherwise `fluffychat-linux:latest`; when rebuilding Linux images for testing, also tag the build as `fluffychat-linux:latest` unless you intentionally want a side tag only, so desktop runs do not silently use a stale image
 - Build logs go to `/tmp/opencode/` for post-mortem
+- Preferred one-command build+deploy helper: `bash scripts/build_and_deploy_web_remote.sh`
+- Direct deploy helper when images are already built: `bash scripts/deploy_web_remote.sh`
 
 ### Git
 
@@ -81,6 +86,7 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - Make small checkpoint commits; amend after user runtime/device feedback
 - Do not commit directly to `main`
 - Squash merge completed feature branches into `main` when user approves
+- Preferred squash helper: `bash scripts/squash_merge_branch.sh <feature-branch> "<commit subject>"`
 - Prefer targeted `flutter test --no-pub` and `dart analyze`/`flutter analyze --no-pub` over broad full-project verification
 
 ### Smoke Tests

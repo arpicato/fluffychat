@@ -27,6 +27,7 @@ import 'package:messie_api/src/model/email_rich_headers_response.dart';
 import 'package:messie_api/src/model/error.dart';
 import 'package:messie_api/src/model/matrix_auth_response.dart';
 import 'package:messie_api/src/model/matrix_open_id_request.dart';
+import 'package:messie_api/src/model/new_calendar_event.dart';
 import 'package:messie_api/src/model/new_calendar_link_source.dart';
 import 'package:messie_api/src/model/new_collaborator.dart';
 import 'package:messie_api/src/model/new_todo_item.dart';
@@ -546,6 +547,107 @@ class DefaultApi {
     }
 
     return Response<BridgeWhoamiResponse>(
+      data: _responseData,
+      headers: _response.headers,
+      isRedirect: _response.isRedirect,
+      requestOptions: _response.requestOptions,
+      redirects: _response.redirects,
+      statusCode: _response.statusCode,
+      statusMessage: _response.statusMessage,
+      extra: _response.extra,
+    );
+  }
+
+  /// Create a calendar event
+  /// 
+  ///
+  /// Parameters:
+  /// * [newCalendarEvent] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future] containing a [Response] with a [CalendarEvent] as data
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<CalendarEvent>> createCalendarEvent({ 
+    required NewCalendarEvent newCalendarEvent,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/calendar/events';
+    final _options = Options(
+      method: r'POST',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(NewCalendarEvent);
+      _bodyData = _serializers.serialize(newCalendarEvent, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    CalendarEvent? _responseData;
+
+    try {
+      final rawResponse = _response.data;
+      _responseData = rawResponse == null ? null : _serializers.deserialize(
+        rawResponse,
+        specifiedType: const FullType(CalendarEvent),
+      ) as CalendarEvent;
+
+    } catch (error, stackTrace) {
+      throw DioException(
+        requestOptions: _response.requestOptions,
+        response: _response,
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    return Response<CalendarEvent>(
       data: _responseData,
       headers: _response.headers,
       isRedirect: _response.isRedirect,
