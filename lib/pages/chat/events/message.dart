@@ -434,19 +434,14 @@ class Message extends StatelessWidget {
                                 alignment: alignment,
                                 padding: const EdgeInsets.only(left: 8),
                                 child: GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
+                                  behavior: HitTestBehavior.deferToChild,
                                   onLongPress: longPressSelect
                                       ? null
                                       : () {
                                           HapticFeedback.heavyImpact();
                                           onSelect(event);
                                         },
-                                  child: MessageClickSurface(
-                                    behavior: HitTestBehavior.opaque,
-                                    onSelect: () => onSelect(event),
-                                    onDeselect: () => onSelect(event),
-                                    onReply: () => onDoubleTap(event),
-                                    child: AnimatedOpacity(
+                                  child: AnimatedOpacity(
                                       duration: FluffyThemes.animationDuration,
                                       curve: FluffyThemes.animationCurve,
                                       opacity:
@@ -610,10 +605,9 @@ class Message extends StatelessWidget {
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ),
-                              ),
-                              Align(
+                                   ),
+                                 ),
+                               Align(
                                 alignment: ownMessage
                                     ? Alignment.bottomRight
                                     : Alignment.bottomLeft,
