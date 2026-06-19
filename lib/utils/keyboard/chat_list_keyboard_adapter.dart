@@ -75,6 +75,34 @@ class ChatListKeyboardHandlerAdapter implements KeyboardChatListHandler {
   }
 
   @override
+  bool openByIndex(int index) {
+    // Only count non-calendar entries
+    final entries = controller.navigableEntries
+        .where((e) => e is! CalendarChatListEntry)
+        .toList();
+    if (index < 0 || index >= entries.length) return false;
+    final entry = entries[index];
+    switch (entry) {
+      case RoomChatListEntry(:final room):
+        controller.onChatTap(room);
+        return true;
+      case TodoChatListEntry(:final todoList):
+        controller.context.push(
+          '/rooms/todos/${todoList.id}',
+          extra: <String, Object?>{
+            'title': todoList.title,
+            'description': todoList.description,
+          },
+        );
+        return true;
+      case CalendarChatListEntry():
+        return false;
+      case DividerChatListEntry():
+        return false;
+    }
+  }
+
+  @override
   bool handleEscape() {
     // If we can pop (e.g. todo/calendar detail page is open), close it first.
     if (controller.mounted && controller.context.canPop()) {

@@ -75,7 +75,7 @@ class ShortcutResolver {
       if (!_conditionsMet(definition, context)) continue;
 
       // Dispatch to the appropriate handler.
-      final handled = _dispatch(definition.command, context, chat, chatList);
+      final handled = _dispatch(definition.command, keyState, context, chat, chatList);
       if (handled) return true;
     }
 
@@ -102,6 +102,7 @@ class ShortcutResolver {
 
   bool _dispatch(
     ShortcutCommand command,
+    ShortcutKeyState keyState,
     ShortcutContext context,
     KeyboardChatHandler? chat,
     KeyboardChatListHandler? chatList,
@@ -118,11 +119,19 @@ class ShortcutResolver {
       case ShortcutCommand.openFocusedChat:
         return chatList?.openFocused() ?? false;
 
+      case ShortcutCommand.openChatByIndex:
+        final index = _digitIndex(keyState.key);
+        if (index < 0) return false;
+        return chatList?.openByIndex(index) ?? false;
+
       case ShortcutCommand.jumpToRecent:
         return chat?.jumpToRecent() ?? false;
 
       case ShortcutCommand.toggleFocusedMessageSelection:
         return chat?.toggleFocusedMessageSelection() ?? false;
+
+      case ShortcutCommand.openFocusedMessage:
+        return chat?.openFocusedMessage() ?? false;
 
       case ShortcutCommand.forwardFocusedMessage:
         return chat?.forwardFocusedMessage() ?? false;
@@ -178,5 +187,18 @@ class ShortcutResolver {
         }
         return false;
     }
+  }
+
+  static int _digitIndex(LogicalKeyboardKey key) {
+    if (key == LogicalKeyboardKey.digit1) return 0;
+    if (key == LogicalKeyboardKey.digit2) return 1;
+    if (key == LogicalKeyboardKey.digit3) return 2;
+    if (key == LogicalKeyboardKey.digit4) return 3;
+    if (key == LogicalKeyboardKey.digit5) return 4;
+    if (key == LogicalKeyboardKey.digit6) return 5;
+    if (key == LogicalKeyboardKey.digit7) return 6;
+    if (key == LogicalKeyboardKey.digit8) return 7;
+    if (key == LogicalKeyboardKey.digit9) return 8;
+    return -1;
   }
 }

@@ -3,6 +3,7 @@ abstract class KeyboardChatListHandler {
   bool focusUp();
   bool focusDown();
   bool openFocused();
+  bool openByIndex(int index);
   bool handleEscape();
 }
 
@@ -17,6 +18,7 @@ abstract class KeyboardChatHandler {
   bool messagePageUp();
   bool messagePageDown();
   bool toggleFocusedMessageSelection();
+  bool openFocusedMessage();
   bool forwardFocusedMessage();
   bool replyFocusedMessage();
   bool editFocusedMessage();

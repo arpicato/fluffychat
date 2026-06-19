@@ -94,8 +94,8 @@ class ChatListViewBody extends StatelessWidget {
                 return title.contains(filter) || description.contains(filter);
               }).toList()
             : const <MessieTodoList>[];
-        final visibleCalendarEvents = includeTodoLists
-            ? controller.upcomingCalendarEvents
+        final rawCalendarEvents = includeTodoLists
+            ? (controller.upcomingCalendarEvents
                   .where((event) {
                     final now = DateTime.now().toUtc();
                     final end = now.add(const Duration(days: 7));
@@ -115,7 +115,14 @@ class ChatListViewBody extends StatelessWidget {
                   })
                   .take(2)
                   .toList()
+                ..sort((a, b) => a.startsAt.compareTo(b.startsAt)))
             : const <MessieCalendarEvent>[];
+        final visibleCalendarEvents = includeTodoLists &&
+                rawCalendarEvents.length > 1 &&
+                !(_isEventToday(rawCalendarEvents[0]) &&
+                    _isEventToday(rawCalendarEvents[1]))
+            ? [rawCalendarEvents[0]]
+            : rawCalendarEvents;
         final timelineEntries = <ChatListEntry>[
           ...rooms.map(ChatListEntry.room),
           ...visibleTodoLists.map(ChatListEntry.todo),
@@ -473,4 +480,13 @@ class _SearchItem extends StatelessWidget {
       ),
     ),
   );
+}
+
+bool _isEventToday(MessieCalendarEvent event) {
+  final localStart = event.startsAt.toLocal();
+  final now = DateTime.now().toLocal();
+  final startOfDay = DateTime(now.year, now.month, now.day);
+  final endOfDay = startOfDay.add(const Duration(days: 1));
+  return localStart.isBefore(endOfDay) &&
+      event.endsAt.toLocal().isAfter(startOfDay);
 }

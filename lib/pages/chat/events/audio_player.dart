@@ -51,6 +51,11 @@ enum AudioPlayerStatus { notDownloaded, downloading, downloaded }
 class AudioPlayerState extends State<AudioPlayerWidget> {
   static const double buttonSize = 36;
 
+  static final Map<String, AudioPlayerState> _activeStates = {};
+
+  static void playPauseFor(String eventId) =>
+      _activeStates[eventId]?._onButtonTap();
+
   AudioPlayerStatus status = AudioPlayerStatus.notDownloaded;
   double? _downloadProgress;
 
@@ -60,6 +65,7 @@ class AudioPlayerState extends State<AudioPlayerWidget> {
 
   @override
   void dispose() {
+    _activeStates.remove(widget.event.eventId);
     super.dispose();
     final audioPlayer = matrix.voiceMessageEventId.value != widget.event.eventId
         ? null
@@ -270,6 +276,7 @@ class AudioPlayerState extends State<AudioPlayerWidget> {
   @override
   void initState() {
     super.initState();
+    _activeStates[widget.event.eventId] = this;
     matrix = Matrix.of(context);
     _waveform = _getWaveform();
 

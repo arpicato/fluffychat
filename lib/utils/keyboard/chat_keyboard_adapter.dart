@@ -1,4 +1,6 @@
 import 'package:fluffychat/pages/chat/chat.dart';
+import 'package:fluffychat/pages/chat/events/audio_player.dart';
+import 'package:fluffychat/pages/image_viewer/image_viewer.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/filtered_timeline_extension.dart';
 import 'package:fluffychat/utils/show_scaffold_dialog.dart';
 import 'package:fluffychat/widgets/share_scaffold_dialog.dart';
@@ -136,6 +138,30 @@ class ChatKeyboardHandlerAdapter implements KeyboardChatHandler {
     if (target == null) return false;
     controller.onSelectMessage(target);
     return true;
+  }
+
+  @override
+  bool openFocusedMessage() {
+    final event = controller.focusedEvent;
+    if (event == null) return false;
+    if (event.messageType == MessageTypes.Image ||
+        event.messageType == MessageTypes.Sticker ||
+        event.messageType == MessageTypes.Video) {
+      showDialog(
+        context: controller.context,
+        builder: (_) => ImageViewer(
+          event,
+          timeline: controller.timeline,
+          outerContext: controller.context,
+        ),
+      );
+      return true;
+    }
+    if (event.messageType == MessageTypes.Audio) {
+      AudioPlayerState.playPauseFor(event.eventId);
+      return true;
+    }
+    return false;
   }
 
   @override

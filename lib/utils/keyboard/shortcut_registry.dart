@@ -5,8 +5,10 @@ enum ShortcutCommand {
   search,
   escape,
   openFocusedChat,
+  openChatByIndex,
   jumpToRecent,
   toggleFocusedMessageSelection,
+  openFocusedMessage,
   forwardFocusedMessage,
   replyFocusedMessage,
   editFocusedMessage,
@@ -128,6 +130,115 @@ class AppShortcutRegistry {
       ],
       when: {ShortcutWhen.textFieldNotFocused, ShortcutWhen.chatListVisible},
     ),
+    // Ctrl/Cmd+1 through Ctrl/Cmd+9: open chat list item by index
+    ShortcutDefinition(
+      command: ShortcutCommand.openChatByIndex,
+      scope: ShortcutScope.chatList,
+      label: 'Open chat #1',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.digit1,
+          modifiers: {ShortcutModifier.primary},
+        ),
+      ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
+    ),
+    ShortcutDefinition(
+      command: ShortcutCommand.openChatByIndex,
+      scope: ShortcutScope.chatList,
+      label: 'Open chat #2',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.digit2,
+          modifiers: {ShortcutModifier.primary},
+        ),
+      ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
+    ),
+    ShortcutDefinition(
+      command: ShortcutCommand.openChatByIndex,
+      scope: ShortcutScope.chatList,
+      label: 'Open chat #3',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.digit3,
+          modifiers: {ShortcutModifier.primary},
+        ),
+      ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
+    ),
+    ShortcutDefinition(
+      command: ShortcutCommand.openChatByIndex,
+      scope: ShortcutScope.chatList,
+      label: 'Open chat #4',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.digit4,
+          modifiers: {ShortcutModifier.primary},
+        ),
+      ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
+    ),
+    ShortcutDefinition(
+      command: ShortcutCommand.openChatByIndex,
+      scope: ShortcutScope.chatList,
+      label: 'Open chat #5',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.digit5,
+          modifiers: {ShortcutModifier.primary},
+        ),
+      ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
+    ),
+    ShortcutDefinition(
+      command: ShortcutCommand.openChatByIndex,
+      scope: ShortcutScope.chatList,
+      label: 'Open chat #6',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.digit6,
+          modifiers: {ShortcutModifier.primary},
+        ),
+      ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
+    ),
+    ShortcutDefinition(
+      command: ShortcutCommand.openChatByIndex,
+      scope: ShortcutScope.chatList,
+      label: 'Open chat #7',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.digit7,
+          modifiers: {ShortcutModifier.primary},
+        ),
+      ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
+    ),
+    ShortcutDefinition(
+      command: ShortcutCommand.openChatByIndex,
+      scope: ShortcutScope.chatList,
+      label: 'Open chat #8',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.digit8,
+          modifiers: {ShortcutModifier.primary},
+        ),
+      ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
+    ),
+    ShortcutDefinition(
+      command: ShortcutCommand.openChatByIndex,
+      scope: ShortcutScope.chatList,
+      label: 'Open chat #9',
+      bindings: [
+        ShortcutBinding(
+          key: LogicalKeyboardKey.digit9,
+          modifiers: {ShortcutModifier.primary},
+        ),
+      ],
+      when: {ShortcutWhen.chatListVisible, ShortcutWhen.noModalOpen},
+    ),
     const ShortcutDefinition(
       command: ShortcutCommand.jumpToRecent,
       scope: ShortcutScope.chat,
@@ -141,6 +252,13 @@ class AppShortcutRegistry {
       label: 'Toggle highlighted message selection',
       bindings: [ShortcutBinding(key: LogicalKeyboardKey.space)],
       when: {ShortcutWhen.messageFocused, ShortcutWhen.textFieldNotFocused},
+    ),
+    const ShortcutDefinition(
+      command: ShortcutCommand.openFocusedMessage,
+      scope: ShortcutScope.chat,
+      label: 'Open image or play voice message',
+      bindings: [ShortcutBinding(key: LogicalKeyboardKey.enter)],
+      when: {ShortcutWhen.messageFocused, ShortcutWhen.textFieldNotFocused, ShortcutWhen.noModalOpen},
     ),
     const ShortcutDefinition(
       command: ShortcutCommand.forwardFocusedMessage,
