@@ -4,15 +4,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import 'package:fluffychat/l10n/l10n.dart';
-import 'package:fluffychat/pages/image_viewer/video_player.dart';
 import 'package:fluffychat/widgets/hover_builder.dart';
-import 'package:fluffychat/widgets/mxc_image.dart';
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-import 'package:photo_view/photo_view.dart';
-import 'package:photo_view/photo_view_gallery.dart';
 
 import 'image_viewer.dart';
+import 'image_viewer_media_grid.dart';
 import 'image_viewer_policy.dart';
 
 class ImageViewerView extends StatelessWidget {
@@ -80,60 +76,7 @@ class ImageViewerView extends StatelessWidget {
               KeyboardListener(
                 focusNode: controller.focusNode,
                 onKeyEvent: controller.onKeyEvent,
-                child: PhotoViewGallery.builder(
-                  scrollDirection: Axis.vertical,
-                  pageController: controller.pageController,
-                  scrollPhysics: ImageViewerPolicy.pageViewPhysics(),
-                  itemCount: controller.allEvents.length,
-                  builder: (context, i) {
-                    final event = controller.allEvents[i];
-                    switch (event.messageType) {
-                      case MessageTypes.Video:
-                        return PhotoViewGalleryPageOptions.customChild(
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 52.0),
-                            child: Center(
-                              child: GestureDetector(
-                                // Ignore taps to not go back here:
-                                onTap: () {},
-                                child: EventVideoPlayer(event),
-                              ),
-                            ),
-                          ),
-                          disableGestures: true,
-                          heroAttributes: PhotoViewHeroAttributes(
-                            tag: event.eventId,
-                          ),
-                        );
-                      case MessageTypes.Image:
-                      case MessageTypes.Sticker:
-                      default:
-                        return PhotoViewGalleryPageOptions.customChild(
-                          minScale: PhotoViewComputedScale.contained,
-                          initialScale: PhotoViewComputedScale.contained,
-                          maxScale: PhotoViewComputedScale.covered * 3,
-                          heroAttributes: PhotoViewHeroAttributes(
-                            tag: event.eventId,
-                          ),
-                          child: GestureDetector(
-                            // Ignore taps to not go back here:
-                            onTap: () {},
-                            child: MxcImage(
-                              key: ValueKey(event.eventId),
-                              event: event,
-                              fit: BoxFit.contain,
-                              isThumbnail: false,
-                              animated: true,
-                            ),
-                          ),
-                        );
-                    }
-                  },
-                  backgroundDecoration: const BoxDecoration(
-                    color: Colors.transparent,
-                  ),
-                  onPageChanged: controller.onPageChanged,
-                ),
+                child: ImageViewerMediaGrid(controller),
               ),
               if (hovered)
                 Align(

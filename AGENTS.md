@@ -70,7 +70,8 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - APK builds use `Dockerfile.apk` (arm64 only, ~20 min)
 - Preferred APK builder: `bash scripts/build_apk_docker.sh`
 - `scripts/build_apk_docker.sh` exports the artifact to `build/android/app-release.apk` by default instead of leaving it inside the image
-- Upgrade-compatible APK builds require local signing material in `android/key.properties`; use `APK_SIGNING_MODE=dev` only for disposable local installs that will conflict with an already-installed release-signed app
+- APK signing: all local builds use `APK_SIGNING_MODE=dev`, which generates `android/local-dev.jks` + `android/key.properties` on first run and reuses them persistently. The keystore password is `localdevpassword`, alias `localdev`. Do NOT delete these files — if the app was installed from a different dev key, uninstall the old app first.
+- Release/fdroid signing uses `FDROID_KEY`/`FDROID_KEY_PASS` env vars (base64 keystore + password), set in CI only; not available locally.
 - Linux desktop build: `Dockerfile.linux` + `run-linux.sh` (X11 forwarding)
 - Preferred helper: `bash scripts/build_linux_docker.sh`
 - AppImage daily-driver path on NixOS/KDE: build and package fully inside Docker with `bash scripts/build_linux_appimage_docker.sh`, run with `bash scripts/run_appimage_local.sh`, install with `bash scripts/install_appimage_local.sh`; the installed launcher clears `GIO_EXTRA_MODULES` to avoid host GVFS module mismatch warnings against the bundled GTK stack

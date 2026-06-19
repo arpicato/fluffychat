@@ -68,6 +68,8 @@ class ImageViewerPolicy {
 
   static bool get isWeb => _isWeb;
 
+  static bool get isMobile => _isMobile;
+
   static double get wheelPixelsPerStep =>
       _isWeb ? webWheelPixelsPerStep : desktopWheelPixelsPerStep;
 
