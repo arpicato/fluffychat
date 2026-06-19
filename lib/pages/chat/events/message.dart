@@ -9,7 +9,9 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:fluffychat/config/setting_keys.dart';
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/pages/chat/message_bubble_tap_gate.dart';
 import 'package:fluffychat/pages/chat/message_click_surface.dart';
+import 'package:fluffychat/utils/platform_infos.dart';
 import 'package:fluffychat/utils/adaptive_bottom_sheet.dart';
 import 'package:fluffychat/utils/date_time_extension.dart';
 import 'package:fluffychat/utils/file_description.dart';
@@ -173,6 +175,18 @@ class Message extends StatelessWidget {
         }.contains(event.messageType) &&
         event.fileDescription == null &&
         !event.redacted);
+
+    // Fork: tap-to-select/reply inside the bubble is limited to text messages
+    // on pointer platforms. Media/voice/file bubbles and mobile (touch) only
+    // select via tapping outside the bubble or long-press.
+    final bubbleTapGateEnabled =
+        PlatformInfos.isMobile == false &&
+        const {
+          MessageTypes.Text,
+          MessageTypes.Notice,
+          MessageTypes.Emote,
+          MessageTypes.None,
+        }.contains(event.messageType);
 
     if (ownMessage) {
       color = displayEvent.status.isError
@@ -441,7 +455,15 @@ class Message extends StatelessWidget {
                                           HapticFeedback.heavyImpact();
                                           onSelect(event);
                                         },
-                                  child: AnimatedOpacity(
+                                  // Fork: route empty-space bubble taps to
+                                  // select/reply while glyph taps fall through
+                                  // to the SelectionArea (see MessageBubbleTapGate).
+                                  child: MessageBubbleTapGate(
+                                    enabled: bubbleTapGateEnabled,
+                                    onSelect: () => onSelect(event),
+                                    onDeselect: () => onSelect(event),
+                                    onReply: () => onDoubleTap(event),
+                                    child: AnimatedOpacity(
                                       duration: FluffyThemes.animationDuration,
                                       curve: FluffyThemes.animationCurve,
                                       opacity:
@@ -604,10 +626,11 @@ class Message extends StatelessWidget {
                                           ),
                                         ),
                                       ),
+                                     ),
                                     ),
-                                   ),
-                                 ),
-                               Align(
+                                    ),
+                                  ),
+                                Align(
                                 alignment: ownMessage
                                     ? Alignment.bottomRight
                                     : Alignment.bottomLeft,
