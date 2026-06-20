@@ -1,6 +1,8 @@
 import 'package:fluffychat/pages/chat_list/chat_list_workspace_mixin.dart';
 import 'package:fluffychat/services/backend_session_service.dart';
+import 'package:fluffychat/services/messie_calendar_service.dart';
 import 'package:fluffychat/services/messie_todo_service.dart';
+import 'package:fluffychat/services/messie_workspace_snapshot_service.dart';
 import 'package:fluffychat/services/messie_workspace_refresh.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/foundation.dart';
@@ -11,7 +13,11 @@ import 'package:messie_api/messie_api.dart' as api;
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class _FakeClient extends Fake implements Client {}
+class _FakeClient extends Fake implements Client {
+  _FakeClient({this.userID = '@user:example.com'});
+
+  final String? userID;
+}
 
 class _FakeMatrixState with DiagnosticableTreeMixin implements MatrixState {
   _FakeMatrixState({required this.client, required this.store});
@@ -114,6 +120,22 @@ MessieTodoList _todoList(String id, String title) => MessieTodoList(
   updatedAt: DateTime.utc(2026, 1, 1),
 );
 
+MessieCalendarEvent _calendarEvent(String id, String title) =>
+    MessieCalendarEvent(
+      id: id,
+      sourceId: 'source-1',
+      externalUid: 'external-$id',
+      title: title,
+      description: '',
+      location: '',
+      startsAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+      endsAt: DateTime.now().toUtc().add(const Duration(hours: 2)),
+      allDay: false,
+      status: 'confirmed',
+      timezone: 'UTC',
+      sourceDisplayName: 'Calendar',
+    );
+
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -123,10 +145,14 @@ void main() {
     tester,
   ) async {
     late _WorkspaceHostState state;
+    final prefs = await SharedPreferences.getInstance();
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: _WorkspaceHost(onState: (value) => state = value),
+      Provider<MatrixState>.value(
+        value: _FakeMatrixState(client: _FakeClient(), store: prefs),
+        child: MaterialApp(
+          home: _WorkspaceHost(onState: (value) => state = value),
+        ),
       ),
     );
 
@@ -207,5 +233,49 @@ void main() {
     await state.setTodoListPinned('list-1', false);
 
     expect(state.isTodoListPinned('list-1'), isFalse);
+  });
+
+  testWidgets('workspace hydrates cached snapshot before first refresh completes', (
+    tester,
+  ) async {
+    final prefs = await SharedPreferences.getInstance();
+    const snapshotService = MessieWorkspaceSnapshotService();
+    await snapshotService.write(
+      store: prefs,
+      userKey: '@user:example.com',
+      snapshot: MessieWorkspaceSnapshot(
+        savedAt: DateTime.utc(2026, 1, 1),
+        todoLists: [_todoList('list-1', 'Cached todo')],
+        upcomingCalendarEvents: [_calendarEvent('event-1', 'Cached event')],
+      ),
+    );
+
+    late _WorkspaceHostState state;
+    await tester.pumpWidget(
+      Provider<MatrixState>.value(
+        value: _FakeMatrixState(client: _FakeClient(), store: prefs),
+        child: MaterialApp(
+          home: _WorkspaceHost(
+            onState: (value) => state = value,
+            session: BackendSession(
+              token: 'token',
+              mxid: '@user:example.com',
+              userId: 'user-1',
+              expiresAt: null,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(state.todoLists.map((list) => list.title), ['Cached todo']);
+    expect(
+      state.upcomingCalendarEvents.map((event) => event.title),
+      ['Cached event'],
+    );
+    expect(state.isWorkspaceSnapshotHydrated, isTrue);
+    expect(state.isWorkspaceReadyForFirstPaint, isTrue);
   });
 }

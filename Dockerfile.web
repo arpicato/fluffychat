@@ -48,14 +48,17 @@ RUN --mount=type=cache,target=/root/.cargo/registry \
 RUN --mount=type=cache,target=/root/.pub-cache \
     --mount=type=cache,id=fluffychat-web-dart-tool,target=/app/.dart_tool \
     --mount=type=cache,id=fluffychat-web-build,target=/app/build \
+    set -e; \
     flutter build web --release --source-maps \
       --dart-define=FLUFFY_FRONTEND_COMMIT=${FLUFFY_FRONTEND_COMMIT} \
-      --dart-define=FLUFFY_FRONTEND_BUILD_DATE=${FLUFFY_FRONTEND_BUILD_DATE}
+      --dart-define=FLUFFY_FRONTEND_BUILD_DATE=${FLUFFY_FRONTEND_BUILD_DATE}; \
+    rm -rf /tmp/fluffychat-web-build; \
+    cp -a /app/build/web /tmp/fluffychat-web-build
 
 # Stage 2: Serve with nginx
 FROM nginx:alpine
 
-COPY --from=builder /app/build/web /usr/share/nginx/html
+COPY --from=builder /tmp/fluffychat-web-build /usr/share/nginx/html
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80

@@ -123,9 +123,11 @@ class ChatListViewBody extends StatelessWidget {
                     _isEventToday(rawCalendarEvents[1]))
             ? [rawCalendarEvents[0]]
             : rawCalendarEvents;
+        final includeWorkspaceEntries = controller.isWorkspaceReadyForFirstPaint;
         final timelineEntries = <ChatListEntry>[
           ...rooms.map(ChatListEntry.room),
-          ...visibleTodoLists.map(ChatListEntry.todo),
+          if (includeWorkspaceEntries)
+            ...visibleTodoLists.map(ChatListEntry.todo),
         ]..sort((a, b) {
           // Preserve SDK room ordering (respects pins, unread, low-priority)
           // Interleave pinned todos with pinned rooms first, then sort the rest by time.
@@ -157,7 +159,8 @@ class ChatListViewBody extends StatelessWidget {
           return b.sortTime.compareTo(a.sortTime);
         });
         final calendarEntries = <ChatListEntry>[
-          ...visibleCalendarEvents.map(ChatListEntry.calendar),
+          if (includeWorkspaceEntries)
+            ...visibleCalendarEvents.map(ChatListEntry.calendar),
         ]..sort((a, b) => a.sortTime.compareTo(b.sortTime));
         final entries = <ChatListEntry>[
           ...calendarEntries,

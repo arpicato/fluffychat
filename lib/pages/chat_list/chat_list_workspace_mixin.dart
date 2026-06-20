@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../services/backend_session_service.dart';
 import '../../services/messie_calendar_service.dart';
 import '../../services/messie_realtime_service.dart';
+import '../../services/messie_workspace_snapshot_service.dart';
 import '../../services/messie_todo_service.dart';
 import '../../services/messie_workspace_refresh.dart';
 import '../../widgets/matrix.dart';
@@ -15,6 +18,9 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
   final BackendSessionService _backendSessionService = BackendSessionService();
   final MessieCalendarService _messieCalendarService = MessieCalendarService();
   final MessieTodoService _messieTodoService = MessieTodoService();
+  final MessieWorkspaceSnapshotService _workspaceSnapshotService =
+      const MessieWorkspaceSnapshotService();
+  static const Duration workspaceHydrationTimeout = Duration(milliseconds: 75);
 
   @protected
   BackendSessionService get backendSessionService => _backendSessionService;
@@ -24,6 +30,10 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
 
   @protected
   MessieTodoService get messieTodoService => _messieTodoService;
+
+  @protected
+  MessieWorkspaceSnapshotService get workspaceSnapshotService =>
+      _workspaceSnapshotService;
 
   @protected
   Future<BackendSession> ensureBackendSession(MatrixState matrix) =>
@@ -42,6 +52,9 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
   List<MessieCalendarEvent> upcomingCalendarEvents = const [];
   bool isLoadingCalendarEvents = false;
   Object? calendarEventsError;
+  bool isWorkspaceSnapshotHydrated = false;
+  bool isWorkspaceReadyForFirstPaint = false;
+  Timer? _workspaceFirstPaintTimer;
 
   Future<void> refreshTodoLists() async {
     if (isLoadingTodoLists || !mounted) return;
@@ -70,6 +83,7 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
         this.todoLists = mergedTodoLists;
         isLoadingTodoLists = false;
       });
+      await persistWorkspaceSnapshot();
     } catch (error, stackTrace) {
       Logs().w('Unable to load Messie todo lists', error, stackTrace);
       if (!mounted) return;
@@ -87,6 +101,7 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
       todoLists = [todoList, ...todoLists.where((list) => list.id != todoList.id)];
       todoListsError = null;
     });
+    unawaited(persistWorkspaceSnapshot());
   }
 
   void removeTodoListFromWorkspace(String todoListId) {
@@ -96,6 +111,7 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
       todoLists = todoLists.where((list) => list.id != todoListId).toList();
       todoListsError = null;
     });
+    unawaited(persistWorkspaceSnapshot());
   }
 
   bool isTodoListPinned(String todoListId) =>
@@ -116,6 +132,7 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
           .map((list) => list.id == todoListId ? updatedTodoList : list)
           .toList();
     });
+    await persistWorkspaceSnapshot();
   }
 
   Future<void> refreshCalendarEvents() async {
@@ -139,6 +156,7 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
         upcomingCalendarEvents = events;
         isLoadingCalendarEvents = false;
       });
+      await persistWorkspaceSnapshot();
     } catch (error, stackTrace) {
       Logs().w('Unable to load Messie calendar events', error, stackTrace);
       if (!mounted) return;
@@ -169,6 +187,11 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
 
   void initWorkspace() {
     MessieWorkspaceRefresh.instance.addListener(refreshWorkspaceData);
+    _workspaceFirstPaintTimer = Timer(
+      workspaceHydrationTimeout,
+      _markWorkspaceReadyForFirstPaint,
+    );
+    unawaited(_hydrateWorkspaceSnapshot());
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await refreshWorkspaceData();
       if (!mounted || !enableMessieRealtime) return;
@@ -183,6 +206,75 @@ mixin ChatListWorkspaceMixin<T extends StatefulWidget> on State<T> {
 
   void disposeWorkspace() {
     MessieWorkspaceRefresh.instance.removeListener(refreshWorkspaceData);
+    _workspaceFirstPaintTimer?.cancel();
     MessieRealtimeService.instance.stop();
+  }
+
+  @protected
+  Future<void> persistWorkspaceSnapshot() async {
+    if (!mounted) return;
+    final matrix = Matrix.of(context);
+    final userKey = _workspaceSnapshotUserKey(matrix.client);
+    if (userKey == null) return;
+    await workspaceSnapshotService.write(
+      store: matrix.store,
+      userKey: userKey,
+      snapshot: MessieWorkspaceSnapshot(
+        savedAt: DateTime.now().toUtc(),
+        todoLists: todoLists,
+        upcomingCalendarEvents: upcomingCalendarEvents,
+      ),
+    );
+  }
+
+  Future<void> _hydrateWorkspaceSnapshot() async {
+    if (!mounted) return;
+    final matrix = Matrix.of(context);
+    final userKey = _workspaceSnapshotUserKey(matrix.client);
+    if (userKey == null) {
+      _markWorkspaceSnapshotHydrated();
+      return;
+    }
+    final snapshot = await workspaceSnapshotService.read(
+      store: matrix.store,
+      userKey: userKey,
+    );
+    if (!mounted) return;
+    if (snapshot != null) {
+      setState(() {
+        todoLists = [
+          ...snapshot.todoLists,
+          ..._optimisticTodoListsById.values.where(
+            (optimistic) =>
+                snapshot.todoLists.every((list) => list.id != optimistic.id),
+          ),
+        ];
+        upcomingCalendarEvents = snapshot.upcomingCalendarEvents;
+      });
+    }
+    _markWorkspaceSnapshotHydrated();
+    _markWorkspaceReadyForFirstPaint();
+  }
+
+  void _markWorkspaceReadyForFirstPaint() {
+    if (!mounted || isWorkspaceReadyForFirstPaint) return;
+    _workspaceFirstPaintTimer?.cancel();
+    _workspaceFirstPaintTimer = null;
+    setState(() {
+      isWorkspaceReadyForFirstPaint = true;
+    });
+  }
+
+  void _markWorkspaceSnapshotHydrated() {
+    if (!mounted || isWorkspaceSnapshotHydrated) return;
+    setState(() {
+      isWorkspaceSnapshotHydrated = true;
+    });
+  }
+
+  String? _workspaceSnapshotUserKey(Client client) {
+    final userId = client.userID;
+    if (userId == null || userId.isEmpty) return null;
+    return userId;
   }
 }

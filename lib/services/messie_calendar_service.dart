@@ -134,6 +134,52 @@ class MessieCalendarEvent {
         createdAt: event.createdAt,
         updatedAt: event.updatedAt,
       );
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'sourceId': sourceId,
+    'externalUid': externalUid,
+    'title': title,
+    'description': description,
+    'location': location,
+    'startsAt': startsAt.toUtc().toIso8601String(),
+    'endsAt': endsAt.toUtc().toIso8601String(),
+    'allDay': allDay,
+    'status': status,
+    'timezone': timezone,
+    'sourceDisplayName': sourceDisplayName,
+    'recurrenceSummary': recurrenceSummary,
+    'createdAt': createdAt?.toUtc().toIso8601String(),
+    'updatedAt': updatedAt?.toUtc().toIso8601String(),
+  };
+
+  factory MessieCalendarEvent.fromJson(Map<String, Object?> json) =>
+      MessieCalendarEvent(
+        id: json['id'] as String? ?? '',
+        sourceId: json['sourceId'] as String? ?? '',
+        externalUid: json['externalUid'] as String? ?? '',
+        title: json['title'] as String? ?? '',
+        description: json['description'] as String? ?? '',
+        location: json['location'] as String? ?? '',
+        startsAt:
+            DateTime.tryParse(json['startsAt'] as String? ?? '')?.toUtc() ??
+            DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        endsAt:
+            DateTime.tryParse(json['endsAt'] as String? ?? '')?.toUtc() ??
+            DateTime.fromMillisecondsSinceEpoch(0, isUtc: true),
+        allDay: json['allDay'] as bool? ?? false,
+        status: json['status'] as String? ?? '',
+        timezone: json['timezone'] as String? ?? '',
+        sourceDisplayName: json['sourceDisplayName'] as String? ?? '',
+        recurrenceSummary: json['recurrenceSummary'] as String?,
+        createdAt: _parseMessieCalendarDateTime(json['createdAt']),
+        updatedAt: _parseMessieCalendarDateTime(json['updatedAt']),
+      );
+}
+
+DateTime? _parseMessieCalendarDateTime(Object? value) {
+  if (value is! String || value.isEmpty) return null;
+  return DateTime.tryParse(value)?.toUtc();
 }
 
 class MessieCalendarImportResult {

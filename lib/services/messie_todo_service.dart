@@ -41,6 +41,33 @@ class MessieTodoList {
     createdAt: list.createdAt,
     updatedAt: list.updatedAt,
   );
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'ownerId': ownerId,
+    'title': title,
+    'description': description,
+    'pinned': pinned,
+    'lastActivityAt': lastActivityAt?.toUtc().toIso8601String(),
+    'createdAt': createdAt?.toUtc().toIso8601String(),
+    'updatedAt': updatedAt?.toUtc().toIso8601String(),
+  };
+
+  factory MessieTodoList.fromJson(Map<String, Object?> json) => MessieTodoList(
+    id: json['id'] as String? ?? '',
+    ownerId: json['ownerId'] as String? ?? '',
+    title: json['title'] as String? ?? '',
+    description: json['description'] as String? ?? '',
+    pinned: json['pinned'] as bool? ?? false,
+    lastActivityAt: _parseMessieDateTime(json['lastActivityAt']),
+    createdAt: _parseMessieDateTime(json['createdAt']),
+    updatedAt: _parseMessieDateTime(json['updatedAt']),
+  );
+}
+
+DateTime? _parseMessieDateTime(Object? value) {
+  if (value is! String || value.isEmpty) return null;
+  return DateTime.tryParse(value)?.toUtc();
 }
 
 class MessieTodoItem {
