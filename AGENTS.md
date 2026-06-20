@@ -70,6 +70,12 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - APK builds use `Dockerfile.apk` (arm64 only, ~20 min)
 - Preferred APK builder: `bash scripts/build_apk_docker.sh`
 - `scripts/build_apk_docker.sh` exports the artifact to `build/android/app-release.apk` by default instead of leaving it inside the image
+- FluffyChat Docker targets now share a local `fluffychat-builder-base:3.41.6` image built from `Dockerfile.builder-base`; build helpers refresh that base automatically before apk/web/linux/appimage builds to avoid repeated giant toolchain cache trees
+- Current Docker layout expectations:
+  - final deploy/export images should stay small (`fluffychat-web`, `fluffychat-apk`, `fluffychat-linux` are artifact/runtime images, not full builder roots)
+  - heavy toolchains live in `fluffychat-builder-base:3.41.6`
+  - apk/web builds cache `/app/.dart_tool` and `/app/build` to keep repeated source-edit rebuild churn low
+  - if repeated rebuilds start growing `docker system df` build cache by multiple GB per edit cycle again, inspect Dockerfiles before adding more cleanup
 - APK signing: all local builds use `APK_SIGNING_MODE=dev`, which generates `android/local-dev.jks` + `android/key.properties` on first run and reuses them persistently. The keystore password is `localdevpassword`, alias `localdev`. Do NOT delete these files — if the app was installed from a different dev key, uninstall the old app first.
 - Release/fdroid signing uses `FDROID_KEY`/`FDROID_KEY_PASS` env vars (base64 keystore + password), set in CI only; not available locally.
 - Linux desktop build: `Dockerfile.linux` + `run-linux.sh` (X11 forwarding)
@@ -79,6 +85,11 @@ FluffyChat is the primary Matrix client for the Messie ecosystem. It is a Flutte
 - Build logs go to `/tmp/opencode/` for post-mortem
 - Preferred one-command build+deploy helper: `bash scripts/build_and_deploy_web_remote.sh`
 - Direct deploy helper when images are already built: `bash scripts/deploy_web_remote.sh`
+- To clean old local Docker artifacts without nuking current working tags, use `bash scripts/cleanup_fluffychat_docker.sh`
+- Cleanup process:
+  - normal path: keep current working tags (`fluffychat-builder-base:3.41.6`, `fluffychat-web:prod`, `fluffychat-apk:latest`, `fluffychat-linux:latest`) and run `bash scripts/cleanup_fluffychat_docker.sh`
+  - for measurement, use `docker system df` before/after a rebuild batch; this shows whether cache growth is under control
+  - avoid routine `docker system prune -a` during normal work because it destroys useful shared builder cache and makes the next rebuild much slower
 
 ### Git
 

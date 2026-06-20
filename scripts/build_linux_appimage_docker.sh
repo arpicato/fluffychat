@@ -3,6 +3,7 @@
 set -euo pipefail
 
 IMAGE_NAME="${IMAGE_NAME:-fluffychat-appimage:latest}"
+BASE_IMAGE="${FLUFFYCHAT_BUILDER_IMAGE:-fluffychat-builder-base:3.41.6}"
 LOG_DIR="${LOG_DIR:-/tmp/opencode}"
 LOG_FILE="${LOG_FILE:-${LOG_DIR}/fluffy_appimage_docker_build.log}"
 HOST_UID="${HOST_UID:-$(id -u)}"
@@ -40,7 +41,9 @@ APPIMAGETOOL_CACHE_DIR="$(bash -lc 'printf %s "$HOME/.cache/appimage-run/$(sha25
 cp -a "$LINUXDEPLOY_CACHE_DIR"/. "$LINUXDEPLOY_DIR"/
 cp -a "$APPIMAGETOOL_CACHE_DIR"/. "$APPIMAGETOOL_DIR"/
 
-docker build -f Dockerfile.appimage -t "$IMAGE_NAME" . 2>&1 | tee "$LOG_FILE"
+bash scripts/build_builder_base.sh >/tmp/opencode/fluffy_builder_base.log 2>&1
+
+docker build -f Dockerfile.appimage --build-arg "FLUFFYCHAT_BUILDER_IMAGE=$BASE_IMAGE" -t "$IMAGE_NAME" . 2>&1 | tee "$LOG_FILE"
 
 docker run --rm \
   -e HOST_UID="$HOST_UID" \

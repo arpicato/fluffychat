@@ -2,10 +2,11 @@
 
 # Headless web integration test runner.
 # Keeps browser deps separate from Linux desktop integration deps.
-FROM ghcr.io/cirruslabs/flutter@sha256:7efb4cd5ef95687924a02cb932dcc27f08450cca92b34a36850dec5292b029d5
+ARG FLUFFYCHAT_BUILDER_IMAGE=ghcr.io/cirruslabs/flutter@sha256:7efb4cd5ef95687924a02cb932dcc27f08450cca92b34a36850dec5292b029d5
+FROM ${FLUFFYCHAT_BUILDER_IMAGE}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl git ca-certificates gnupg unzip \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /etc/apt/keyrings \

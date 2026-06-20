@@ -1,25 +1,11 @@
 # Build FluffyChat APK (arm64 only for fast builds)
 # syntax=docker/dockerfile:1.7
-FROM ghcr.io/cirruslabs/flutter:3.41.6
+ARG FLUFFYCHAT_BUILDER_IMAGE=ghcr.io/cirruslabs/flutter:3.41.6
+FROM ${FLUFFYCHAT_BUILDER_IMAGE} AS builder
 
 ARG APK_SIGNING_MODE=release
 ARG APK_DEV_VERSION_CODE=
 ARG APK_DEV_VERSION_NAME=
-
-# Install Rust toolchain for native crypto (Vodozemac) — arm64 only
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
-    && . "$HOME/.cargo/env" \
-    && rustup target add aarch64-linux-android
-
-ENV PATH="/root/.cargo/bin:${PATH}"
-ENV PUB_CACHE=/root/.pub-cache
-
-# Install Android SDK dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    openjdk-17-jdk-headless \
-    && rm -rf /var/lib/apt/lists/*
-
-ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 
 WORKDIR /app
 
@@ -49,6 +35,8 @@ RUN --mount=type=cache,target=/root/.pub-cache \
     --mount=type=cache,target=/root/.gradle \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=cache,id=fluffychat-apk-dart-tool,target=/app/.dart_tool \
+    --mount=type=cache,id=fluffychat-apk-build,target=/app/build \
     FLUFFY_DEV_VERSION_CODE="$APK_DEV_VERSION_CODE" \
     FLUFFY_DEV_VERSION_NAME="$APK_DEV_VERSION_NAME" \
     flutter build apk --release --target-platform android-arm64 -v 2>&1 | tee /tmp/build.log; \
@@ -56,4 +44,6 @@ RUN --mount=type=cache,target=/root/.pub-cache \
       cat /tmp/build.log; exit 1; \
     fi
 
-# Output is at /app/build/app/outputs/flutter-apk/app-release.apk
+FROM alpine:3.20
+COPY --from=builder /app/build/app/outputs/flutter-apk/app-release.apk /out/app-release.apk
+CMD ["/bin/true"]

@@ -1,0 +1,33 @@
+# syntax=docker/dockerfile:1.7
+
+# Shared local builder base for FluffyChat Docker targets.
+# Keeps heavyweight Flutter/Rust/Java/Linux deps in one reusable image so
+# apk/web/linux/appimage builds do not each create their own giant toolchain
+# cache trees.
+# flutter:3.41.6 linux/amd64
+FROM ghcr.io/cirruslabs/flutter@sha256:7efb4cd5ef95687924a02cb932dcc27f08450cca92b34a36850dec5292b029d5
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-17-jdk-headless \
+    clang llvm lld cmake ninja-build pkg-config \
+    libgtk-3-dev liblzma-dev libstdc++-12-dev \
+    libsecret-1-dev libjsoncpp-dev libsqlite3-dev \
+    libwebkit2gtk-4.1-dev libssl-dev tcl \
+    curl git ca-certificates yq unzip file patchelf desktop-file-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN --mount=type=cache,target=/root/.cargo/registry \
+    --mount=type=cache,target=/root/.cargo/git \
+    --mount=type=cache,id=cargo-install,target=/root/.cargo/install-cache \
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
+    && . "$HOME/.cargo/env" \
+    && rustup target add aarch64-linux-android wasm32-unknown-unknown \
+    && rustup toolchain install nightly \
+    && rustup component add rust-src --toolchain nightly \
+    && CARGO_TARGET_DIR=/root/.cargo/install-cache cargo install wasm-pack flutter_rust_bridge_codegen \
+    && cp /root/.cargo/install-cache/release/wasm-pack /root/.cargo/bin/ \
+    && cp /root/.cargo/install-cache/release/flutter_rust_bridge_codegen /root/.cargo/bin/
+
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="/root/.cargo/bin:${PATH}"
+ENV PUB_CACHE=/root/.pub-cache

@@ -4,6 +4,7 @@ set -euo pipefail
 repo_root=$(cd "$(dirname "$0")/.." && pwd)
 output_dir="${APK_OUTPUT_DIR:-$repo_root/build/android}"
 image_tag="${APK_IMAGE_TAG:-fluffychat-apk:latest}"
+base_image="${FLUFFYCHAT_BUILDER_IMAGE:-fluffychat-builder-base:3.41.6}"
 signing_mode="${APK_SIGNING_MODE:-release}"
 temp_signing_files=()
 container_name=""
@@ -89,8 +90,11 @@ fi
 
 build_log="/tmp/opencode/build_apk_docker.log"
 
+bash "$repo_root/scripts/build_builder_base.sh" >/tmp/opencode/fluffy_builder_base.log 2>&1
+
 DOCKER_BUILDKIT=1 docker build \
   -f "$repo_root/Dockerfile.apk" \
+  --build-arg "FLUFFYCHAT_BUILDER_IMAGE=$base_image" \
   --build-arg "APK_SIGNING_MODE=$signing_mode" \
   --build-arg "APK_DEV_VERSION_CODE=$dev_version_code" \
   --build-arg "APK_DEV_VERSION_NAME=$dev_version_name" \
@@ -101,7 +105,7 @@ container_name="fluffychat-apk-export-$$"
 
 docker create --name "$container_name" "$image_tag" >/dev/null
 docker cp \
-  "$container_name:/app/build/app/outputs/apk/release/app-release.apk" \
+  "$container_name:/out/app-release.apk" \
   "$artifact_temp_path"
 mv "$artifact_temp_path" "$artifact_timestamped_path"
 
