@@ -3,7 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:matrix/matrix.dart';
 
 class _FakeRoom extends Fake implements Room {
-  _FakeRoom(this._directChatMatrixId);
+  _FakeRoom({String? directChatMatrixId})
+    : _directChatMatrixId = directChatMatrixId;
 
   final String? _directChatMatrixId;
 
@@ -12,42 +13,39 @@ class _FakeRoom extends Fake implements Room {
 }
 
 void main() {
-  test('bridge bot is recognized for bridge direct chats', () {
+  test('whatsapp direct chat resolves whatsapp provider', () {
     final catalog = BridgeProviderCatalog.fromStates([]);
-    final room = _FakeRoom('@whatsapp_123456789:messie.arpinfidel.com');
+    final room = _FakeRoom(
+      directChatMatrixId: '@whatsapp_123456789:messie.arpinfidel.com',
+    );
 
+    expect(catalog.providerForRemoteUserId(room.directChatMatrixID!), isNotNull);
     expect(
-      catalog.isBridgeBotParticipantForDirectChat(
-        '@whatsappbot:messie.arpinfidel.com',
-        room,
-      ),
+      catalog
+          .providerForRemoteUserId(room.directChatMatrixID!)
+          ?.matchesBridgeBotId('@whatsappbot:messie.arpinfidel.com'),
       isTrue,
     );
   });
 
-  test('non bridge participants are not treated as bridge bots', () {
+  test('bridge-like user id does not match non-bot participant', () {
     final catalog = BridgeProviderCatalog.fromStates([]);
-    final room = _FakeRoom('@whatsapp_123456789:messie.arpinfidel.com');
+    final room = _FakeRoom(
+      directChatMatrixId: '@whatsapp_123456789:messie.arpinfidel.com',
+    );
 
     expect(
-      catalog.isBridgeBotParticipantForDirectChat(
-        '@realperson:messie.arpinfidel.com',
-        room,
-      ),
+      catalog
+          .providerForRemoteUserId(room.directChatMatrixID!)
+          ?.matchesBridgeBotId('@realperson:messie.arpinfidel.com'),
       isFalse,
     );
   });
 
-  test('bridge bots are not filtered for non bridge direct chats', () {
+  test('non-bridge direct chats do not resolve a bridge provider', () {
     final catalog = BridgeProviderCatalog.fromStates([]);
-    final room = _FakeRoom('@alice:messie.arpinfidel.com');
+    final room = _FakeRoom(directChatMatrixId: '@alice:messie.arpinfidel.com');
 
-    expect(
-      catalog.isBridgeBotParticipantForDirectChat(
-        '@whatsappbot:messie.arpinfidel.com',
-        room,
-      ),
-      isFalse,
-    );
+    expect(catalog.providerForRemoteUserId(room.directChatMatrixID!), isNull);
   });
 }
