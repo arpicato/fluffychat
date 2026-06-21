@@ -1,5 +1,6 @@
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:fluffychat/config/setting_keys.dart';
+import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/input_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,9 @@ class _FakeRoom extends Fake implements Room {}
 
 class _FakeClient extends Fake implements Client {
   @override
+  final Map<String, BasicEvent> accountData = {};
+
+  @override
   List<Room> get rooms => const [];
 
   @override
@@ -22,6 +26,9 @@ class _FakeClient extends Fake implements Client {
 }
 
 class _RoomForSuggestions extends Fake implements Room {
+  @override
+  final Map<String, Map<String, StrippedStateEvent>> states = {};
+
   @override
   Client get client => _FakeClient();
 }
@@ -410,6 +417,105 @@ void main() {
     await tester.pump();
 
     expect(computed?.map((s) => s['name']).toList(), ['html', 'hug']);
+  });
+
+  testWidgets('InputBar submit accepts highlighted emoji suggestion before send', (
+    tester,
+  ) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+    String? submitted;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: L10n.localizationsDelegates,
+        supportedLocales: L10n.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
+            width: 240,
+            child: InputBar(
+              room: _RoomForSuggestions(),
+              minLines: 1,
+              maxLines: 8,
+              autofocus: false,
+              keyboardType: TextInputType.multiline,
+              focusNode: focusNode,
+              controller: controller,
+              decoration: const InputDecoration(border: InputBorder.none),
+              onChanged: (_) {},
+              onSubmitted: (value) => submitted = value,
+              suggestionEmojis: const [Emoji('😀', 'grinning face')],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    focusNode.requestFocus();
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), ':gri');
+    controller.selection = const TextSelection.collapsed(offset: 4);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('grinning face'), findsOneWidget);
+
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    expect(controller.text, '😀 ');
+    expect(submitted, isNull);
+  });
+
+  testWidgets('InputBar closes suggestions after accepting emoji', (tester) async {
+    final controller = TextEditingController();
+    final focusNode = FocusNode();
+    bool? suggestionsOpen;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: L10n.localizationsDelegates,
+        supportedLocales: L10n.supportedLocales,
+        home: Scaffold(
+          body: SizedBox(
+            width: 240,
+            child: InputBar(
+              room: _RoomForSuggestions(),
+              minLines: 1,
+              maxLines: 8,
+              autofocus: false,
+              keyboardType: TextInputType.multiline,
+              focusNode: focusNode,
+              controller: controller,
+              decoration: const InputDecoration(border: InputBorder.none),
+              onChanged: (_) {},
+              onSubmitted: (_) {},
+              onSuggestionsOpenChanged: (value) => suggestionsOpen = value,
+              suggestionEmojis: const [Emoji('😀', 'grinning face')],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    focusNode.requestFocus();
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), ':gri');
+    controller.selection = const TextSelection.collapsed(offset: 4);
+    await tester.pump();
+    await tester.pump();
+
+    expect(suggestionsOpen, isTrue);
+
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump();
+
+    expect(controller.text, '😀 ');
+    expect(suggestionsOpen, isFalse);
   });
 
 }

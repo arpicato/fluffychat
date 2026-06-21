@@ -12,6 +12,13 @@ import 'package:fluffychat/widgets/avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
+bool shouldSkipTrustPromptForMasterKey({
+  required bool hasKeys,
+  required bool hasMasterKey,
+  required bool verified,
+}) =>
+    !hasKeys || !hasMasterKey || verified;
+
 Future<bool> showTrustUserInRoomDialog(BuildContext context, Room room) async {
   if (!room.encrypted) return true;
 
@@ -22,11 +29,11 @@ Future<bool> showTrustUserInRoomDialog(BuildContext context, Room room) async {
     if (user.id == room.client.userID) return true;
     final keys = room.client.userDeviceKeys[user.id];
     final masterKey = keys?.masterKey;
-
-    if (keys == null || masterKey == null || masterKey.verified) {
-      return true;
-    }
-    return false;
+    return shouldSkipTrustPromptForMasterKey(
+      hasKeys: keys != null,
+      hasMasterKey: masterKey != null,
+      verified: masterKey?.verified ?? false,
+    );
   });
 
   if (users.isEmpty) return true;
@@ -105,11 +112,11 @@ Future<bool> showTrustUserInRoomDialog(BuildContext context, Room room) async {
       ),
       actions: [
         AdaptiveDialogAction(
-          bigButtons: true,
-          onPressed: () {
-            Navigator.of(context).pop(_Action.allow);
-          },
-          child: Text(L10n.of(context).allow),
+            bigButtons: true,
+            onPressed: () {
+              Navigator.of(context).pop(_Action.allow);
+            },
+            child: Text(L10n.of(context).allow),
         ),
         if (room.isDirectChat)
           AdaptiveDialogAction(
@@ -130,6 +137,12 @@ Future<bool> showTrustUserInRoomDialog(BuildContext context, Room room) async {
 
   switch (action) {
     case _Action.allow:
+      for (final user in users) {
+        await room.client.userDeviceKeys[user.id]?.masterKey?.setVerified(
+          true,
+          false,
+        );
+      }
       return true;
     case _Action.deny:
       return false;

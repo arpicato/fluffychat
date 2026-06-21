@@ -106,6 +106,12 @@ class ChatPageWithRoom extends StatefulWidget {
   ChatController createState() => ChatController();
 }
 
+bool shouldDeferEnterToComposerSuggestions({
+  required KeyEvent event,
+  required bool composerSuggestionsOpen,
+}) =>
+    composerSuggestionsOpen && event.logicalKey == LogicalKeyboardKey.enter;
+
 class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver {
   Room get room => sendingClient.getRoomById(roomId) ?? widget.room;
 
@@ -340,6 +346,14 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
   KeyEventResult _customEnterKeyHandling(FocusNode node, KeyEvent evt) {
     // Note: Up-arrow from empty composer is handled by our global keyboard
     // resolver (enters message focus navigation) instead of editing last message.
+
+    if (
+        shouldDeferEnterToComposerSuggestions(
+          event: evt,
+          composerSuggestionsOpen: composerSuggestionsOpen,
+        )) {
+      return KeyEventResult.ignored;
+    }
 
     if (evt is KeyDownEvent &&
         evt.logicalKey == LogicalKeyboardKey.escape &&

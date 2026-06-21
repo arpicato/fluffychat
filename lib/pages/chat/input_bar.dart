@@ -432,7 +432,7 @@ class InputBar extends StatelessWidget {
         return suggestions;
       },
       fieldViewBuilder: fieldViewBuilder ??
-          (context, controller, focusNode, _) {
+          (context, controller, focusNode, onFieldSubmitted) {
             return _InputBarTextField(
               room: room,
               controller: controller,
@@ -444,6 +444,8 @@ class InputBar extends StatelessWidget {
               textInputAction: textInputAction,
               autofocus: autofocus!,
               onSubmitted: onSubmitted,
+              onAutocompleteFieldSubmitted: onFieldSubmitted,
+              onSuggestionsOpenChanged: onSuggestionsOpenChanged,
               decoration: decoration,
               onChanged: onChanged,
               onCaretTopVisualLineChanged: onCaretTopVisualLineChanged,
@@ -451,6 +453,10 @@ class InputBar extends StatelessWidget {
           },
       optionsViewBuilder: (c, onSelected, s) {
         final suggestions = s.toList();
+        void selectSuggestion(Map<String, String?> suggestion) {
+          onSelected(suggestion);
+          onSuggestionsOpenChanged?.call(false);
+        }
         return Material(
           elevation: theme.appBarTheme.scrolledUnderElevation ?? 4,
           shadowColor: theme.appBarTheme.shadowColor,
@@ -463,7 +469,7 @@ class InputBar extends StatelessWidget {
               builder: (context) => buildSuggestion(
                 c,
                 suggestions[i],
-                onSelected,
+                selectSuggestion,
                 room.client,
                 AutocompleteHighlightedOption.of(context) == i,
               ),
@@ -489,6 +495,8 @@ class _InputBarTextField extends StatefulWidget {
     required this.textInputAction,
     required this.autofocus,
     required this.onSubmitted,
+    required this.onAutocompleteFieldSubmitted,
+    required this.onSuggestionsOpenChanged,
     required this.decoration,
     required this.onChanged,
     required this.onCaretTopVisualLineChanged,
@@ -504,6 +512,8 @@ class _InputBarTextField extends StatefulWidget {
   final TextInputAction? textInputAction;
   final bool autofocus;
   final ValueChanged<String>? onSubmitted;
+  final VoidCallback? onAutocompleteFieldSubmitted;
+  final ValueChanged<bool>? onSuggestionsOpenChanged;
   final InputDecoration decoration;
   final ValueChanged<String>? onChanged;
   final ValueChanged<bool>? onCaretTopVisualLineChanged;
@@ -514,6 +524,24 @@ class _InputBarTextField extends StatefulWidget {
 
 class _InputBarTextFieldState extends State<_InputBarTextField> {
   bool? _lastReportedTopVisualLine;
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent || event.logicalKey != LogicalKeyboardKey.enter) {
+      return KeyEventResult.ignored;
+    }
+    if (HardwareKeyboard.instance.isShiftPressed) {
+      return KeyEventResult.ignored;
+    }
+    final beforeText = widget.controller.text;
+    final beforeSelection = widget.controller.selection;
+    widget.onAutocompleteFieldSubmitted?.call();
+    if (widget.controller.text != beforeText ||
+        widget.controller.selection != beforeSelection) {
+      widget.onSuggestionsOpenChanged?.call(false);
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
+  }
 
   @override
   void initState() {
@@ -556,49 +584,60 @@ class _InputBarTextFieldState extends State<_InputBarTextField> {
 
   @override
   Widget build(BuildContext context) => Builder(
-    builder: (context) => TextField(
-      controller: widget.controller,
-      focusNode: widget.focusNode,
-      readOnly: widget.readOnly,
-      onEditingComplete: () {
-        // To not lose focus on iOS:
-        // https://github.com/krille-chan/fluffychat/issues/2784
-      },
-      contextMenuBuilder: (c, e) => MarkdownContextBuilder(
-        editableTextState: e,
+    builder: (context) => Focus(
+      onKeyEvent: _handleKeyEvent,
+      child: TextField(
         controller: widget.controller,
-      ),
-      contentInsertionConfiguration: ContentInsertionConfiguration(
-        onContentInserted: (KeyboardInsertedContent content) {
-          final data = content.data;
-          if (data == null) return;
-
-          final file = MatrixFile(
-            mimeType: content.mimeType,
-            bytes: data,
-            name: content.uri.split('/').last,
-          );
-          widget.room.sendFileEvent(file, shrinkImageMaxDimension: 1600);
+        focusNode: widget.focusNode,
+        readOnly: widget.readOnly,
+        onEditingComplete: () {
+          // To not lose focus on iOS:
+          // https://github.com/krille-chan/fluffychat/issues/2784
         },
+        contextMenuBuilder: (c, e) => MarkdownContextBuilder(
+          editableTextState: e,
+          controller: widget.controller,
+        ),
+        contentInsertionConfiguration: ContentInsertionConfiguration(
+          onContentInserted: (KeyboardInsertedContent content) {
+            final data = content.data;
+            if (data == null) return;
+
+            final file = MatrixFile(
+              mimeType: content.mimeType,
+              bytes: data,
+              name: content.uri.split('/').last,
+            );
+            widget.room.sendFileEvent(file, shrinkImageMaxDimension: 1600);
+          },
+        ),
+        minLines: widget.minLines,
+        maxLines: widget.maxLines,
+        keyboardType: widget.keyboardType,
+        textInputAction: widget.textInputAction,
+        autofocus: widget.autofocus,
+        inputFormatters: [
+          LengthLimitingTextInputFormatter((maxPDUSize / 3).floor()),
+        ],
+        onSubmitted: (text) {
+          final beforeText = widget.controller.text;
+          final beforeSelection = widget.controller.selection;
+          widget.onAutocompleteFieldSubmitted?.call();
+          if (widget.controller.text != beforeText ||
+              widget.controller.selection != beforeSelection) {
+            widget.onSuggestionsOpenChanged?.call(false);
+            return;
+          }
+          widget.onSubmitted?.call(text);
+        },
+        maxLength: AppSettings.textMessageMaxLength.value,
+        decoration: widget.decoration,
+        onChanged: (text) {
+          widget.onChanged?.call(text);
+          _scheduleCaretProbe();
+        },
+        textCapitalization: TextCapitalization.sentences,
       ),
-      minLines: widget.minLines,
-      maxLines: widget.maxLines,
-      keyboardType: widget.keyboardType,
-      textInputAction: widget.textInputAction,
-      autofocus: widget.autofocus,
-      inputFormatters: [
-        LengthLimitingTextInputFormatter((maxPDUSize / 3).floor()),
-      ],
-      onSubmitted: (text) {
-        widget.onSubmitted?.call(text);
-      },
-      maxLength: AppSettings.textMessageMaxLength.value,
-      decoration: widget.decoration,
-      onChanged: (text) {
-        widget.onChanged?.call(text);
-        _scheduleCaretProbe();
-      },
-      textCapitalization: TextCapitalization.sentences,
     ),
   );
 }
