@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/invitation_selection/invitation_selection_view.dart';
+import 'package:fluffychat/services/bridge_room_presentation.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
@@ -45,6 +46,12 @@ class InvitationSelectionController extends State<InvitationSelection> {
     final contacts = client.rooms
         .where((r) => r.isDirectChat)
         .map((r) => r.unsafeGetUserFromMemoryOrFallback(r.directChatMatrixID!))
+        .where(
+          (user) => !isOfficialBridgeBotUserId(
+            user.id,
+            ownHomeserverDomain: client.userID?.domain,
+          ),
+        )
         .toList();
     contacts.sort(
       (a, b) => a.calcDisplayname().toLowerCase().compareTo(
@@ -105,9 +112,21 @@ class InvitationSelectionController extends State<InvitationSelection> {
     } finally {
       setState(() => loading = false);
     }
+    final ownHomeserverDomain = matrix.client.userID?.domain;
     setState(() {
-      foundProfiles = List<Profile>.from(response.results);
+      foundProfiles = List<Profile>.from(response.results)
+          .where(
+            (profile) => !isOfficialBridgeBotUserId(
+              profile.userId,
+              ownHomeserverDomain: ownHomeserverDomain,
+            ),
+          )
+          .toList();
       if (text.isValidMatrixId &&
+          !isOfficialBridgeBotUserId(
+            text,
+            ownHomeserverDomain: ownHomeserverDomain,
+          ) &&
           foundProfiles.indexWhere((profile) => text == profile.userId) == -1) {
         setState(
           () => foundProfiles = [

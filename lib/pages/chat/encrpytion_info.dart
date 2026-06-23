@@ -6,6 +6,7 @@
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/services/bridge_room_presentation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -18,7 +19,10 @@ class EncryptionInfo extends StatelessWidget {
 
   Future<int> _unverifiedDevices() async {
     if (!room.encrypted) return 0;
-    final users = await room.requestParticipants();
+    final users = visibleUsersWithoutOfficialBridgeBotsInRoom(
+      room,
+      await room.requestParticipants(),
+    );
     final devicesKeysLists = users
         .map((user) => room.client.userDeviceKeys[user.id])
         .nonNulls;

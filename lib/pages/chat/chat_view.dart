@@ -201,6 +201,20 @@ class ChatView extends StatelessWidget {
                                 ],
                               ),
                             ),
+                          if (controller.canSaveSelectedSticker)
+                            PopupMenuItem(
+                              onTap: () =>
+                                  controller.saveSelectedSticker(context),
+                              value: null,
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.collections_outlined),
+                                  SizedBox(width: 12),
+                                  Text('Save to sticker library'),
+                                ],
+                              ),
+                            ),
                           PopupMenuItem(
                             value: _EventContextAction.info,
                             child: Row(

@@ -30,6 +30,8 @@ import 'package:messie_api/src/model/calendar_event.dart';
 import 'package:messie_api/src/model/calendar_import_response.dart';
 import 'package:messie_api/src/model/calendar_source.dart';
 import 'package:messie_api/src/model/collaborator_detail.dart';
+import 'package:messie_api/src/model/create_sticker_pack_request.dart';
+import 'package:messie_api/src/model/delete_sticker_pack_request.dart';
 import 'package:messie_api/src/model/email_list_request.dart';
 import 'package:messie_api/src/model/email_login_request.dart';
 import 'package:messie_api/src/model/email_message_header.dart';
@@ -48,13 +50,19 @@ import 'package:messie_api/src/model/login_step_user_input_user_input.dart';
 import 'package:messie_api/src/model/login_step_user_input_user_input_fields_inner.dart';
 import 'package:messie_api/src/model/matrix_auth_response.dart';
 import 'package:messie_api/src/model/matrix_open_id_request.dart';
+import 'package:messie_api/src/model/move_sticker_entry_request.dart';
 import 'package:messie_api/src/model/new_calendar_event.dart';
 import 'package:messie_api/src/model/new_calendar_link_source.dart';
 import 'package:messie_api/src/model/new_collaborator.dart';
 import 'package:messie_api/src/model/new_todo_item.dart';
 import 'package:messie_api/src/model/new_todo_list.dart';
 import 'package:messie_api/src/model/remote_profile.dart';
+import 'package:messie_api/src/model/save_sticker_entry_request.dart';
 import 'package:messie_api/src/model/set_todo_list_pin.dart';
+import 'package:messie_api/src/model/sticker_entry.dart';
+import 'package:messie_api/src/model/sticker_entry_list_response.dart';
+import 'package:messie_api/src/model/sticker_pack.dart';
+import 'package:messie_api/src/model/sticker_pack_list_response.dart';
 import 'package:messie_api/src/model/todo_item.dart';
 import 'package:messie_api/src/model/todo_list.dart';
 import 'package:messie_api/src/model/update_calendar_source.dart';
@@ -84,6 +92,8 @@ part 'serializers.g.dart';
   CalendarImportResponse,
   CalendarSource,
   CollaboratorDetail,
+  CreateStickerPackRequest,
+  DeleteStickerPackRequest,
   EmailListRequest,
   EmailLoginRequest,$EmailLoginRequest,
   EmailMessageHeader,
@@ -102,13 +112,19 @@ part 'serializers.g.dart';
   LoginStepUserInputUserInputFieldsInner,
   MatrixAuthResponse,
   MatrixOpenIDRequest,
+  MoveStickerEntryRequest,
   NewCalendarEvent,
   NewCalendarLinkSource,
   NewCollaborator,
   NewTodoItem,
   NewTodoList,
   RemoteProfile,
+  SaveStickerEntryRequest,
   SetTodoListPin,
+  StickerEntry,
+  StickerEntryListResponse,
+  StickerPack,
+  StickerPackListResponse,
   TodoItem,
   TodoList,
   UpdateCalendarSource,

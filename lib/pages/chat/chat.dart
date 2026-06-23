@@ -20,6 +20,7 @@ import 'package:fluffychat/pages/chat/start_poll_bottom_sheet.dart';
 import 'package:fluffychat/pages/chat/trust_user_key_dialog.dart';
 import 'package:fluffychat/pages/chat/utils/web_file_to_x_file.dart';
 import 'package:fluffychat/pages/chat_details/chat_details.dart';
+import 'package:fluffychat/services/private_sticker_library_service.dart';
 import 'package:fluffychat/utils/adaptive_bottom_sheet.dart';
 import 'package:fluffychat/utils/error_reporter.dart';
 import 'package:fluffychat/utils/file_selector.dart';
@@ -184,6 +185,13 @@ class ChatController extends State<ChatPageWithRoom> with WidgetsBindingObserver
 
   void saveSelectedEvent(BuildContext context) =>
       selectedEvents.single.saveFile(context);
+
+  bool get canSaveSelectedSticker =>
+      selectedEvents.length == 1 &&
+      isStickerLibraryEligibleEvent(selectedEvents.single);
+
+  void saveSelectedSticker(BuildContext context) =>
+      selectedEvents.single.saveToStickerLibrary(context);
 
   List<Event> selectedEvents = [];
 

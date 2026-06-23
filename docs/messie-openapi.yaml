@@ -1189,6 +1189,186 @@ paths:
           description: Logged out
         "401":
           description: Unauthorized
+
+  /stickers/packs:
+    get:
+      security:
+        - bearerAuth: []
+      summary: List sticker packs for current user
+      operationId: listStickerPacks
+      responses:
+        "200":
+          description: Sticker packs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StickerPackListResponse"
+        "401":
+          description: Unauthorized
+    post:
+      security:
+        - bearerAuth: []
+      summary: Create sticker pack
+      operationId: createStickerPack
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStickerPackRequest"
+      responses:
+        "201":
+          description: Sticker pack created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StickerPack"
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+
+  /stickers/packs/{packId}:
+    patch:
+      security:
+        - bearerAuth: []
+      summary: Rename sticker pack
+      operationId: renameStickerPack
+      parameters:
+        - in: path
+          name: packId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStickerPackRequest"
+      responses:
+        "200":
+          description: Sticker pack renamed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StickerPack"
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+    delete:
+      security:
+        - bearerAuth: []
+      summary: Delete sticker pack
+      operationId: deleteStickerPack
+      parameters:
+        - in: path
+          name: packId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteStickerPackRequest"
+      responses:
+        "204":
+          description: Sticker pack deleted
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+
+  /stickers/entries:
+    get:
+      security:
+        - bearerAuth: []
+      summary: List saved sticker entries for current user
+      operationId: listStickerEntries
+      responses:
+        "200":
+          description: Saved sticker entries
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StickerEntryListResponse"
+        "401":
+          description: Unauthorized
+    post:
+      security:
+        - bearerAuth: []
+      summary: Save encrypted sticker entry
+      operationId: saveStickerEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveStickerEntryRequest"
+      responses:
+        "201":
+          description: Sticker entry saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StickerEntry"
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+
+  /stickers/entries/{entryId}/move:
+    post:
+      security:
+        - bearerAuth: []
+      summary: Add sticker entry to another pack
+      operationId: moveStickerEntryToPack
+      parameters:
+        - in: path
+          name: entryId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveStickerEntryRequest"
+      responses:
+        "204":
+          description: Sticker entry moved
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
+
+  /stickers/entries/{entryId}:
+    delete:
+      security:
+        - bearerAuth: []
+      summary: Delete saved sticker entry
+      operationId: deleteStickerEntry
+      parameters:
+        - in: path
+          name: entryId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Sticker entry deleted
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
   
   
 
@@ -1227,6 +1407,150 @@ components:
           type: string
           format: date-time
           description: Timestamp when the user was last updated
+    StickerPack:
+      type: object
+      required:
+        - id
+        - user_id
+        - name
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    StickerPackListResponse:
+      type: object
+      required:
+        - packs
+      properties:
+        packs:
+          type: array
+          items:
+            $ref: "#/components/schemas/StickerPack"
+    StickerEntry:
+      type: object
+      required:
+        - id
+        - code
+        - body
+        - content_hash
+        - created_at
+        - file
+        - info
+        - pack_ids
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        body:
+          type: string
+        content_hash:
+          type: string
+        created_at:
+          type: integer
+          format: int64
+        file:
+          type: object
+          additionalProperties: true
+        info:
+          type: object
+          additionalProperties: true
+        thumbnail_file:
+          type: object
+          additionalProperties: true
+        thumbnail_info:
+          type: object
+          additionalProperties: true
+        animated:
+          type: boolean
+        pack_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+    StickerEntryListResponse:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/StickerEntry"
+    CreateStickerPackRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    DeleteStickerPackRequest:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - move_to_saved
+            - delete_stickers
+    SaveStickerEntryRequest:
+      type: object
+      required:
+        - pack_id
+        - content_hash
+        - body
+        - encrypted_file
+        - size_bytes
+        - mxc_uri
+        - media_id
+      properties:
+        pack_id:
+          type: string
+          format: uuid
+        content_hash:
+          type: string
+        body:
+          type: string
+        encrypted_file:
+          type: object
+          additionalProperties: true
+        info:
+          type: object
+          additionalProperties: true
+        thumbnail_encrypted_file:
+          type: object
+          additionalProperties: true
+        thumbnail_info:
+          type: object
+          additionalProperties: true
+        animated:
+          type: boolean
+        size_bytes:
+          type: integer
+          format: int64
+        mxc_uri:
+          type: string
+        media_id:
+          type: string
+    MoveStickerEntryRequest:
+      type: object
+      required:
+        - pack_id
+      properties:
+        pack_id:
+          type: string
+          format: uuid
     CollaboratorDetail:
       type: object
       required:

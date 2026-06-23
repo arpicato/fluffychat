@@ -6,6 +6,7 @@
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat_details/chat_details.dart';
 import 'package:fluffychat/pages/chat_details/participant_list_item.dart';
+import 'package:fluffychat/services/bridge_room_presentation.dart';
 import 'package:fluffychat/utils/fluffy_share.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_locals.dart';
 import 'package:fluffychat/widgets/avatar.dart';
@@ -48,13 +49,15 @@ class ChatDetailsView extends StatelessWidget {
         (update) => update.roomId == room.id,
       ),
       builder: (context, snapshot) {
-        var members = room.getParticipants().toList()
+        final participantSummary = summarizeVisibleParticipants(
+          room,
+          room.getParticipants(),
+        );
+        final allVisibleMembers = participantSummary.visibleUsers
           ..sort((b, a) => a.powerLevel.level.compareTo(b.powerLevel.level));
-        members = members.take(10).toList();
-        final actualMembersCount =
-            (room.summary.mInvitedMemberCount ?? 0) +
-            (room.summary.mJoinedMemberCount ?? 0);
-        final canRequestMoreMembers = members.length < actualMembersCount;
+        final members = allVisibleMembers.take(10).toList();
+        final visibleMembersCount = participantSummary.visibleCount;
+        final canRequestMoreMembers = members.length < visibleMembersCount;
         final iconColor = theme.textTheme.bodyLarge!.color;
         final displayname = room.getLocalizedDisplayname(
           MatrixLocals(L10n.of(context)),
@@ -197,7 +200,7 @@ class ChatDetailsView extends StatelessWidget {
                                     label: Text(
                                       L10n.of(
                                         context,
-                                      ).countParticipants(actualMembersCount),
+                                      ).countParticipants(visibleMembersCount),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       //    style: const TextStyle(fontSize: 12),
@@ -303,7 +306,7 @@ class ChatDetailsView extends StatelessWidget {
                           title: Text(
                             L10n.of(
                               context,
-                            ).countParticipants(actualMembersCount),
+                            ).countParticipants(visibleMembersCount),
                             style: TextStyle(
                               color: theme.colorScheme.secondary,
                               fontWeight: FontWeight.bold,
@@ -329,11 +332,11 @@ class ChatDetailsView extends StatelessWidget {
                   : i < members.length + 1
                   ? ParticipantListItem(members[i - 1])
                   : ListTile(
-                      title: Text(
-                        L10n.of(context).loadCountMoreParticipants(
-                          (actualMembersCount - members.length),
+                        title: Text(
+                          L10n.of(context).loadCountMoreParticipants(
+                          (visibleMembersCount - members.length),
+                          ),
                         ),
-                      ),
                       leading: CircleAvatar(
                         backgroundColor: theme.scaffoldBackgroundColor,
                         child: const Icon(

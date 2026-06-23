@@ -73,9 +73,12 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**bridgeWhoami**](doc/DefaultApi.md#bridgewhoami) | **GET** /bridge/provision/v3/whoami | Get provider-specific whoami with logins
 [*DefaultApi*](doc/DefaultApi.md) | [**createCalendarEvent**](doc/DefaultApi.md#createcalendarevent) | **POST** /calendar/events | Create a calendar event
 [*DefaultApi*](doc/DefaultApi.md) | [**createLinkedCalendarSource**](doc/DefaultApi.md#createlinkedcalendarsource) | **POST** /calendar/sources/link | Add a linked ICS calendar source
+[*DefaultApi*](doc/DefaultApi.md) | [**createStickerPack**](doc/DefaultApi.md#createstickerpack) | **POST** /stickers/packs | Create sticker pack
 [*DefaultApi*](doc/DefaultApi.md) | [**createTodoItem**](doc/DefaultApi.md#createtodoitem) | **POST** /todolists/{listId}/items | Create a new todo item in a list
 [*DefaultApi*](doc/DefaultApi.md) | [**createTodoList**](doc/DefaultApi.md#createtodolist) | **POST** /todolists | Create a new todo list
 [*DefaultApi*](doc/DefaultApi.md) | [**deleteCalendarSource**](doc/DefaultApi.md#deletecalendarsource) | **DELETE** /calendar/sources/{sourceId} | Delete a calendar source and its imported events
+[*DefaultApi*](doc/DefaultApi.md) | [**deleteStickerEntry**](doc/DefaultApi.md#deletestickerentry) | **DELETE** /stickers/entries/{entryId} | Delete saved sticker entry
+[*DefaultApi*](doc/DefaultApi.md) | [**deleteStickerPack**](doc/DefaultApi.md#deletestickerpack) | **DELETE** /stickers/packs/{packId} | Delete sticker pack
 [*DefaultApi*](doc/DefaultApi.md) | [**deleteTodoItem**](doc/DefaultApi.md#deletetodoitem) | **DELETE** /todolists/{listId}/items/{itemId} | Delete a todo item
 [*DefaultApi*](doc/DefaultApi.md) | [**deleteTodoList**](doc/DefaultApi.md#deletetodolist) | **DELETE** /todolists/{listId} | Delete a todo list
 [*DefaultApi*](doc/DefaultApi.md) | [**emailHeaders**](doc/DefaultApi.md#emailheaders) | **POST** /email/headers | List recent email headers with threading metadata
@@ -98,9 +101,14 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**getUpcomingCalendarEvents**](doc/DefaultApi.md#getupcomingcalendarevents) | **GET** /calendar/upcoming | Get upcoming imported calendar events for the current user
 [*DefaultApi*](doc/DefaultApi.md) | [**getUserByMatrixId**](doc/DefaultApi.md#getuserbymatrixid) | **GET** /users/by-matrix-id | Get user by Matrix ID
 [*DefaultApi*](doc/DefaultApi.md) | [**importCalendarSource**](doc/DefaultApi.md#importcalendarsource) | **POST** /calendar/sources/import | Import a calendar source from an uploaded ICS file
+[*DefaultApi*](doc/DefaultApi.md) | [**listStickerEntries**](doc/DefaultApi.md#liststickerentries) | **GET** /stickers/entries | List saved sticker entries for current user
+[*DefaultApi*](doc/DefaultApi.md) | [**listStickerPacks**](doc/DefaultApi.md#liststickerpacks) | **GET** /stickers/packs | List sticker packs for current user
+[*DefaultApi*](doc/DefaultApi.md) | [**moveStickerEntryToPack**](doc/DefaultApi.md#movestickerentrytopack) | **POST** /stickers/entries/{entryId}/move | Add sticker entry to another pack
 [*DefaultApi*](doc/DefaultApi.md) | [**postMatrixAuth**](doc/DefaultApi.md#postmatrixauth) | **POST** /auth/matrix/openid | Authenticate using Matrix OpenID
 [*DefaultApi*](doc/DefaultApi.md) | [**refreshCalendarSource**](doc/DefaultApi.md#refreshcalendarsource) | **POST** /calendar/sources/{sourceId}/refresh | Refresh a linked calendar source
 [*DefaultApi*](doc/DefaultApi.md) | [**removeCollaborator**](doc/DefaultApi.md#removecollaborator) | **DELETE** /todolists/{listId}/collaborators/{userId} | Remove a collaborator from a todo list
+[*DefaultApi*](doc/DefaultApi.md) | [**renameStickerPack**](doc/DefaultApi.md#renamestickerpack) | **PATCH** /stickers/packs/{packId} | Rename sticker pack
+[*DefaultApi*](doc/DefaultApi.md) | [**saveStickerEntry**](doc/DefaultApi.md#savestickerentry) | **POST** /stickers/entries | Save encrypted sticker entry
 [*DefaultApi*](doc/DefaultApi.md) | [**setTodoListPin**](doc/DefaultApi.md#settodolistpin) | **PUT** /todolists/{listId}/pin | Set personal pinned state for a todo list
 [*DefaultApi*](doc/DefaultApi.md) | [**updateCalendarSource**](doc/DefaultApi.md#updatecalendarsource) | **PATCH** /calendar/sources/{sourceId} | Rename a calendar source
 [*DefaultApi*](doc/DefaultApi.md) | [**updateTodoItem**](doc/DefaultApi.md#updatetodoitem) | **PUT** /todolists/{listId}/items/{itemId} | Update a todo item
@@ -125,6 +133,8 @@ Class | Method | HTTP request | Description
  - [CalendarImportResponse](doc/CalendarImportResponse.md)
  - [CalendarSource](doc/CalendarSource.md)
  - [CollaboratorDetail](doc/CollaboratorDetail.md)
+ - [CreateStickerPackRequest](doc/CreateStickerPackRequest.md)
+ - [DeleteStickerPackRequest](doc/DeleteStickerPackRequest.md)
  - [EmailListRequest](doc/EmailListRequest.md)
  - [EmailLoginRequest](doc/EmailLoginRequest.md)
  - [EmailMessageHeader](doc/EmailMessageHeader.md)
@@ -143,13 +153,19 @@ Class | Method | HTTP request | Description
  - [LoginStepUserInputUserInputFieldsInner](doc/LoginStepUserInputUserInputFieldsInner.md)
  - [MatrixAuthResponse](doc/MatrixAuthResponse.md)
  - [MatrixOpenIDRequest](doc/MatrixOpenIDRequest.md)
+ - [MoveStickerEntryRequest](doc/MoveStickerEntryRequest.md)
  - [NewCalendarEvent](doc/NewCalendarEvent.md)
  - [NewCalendarLinkSource](doc/NewCalendarLinkSource.md)
  - [NewCollaborator](doc/NewCollaborator.md)
  - [NewTodoItem](doc/NewTodoItem.md)
  - [NewTodoList](doc/NewTodoList.md)
  - [RemoteProfile](doc/RemoteProfile.md)
+ - [SaveStickerEntryRequest](doc/SaveStickerEntryRequest.md)
  - [SetTodoListPin](doc/SetTodoListPin.md)
+ - [StickerEntry](doc/StickerEntry.md)
+ - [StickerEntryListResponse](doc/StickerEntryListResponse.md)
+ - [StickerPack](doc/StickerPack.md)
+ - [StickerPackListResponse](doc/StickerPackListResponse.md)
  - [TodoItem](doc/TodoItem.md)
  - [TodoList](doc/TodoList.md)
  - [UpdateCalendarSource](doc/UpdateCalendarSource.md)

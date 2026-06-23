@@ -5,6 +5,7 @@
 
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/key_verification/key_verification_dialog.dart';
+import 'package:fluffychat/services/bridge_room_presentation.dart';
 import 'package:fluffychat/utils/beautify_string_extension.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/adaptive_dialog_action.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/dialog_text_field.dart';
@@ -27,6 +28,13 @@ Future<bool> showTrustUserInRoomDialog(BuildContext context, Room room) async {
 
   users.removeWhere((user) {
     if (user.id == room.client.userID) return true;
+    if (
+        isOfficialBridgeBotUserId(
+          user.id,
+          ownHomeserverDomain: room.client.userID?.domain,
+        )) {
+      return true;
+    }
     final keys = room.client.userDeviceKeys[user.id];
     final masterKey = keys?.masterKey;
     return shouldSkipTrustPromptForMasterKey(

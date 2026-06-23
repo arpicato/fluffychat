@@ -8,6 +8,7 @@ import 'package:fluffychat/config/themes.dart';
 import 'package:fluffychat/l10n/l10n.dart';
 import 'package:fluffychat/pages/chat/sticker_picker_dialog.dart';
 import 'package:fluffychat/pages/chat/trust_user_key_dialog.dart';
+import 'package:fluffychat/services/private_sticker_library_service.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
@@ -76,6 +77,20 @@ class ChatEmojiPicker extends StatelessWidget {
                         ),
                         StickerPickerDialog(
                           room: controller.room,
+                          onPrivateSelected: (entry) async {
+                            final proceed = await showTrustUserInRoomDialog(
+                              context,
+                              controller.room,
+                            );
+                            if (!proceed) return;
+                            await PrivateStickerLibraryService.instance.sendSticker(
+                              room: controller.room,
+                              entry: entry,
+                              threadRootEventId: controller.activeThreadId,
+                              threadLastEventId: controller.threadLastEventId,
+                            );
+                            controller.hideEmojiPicker();
+                          },
                           onSelected: (sticker) async {
                             final proceed = await showTrustUserInRoomDialog(
                               context,

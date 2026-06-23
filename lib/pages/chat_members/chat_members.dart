@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:fluffychat/services/bridge_room_presentation.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
@@ -75,7 +76,12 @@ class ChatMembersController extends State<ChatMembersPage> {
       if (!mounted) return;
 
       setState(() {
-        members = participants;
+        final room = Matrix.of(context).client.getRoomById(widget.roomId);
+        members = participants == null
+            ? null
+            : room == null
+            ? participants.toList()
+            : visibleUsersWithoutOfficialBridgeBotsInRoom(room, participants);
       });
       setFilter();
     } catch (e, s) {

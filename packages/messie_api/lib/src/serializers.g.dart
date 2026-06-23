@@ -26,6 +26,9 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(CalendarImportResponse.serializer)
       ..add(CalendarSource.serializer)
       ..add(CollaboratorDetail.serializer)
+      ..add(CreateStickerPackRequest.serializer)
+      ..add(DeleteStickerPackRequest.serializer)
+      ..add(DeleteStickerPackRequestModeEnum.serializer)
       ..add(EmailListRequest.serializer)
       ..add(EmailMessageHeader.serializer)
       ..add(EmailMessagesResponse.serializer)
@@ -47,13 +50,19 @@ Serializers _$serializers = (Serializers().toBuilder()
       ..add(LoginStepUserInputUserInputFieldsInner.serializer)
       ..add(MatrixAuthResponse.serializer)
       ..add(MatrixOpenIDRequest.serializer)
+      ..add(MoveStickerEntryRequest.serializer)
       ..add(NewCalendarEvent.serializer)
       ..add(NewCalendarLinkSource.serializer)
       ..add(NewCollaborator.serializer)
       ..add(NewTodoItem.serializer)
       ..add(NewTodoList.serializer)
       ..add(RemoteProfile.serializer)
+      ..add(SaveStickerEntryRequest.serializer)
       ..add(SetTodoListPin.serializer)
+      ..add(StickerEntry.serializer)
+      ..add(StickerEntryListResponse.serializer)
+      ..add(StickerPack.serializer)
+      ..add(StickerPackListResponse.serializer)
       ..add(TodoItem.serializer)
       ..add(TodoList.serializer)
       ..add(UpdateCalendarSource.serializer)
@@ -85,6 +94,12 @@ Serializers _$serializers = (Serializers().toBuilder()
               const [const FullType(LoginStepUserInputUserInputFieldsInner)]),
           () => ListBuilder<LoginStepUserInputUserInputFieldsInner>())
       ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(StickerEntry)]),
+          () => ListBuilder<StickerEntry>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(StickerPack)]),
+          () => ListBuilder<StickerPack>())
+      ..addBuilderFactory(
           const FullType(BuiltList, const [const FullType(String)]),
           () => ListBuilder<String>())
       ..addBuilderFactory(
@@ -104,7 +119,58 @@ Serializers _$serializers = (Serializers().toBuilder()
             const FullType(String),
             const FullType.nullable(JsonObject)
           ]),
-          () => MapBuilder<String, JsonObject?>()))
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltMap, const [
+            const FullType(String),
+            const FullType.nullable(JsonObject)
+          ]),
+          () => MapBuilder<String, JsonObject?>())
+      ..addBuilderFactory(
+          const FullType(BuiltList, const [const FullType(String)]),
+          () => ListBuilder<String>()))
     .build();
 
 // ignore_for_file: deprecated_member_use_from_same_package,type=lint

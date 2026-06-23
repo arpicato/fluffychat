@@ -4,6 +4,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import 'package:async/async.dart' as async;
+import 'package:fluffychat/services/private_sticker_library_actions.dart';
 import 'package:fluffychat/utils/size_string.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:flutter/foundation.dart';
@@ -40,6 +41,10 @@ extension LocalizedBody on Event {
     if (!context.mounted) return;
 
     matrixFile.result?.share(context);
+  }
+
+  Future<void> saveToStickerLibrary(BuildContext context) async {
+    await saveEventToStickerLibrary(context, this);
   }
 
   bool get isAttachmentSmallEnough =>

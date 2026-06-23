@@ -38,6 +38,7 @@ class ChatMembersView extends StatelessWidget {
     final roomCount =
         (room.summary.mJoinedMemberCount ?? 0) +
         (room.summary.mInvitedMemberCount ?? 0);
+    final visibleRoomCount = members?.length ?? roomCount;
 
     final error = controller.error;
     final theme = Theme.of(context);
@@ -45,7 +46,7 @@ class ChatMembersView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         leading: const Center(child: BackButton()),
-        title: Text(L10n.of(context).countParticipants(roomCount)),
+        title: Text(L10n.of(context).countParticipants(visibleRoomCount)),
         actions: [
           if (room.canInvite)
             IconButton(

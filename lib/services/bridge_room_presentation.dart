@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:fluffychat/services/messie_bridge_service.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
@@ -76,6 +78,68 @@ class BridgeProviderCatalog {
       bridgeBotIdsByProvider: bridgeBotIdsByProvider,
     );
   }
+}
+
+bool isOfficialBridgeBotUserId(
+  String userId, {
+  required String? ownHomeserverDomain,
+}) {
+  if (ownHomeserverDomain == null || userId.domain != ownHomeserverDomain) {
+    return false;
+  }
+  return BridgeProviderCatalog.supportedProviders.values.any(
+    (provider) => provider.matchesBridgeBotId(userId),
+  );
+}
+
+class VisibleParticipantSummary {
+  const VisibleParticipantSummary({
+    required this.visibleUsers,
+    required this.visibleCount,
+  });
+
+  final List<User> visibleUsers;
+  final int visibleCount;
+}
+
+Iterable<User> visibleUsersWithoutOfficialBridgeBots(
+  Iterable<User> users, {
+  required String? ownHomeserverDomain,
+}) => users.where(
+  (user) => !isOfficialBridgeBotUserId(
+    user.id,
+    ownHomeserverDomain: ownHomeserverDomain,
+  ),
+);
+
+List<User> visibleUsersWithoutOfficialBridgeBotsInRoom(
+  Room room,
+  Iterable<User> users,
+) => visibleUsersWithoutOfficialBridgeBots(
+  users,
+  ownHomeserverDomain: room.client.userID?.domain,
+).toList();
+
+VisibleParticipantSummary summarizeVisibleParticipants(
+  Room room,
+  Iterable<User> participants,
+) {
+  final allParticipants = participants.toList();
+  final visibleUsers = visibleUsersWithoutOfficialBridgeBotsInRoom(
+    room,
+    allParticipants,
+  );
+  final actualMembersCount =
+      (room.summary.mInvitedMemberCount ?? 0) +
+      (room.summary.mJoinedMemberCount ?? 0);
+  final hiddenBridgeBotCount = allParticipants.length - visibleUsers.length;
+  return VisibleParticipantSummary(
+    visibleUsers: visibleUsers,
+    visibleCount: math.max(
+      visibleUsers.length,
+      actualMembersCount - hiddenBridgeBotCount,
+    ),
+  );
 }
 
 class BridgeRoomPresentation {

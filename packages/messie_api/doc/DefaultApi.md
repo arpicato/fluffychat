@@ -17,9 +17,12 @@ Method | HTTP request | Description
 [**bridgeWhoami**](DefaultApi.md#bridgewhoami) | **GET** /bridge/provision/v3/whoami | Get provider-specific whoami with logins
 [**createCalendarEvent**](DefaultApi.md#createcalendarevent) | **POST** /calendar/events | Create a calendar event
 [**createLinkedCalendarSource**](DefaultApi.md#createlinkedcalendarsource) | **POST** /calendar/sources/link | Add a linked ICS calendar source
+[**createStickerPack**](DefaultApi.md#createstickerpack) | **POST** /stickers/packs | Create sticker pack
 [**createTodoItem**](DefaultApi.md#createtodoitem) | **POST** /todolists/{listId}/items | Create a new todo item in a list
 [**createTodoList**](DefaultApi.md#createtodolist) | **POST** /todolists | Create a new todo list
 [**deleteCalendarSource**](DefaultApi.md#deletecalendarsource) | **DELETE** /calendar/sources/{sourceId} | Delete a calendar source and its imported events
+[**deleteStickerEntry**](DefaultApi.md#deletestickerentry) | **DELETE** /stickers/entries/{entryId} | Delete saved sticker entry
+[**deleteStickerPack**](DefaultApi.md#deletestickerpack) | **DELETE** /stickers/packs/{packId} | Delete sticker pack
 [**deleteTodoItem**](DefaultApi.md#deletetodoitem) | **DELETE** /todolists/{listId}/items/{itemId} | Delete a todo item
 [**deleteTodoList**](DefaultApi.md#deletetodolist) | **DELETE** /todolists/{listId} | Delete a todo list
 [**emailHeaders**](DefaultApi.md#emailheaders) | **POST** /email/headers | List recent email headers with threading metadata
@@ -42,9 +45,14 @@ Method | HTTP request | Description
 [**getUpcomingCalendarEvents**](DefaultApi.md#getupcomingcalendarevents) | **GET** /calendar/upcoming | Get upcoming imported calendar events for the current user
 [**getUserByMatrixId**](DefaultApi.md#getuserbymatrixid) | **GET** /users/by-matrix-id | Get user by Matrix ID
 [**importCalendarSource**](DefaultApi.md#importcalendarsource) | **POST** /calendar/sources/import | Import a calendar source from an uploaded ICS file
+[**listStickerEntries**](DefaultApi.md#liststickerentries) | **GET** /stickers/entries | List saved sticker entries for current user
+[**listStickerPacks**](DefaultApi.md#liststickerpacks) | **GET** /stickers/packs | List sticker packs for current user
+[**moveStickerEntryToPack**](DefaultApi.md#movestickerentrytopack) | **POST** /stickers/entries/{entryId}/move | Add sticker entry to another pack
 [**postMatrixAuth**](DefaultApi.md#postmatrixauth) | **POST** /auth/matrix/openid | Authenticate using Matrix OpenID
 [**refreshCalendarSource**](DefaultApi.md#refreshcalendarsource) | **POST** /calendar/sources/{sourceId}/refresh | Refresh a linked calendar source
 [**removeCollaborator**](DefaultApi.md#removecollaborator) | **DELETE** /todolists/{listId}/collaborators/{userId} | Remove a collaborator from a todo list
+[**renameStickerPack**](DefaultApi.md#renamestickerpack) | **PATCH** /stickers/packs/{packId} | Rename sticker pack
+[**saveStickerEntry**](DefaultApi.md#savestickerentry) | **POST** /stickers/entries | Save encrypted sticker entry
 [**setTodoListPin**](DefaultApi.md#settodolistpin) | **PUT** /todolists/{listId}/pin | Set personal pinned state for a todo list
 [**updateCalendarSource**](DefaultApi.md#updatecalendarsource) | **PATCH** /calendar/sources/{sourceId} | Rename a calendar source
 [**updateTodoItem**](DefaultApi.md#updatetodoitem) | **PUT** /todolists/{listId}/items/{itemId} | Update a todo item
@@ -391,6 +399,47 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **createStickerPack**
+> StickerPack createStickerPack(createStickerPackRequest)
+
+Create sticker pack
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final CreateStickerPackRequest createStickerPackRequest = ; // CreateStickerPackRequest | 
+
+try {
+    final response = api.createStickerPack(createStickerPackRequest);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->createStickerPack: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **createStickerPackRequest** | [**CreateStickerPackRequest**](CreateStickerPackRequest.md)|  | 
+
+### Return type
+
+[**StickerPack**](StickerPack.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **createTodoItem**
 > TodoItem createTodoItem(listId, newTodoItem)
 
@@ -512,6 +561,88 @@ void (empty response body)
 
  - **Content-Type**: Not defined
  - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **deleteStickerEntry**
+> deleteStickerEntry(entryId)
+
+Delete saved sticker entry
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String entryId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+
+try {
+    api.deleteStickerEntry(entryId);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->deleteStickerEntry: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **entryId** | **String**|  | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: Not defined
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **deleteStickerPack**
+> deleteStickerPack(packId, deleteStickerPackRequest)
+
+Delete sticker pack
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String packId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+final DeleteStickerPackRequest deleteStickerPackRequest = ; // DeleteStickerPackRequest | 
+
+try {
+    api.deleteStickerPack(packId, deleteStickerPackRequest);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->deleteStickerPack: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **packId** | **String**|  | 
+ **deleteStickerPackRequest** | [**DeleteStickerPackRequest**](DeleteStickerPackRequest.md)|  | [optional] 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: Not defined
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
@@ -1426,6 +1557,122 @@ Name | Type | Description  | Notes
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
+# **listStickerEntries**
+> StickerEntryListResponse listStickerEntries()
+
+List saved sticker entries for current user
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+
+try {
+    final response = api.listStickerEntries();
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->listStickerEntries: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**StickerEntryListResponse**](StickerEntryListResponse.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listStickerPacks**
+> StickerPackListResponse listStickerPacks()
+
+List sticker packs for current user
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+
+try {
+    final response = api.listStickerPacks();
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->listStickerPacks: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**StickerPackListResponse**](StickerPackListResponse.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **moveStickerEntryToPack**
+> moveStickerEntryToPack(entryId, moveStickerEntryRequest)
+
+Add sticker entry to another pack
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String entryId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+final MoveStickerEntryRequest moveStickerEntryRequest = ; // MoveStickerEntryRequest | 
+
+try {
+    api.moveStickerEntryToPack(entryId, moveStickerEntryRequest);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->moveStickerEntryToPack: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **entryId** | **String**|  | 
+ **moveStickerEntryRequest** | [**MoveStickerEntryRequest**](MoveStickerEntryRequest.md)|  | 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: Not defined
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
 # **postMatrixAuth**
 > MatrixAuthResponse postMatrixAuth(matrixOpenIDRequest)
 
@@ -1547,6 +1794,90 @@ void (empty response body)
 
  - **Content-Type**: Not defined
  - **Accept**: Not defined
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **renameStickerPack**
+> StickerPack renameStickerPack(packId, createStickerPackRequest)
+
+Rename sticker pack
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String packId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+final CreateStickerPackRequest createStickerPackRequest = ; // CreateStickerPackRequest | 
+
+try {
+    final response = api.renameStickerPack(packId, createStickerPackRequest);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->renameStickerPack: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **packId** | **String**|  | 
+ **createStickerPackRequest** | [**CreateStickerPackRequest**](CreateStickerPackRequest.md)|  | 
+
+### Return type
+
+[**StickerPack**](StickerPack.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **saveStickerEntry**
+> StickerEntry saveStickerEntry(saveStickerEntryRequest)
+
+Save encrypted sticker entry
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final SaveStickerEntryRequest saveStickerEntryRequest = ; // SaveStickerEntryRequest | 
+
+try {
+    final response = api.saveStickerEntry(saveStickerEntryRequest);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->saveStickerEntry: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **saveStickerEntryRequest** | [**SaveStickerEntryRequest**](SaveStickerEntryRequest.md)|  | 
+
+### Return type
+
+[**StickerEntry**](StickerEntry.md)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
