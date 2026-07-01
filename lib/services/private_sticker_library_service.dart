@@ -456,14 +456,26 @@ class PrivateStickerLibraryService {
     required String name,
     String? packId,
   }) async {
-    final prepared = await _prepareMedia(client, file);
     final resolvedPackId = await _resolvePackId(client, packId);
-    await _savePreparedSticker(
+    final resultMap = await bulkUploadFilesAsStickers(
       client: client,
-      prepared: prepared,
-      name: name,
       packId: resolvedPackId,
+      stickers: [
+        (
+          requestId: 'single',
+          file: file,
+          name: name,
+        ),
+      ],
     );
+    final error = resultMap['single'];
+    if (error != null && error.isNotEmpty) {
+      throw MessieUserException(
+        kind: MessieErrorKind.server,
+        userMessage: error,
+        operation: 'Save sticker to library',
+      );
+    }
   }
 
   Future<Map<String, String?>> bulkUploadFilesAsStickers({
@@ -630,85 +642,6 @@ class PrivateStickerLibraryService {
       orElse: () => availablePacks.first,
     );
     return preferred.id;
-  }
-
-  Future<void> _savePreparedSticker({
-    required Client client,
-    required _PreparedStickerMedia prepared,
-    required String name,
-    required String packId,
-  }) async {
-    final uploadedFile = await _uploadEncryptedMedia(client, prepared.file);
-    final uploadedPreview = prepared.previewFile == null
-        ? null
-        : await _uploadEncryptedMedia(client, prepared.previewFile!);
-
-    final apiClient = await _createApiClient(client);
-    try {
-      final contentHash = sha256.convert(prepared.file.bytes).toString();
-      final request = api.SaveStickerEntryRequest(
-        (builder) => builder
-          ..packId = packId
-          ..contentHash = contentHash
-          ..body = name
-          ..encryptedFile.replace(
-            Map<String, JsonObject?>.fromEntries(
-              uploadedFile.fileJson.entries.map(
-                (entry) => MapEntry(entry.key, JsonObject(entry.value)),
-              ),
-            ),
-          )
-          ..info.replace(
-            Map<String, JsonObject?>.fromEntries(
-              uploadedFile.info.entries.map(
-                (entry) => MapEntry(entry.key, JsonObject(entry.value)),
-              ),
-            ),
-          )
-          ..thumbnailEncryptedFile = (uploadedPreview?.fileJson == null)
-              ? null
-              : MapBuilder<String, JsonObject?>(
-                  Map<String, JsonObject?>.fromEntries(
-                    uploadedPreview!.fileJson.entries.map(
-                      (entry) => MapEntry(entry.key, JsonObject(entry.value)),
-                    ),
-                  ),
-                )
-          ..thumbnailInfo = (uploadedPreview?.info == null)
-              ? null
-              : MapBuilder<String, JsonObject?>(
-                  Map<String, JsonObject?>.fromEntries(
-                    uploadedPreview!.info.entries.map(
-                      (entry) => MapEntry(entry.key, JsonObject(entry.value)),
-                    ),
-                  ),
-                )
-          ..animated = prepared.animated
-          ..sizeBytes = prepared.file.bytes.length
-          ..mxcUri = uploadedFile.fileJson['url'] as String
-          ..mediaId = Uri.parse(uploadedFile.fileJson['url'] as String).pathSegments.last,
-      );
-      final response = await apiClient.defaultApi.saveStickerEntry(
-        saveStickerEntryRequest: request,
-      );
-      final savedEntry = response.data == null
-          ? throw Exception('Backend returned invalid sticker entry payload.')
-          : _entriesFromApi(
-              api.StickerEntryListResponse(
-                (builder) => builder..entries.add(response.data!),
-              ),
-            ).first;
-      _upsertEntryInCache(client, savedEntry);
-      _previewCache.remove(savedEntry.id);
-    } on DioException catch (error) {
-      throw await _errorService.fromDio(
-        'messie/stickers',
-        'Save sticker to library',
-        error,
-      );
-    } finally {
-      apiClient.dispose();
-    }
   }
 
   Future<MatrixFile> _loadBestAvailableSourceFile(Event event) async {
@@ -1170,19 +1103,6 @@ class PrivateStickerLibraryService {
     return true;
   }
 
-  Future<_UploadedEncryptedMedia> _uploadEncryptedMedia(Client client, MatrixFile file) async {
-    final encrypted = await file.encrypt();
-    final uploadResp = await client.uploadContent(
-      encrypted.data,
-      filename: file.name,
-      contentType: file.mimeType,
-    );
-    return _UploadedEncryptedMedia(
-      fileJson: _encryptedFileToJson(encrypted, uploadResp, file.mimeType),
-      info: file.info,
-    );
-  }
-
   Future<_LocallyEncryptedMedia> _encryptMediaLocally(MatrixFile file) async {
     final encrypted = await file.encrypt();
     return _LocallyEncryptedMedia(
@@ -1219,13 +1139,6 @@ class PrivateStickerLibraryService {
     }
     return decrypted;
   }
-}
-
-class _UploadedEncryptedMedia {
-  _UploadedEncryptedMedia({required this.fileJson, required this.info});
-
-  final Map<String, dynamic> fileJson;
-  final Map<String, dynamic> info;
 }
 
 class _LocallyEncryptedMedia {
