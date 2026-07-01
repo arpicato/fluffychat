@@ -11,6 +11,7 @@ import 'package:fluffychat/widgets/adaptive_dialogs/show_text_input_dialog.dart'
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/matrix_api_lite/utils/logs.dart';
 
 Future<void> saveEventToStickerLibrary(
   BuildContext context,
@@ -70,25 +71,41 @@ Future<void> importImagesToPrivateStickerPack(
     allowMultiple: true,
   );
   if (files.isEmpty || !context.mounted) return;
-  await showFutureLoadingDialog<void>(
+  final result = await showFutureLoadingDialog<void>(
     context: context,
-    futureWithProgress: (setProgress) async {
-      for (final (index, file) in files.indexed) {
-        setProgress(index / files.length);
-        await PrivateStickerLibraryService.instance.saveFileAsSticker(
-          client: client,
-          file: MatrixImageFile(
-            bytes: await file.readAsBytes(),
-            name: file.name,
-          ),
-          name: file.name.split('.').first,
-          packId: packId,
-        );
-        await Future<void>.delayed(Duration.zero);
+      futureWithProgress: (setProgress) async {
+        for (final (index, file) in files.indexed) {
+          setProgress(index / files.length);
+          final started = DateTime.now();
+          final bytes = await file.readAsBytes();
+          await PrivateStickerLibraryService.instance.saveFileAsSticker(
+            client: client,
+            file: MatrixImageFile(
+              bytes: bytes,
+              name: file.name,
+            ),
+            name: file.name.split('.').first,
+            packId: packId,
+          );
+          final elapsedMs = DateTime.now().difference(started).inMilliseconds;
+          final message =
+              'Sticker import single image ${index + 1}/${files.length}: total ${elapsedMs}ms, bytes ${bytes.length}';
+          Logs().i(message);
+          print(message);
+          await Future<void>.delayed(Duration.zero);
       }
       setProgress(1);
     },
   );
+  if (result.isError && context.mounted) {
+    final error = result.asError!.error;
+    final message = error is MessieUserException
+        ? error.userMessage
+        : error.toString().replaceFirst('Exception: ', '');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 }
 
 Future<_SaveToStickerLibraryChoice?> _showSaveToStickerLibraryDialog(
