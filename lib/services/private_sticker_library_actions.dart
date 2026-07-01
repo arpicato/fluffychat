@@ -3,7 +3,10 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import 'package:file_picker/file_picker.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:fluffychat/services/private_sticker_library_service.dart';
+import 'package:fluffychat/utils/file_selector.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_text_input_dialog.dart';
 import 'package:fluffychat/widgets/future_loading_dialog.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +30,64 @@ Future<void> saveEventToStickerLibrary(
   if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
     const SnackBar(content: Text('Saved to sticker library')),
+  );
+}
+
+Future<PrivateStickerPack?> createPrivateStickerPack(
+  BuildContext context,
+  Client client,
+) async {
+  final service = PrivateStickerLibraryService.instance;
+  final newPackName = await showTextInputDialog(
+    context: context,
+    title: 'New sticker pack',
+    okLabel: 'Create',
+  );
+  final trimmed = newPackName?.trim();
+  if (trimmed == null || trimmed.isEmpty) return null;
+  try {
+    return await service.createPack(client: client, name: trimmed);
+  } catch (error) {
+    if (!context.mounted) return null;
+    final message = error is MessieUserException
+        ? error.userMessage
+        : error.toString().replaceFirst('Exception: ', '');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+    return null;
+  }
+}
+
+Future<void> importImagesToPrivateStickerPack(
+  BuildContext context,
+  Client client, {
+  required String packId,
+}) async {
+  final files = await selectFiles(
+    context,
+    type: FileType.image,
+    allowMultiple: true,
+  );
+  if (files.isEmpty || !context.mounted) return;
+  await showFutureLoadingDialog<void>(
+    context: context,
+    futureWithProgress: (setProgress) async {
+      for (final (index, file) in files.indexed) {
+        setProgress(index / files.length);
+        await PrivateStickerLibraryService.instance.saveFileAsSticker(
+          client: client,
+          file: MatrixImageFile(
+            bytes: await file.readAsBytes(),
+            name: file.name,
+          ),
+          name: file.name.split('.').first,
+          packId: packId,
+        );
+        await Future<void>.delayed(Duration.zero);
+      }
+      setProgress(1);
+    },
   );
 }
 
@@ -104,10 +165,22 @@ Future<_SaveToStickerLibraryChoice?> _showSaveToStickerLibraryDialog(
               );
               final trimmed = newPackName?.trim();
               if (trimmed == null || trimmed.isEmpty) return;
-              final newPack = await service.createPack(
-                client: event.room.client,
-                name: trimmed,
-              );
+              PrivateStickerPack newPack;
+              try {
+                newPack = await service.createPack(
+                  client: event.room.client,
+                  name: trimmed,
+                );
+              } catch (error) {
+                if (!dialogContext.mounted) return;
+                final message = error is MessieUserException
+                    ? error.userMessage
+                    : error.toString().replaceFirst('Exception: ', '');
+                ScaffoldMessenger.of(dialogContext).showSnackBar(
+                  SnackBar(content: Text(message)),
+                );
+                return;
+              }
               setState(() => refreshPacks(newPack));
             },
             child: const Text('New pack'),

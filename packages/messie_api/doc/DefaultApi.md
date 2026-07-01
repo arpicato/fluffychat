@@ -21,6 +21,7 @@ Method | HTTP request | Description
 [**createTodoItem**](DefaultApi.md#createtodoitem) | **POST** /todolists/{listId}/items | Create a new todo item in a list
 [**createTodoList**](DefaultApi.md#createtodolist) | **POST** /todolists | Create a new todo list
 [**deleteCalendarSource**](DefaultApi.md#deletecalendarsource) | **DELETE** /calendar/sources/{sourceId} | Delete a calendar source and its imported events
+[**deleteStickerEntries**](DefaultApi.md#deletestickerentries) | **DELETE** /stickers/entries | Delete multiple saved sticker entries from a pack
 [**deleteStickerEntry**](DefaultApi.md#deletestickerentry) | **DELETE** /stickers/entries/{entryId} | Delete saved sticker entry
 [**deleteStickerPack**](DefaultApi.md#deletestickerpack) | **DELETE** /stickers/packs/{packId} | Delete sticker pack
 [**deleteTodoItem**](DefaultApi.md#deletetodoitem) | **DELETE** /todolists/{listId}/items/{itemId} | Delete a todo item
@@ -564,22 +565,22 @@ void (empty response body)
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **deleteStickerEntry**
-> deleteStickerEntry(entryId)
+# **deleteStickerEntries**
+> deleteStickerEntries(deleteStickerEntriesRequest)
 
-Delete saved sticker entry
+Delete multiple saved sticker entries from a pack
 
 ### Example
 ```dart
 import 'package:messie_api/api.dart';
 
 final api = MessieApi().getDefaultApi();
-final String entryId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+final DeleteStickerEntriesRequest deleteStickerEntriesRequest = ; // DeleteStickerEntriesRequest | 
 
 try {
-    api.deleteStickerEntry(entryId);
+    api.deleteStickerEntries(deleteStickerEntriesRequest);
 } catch on DioException (e) {
-    print('Exception when calling DefaultApi->deleteStickerEntry: $e\n');
+    print('Exception when calling DefaultApi->deleteStickerEntries: $e\n');
 }
 ```
 
@@ -587,7 +588,7 @@ try {
 
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
- **entryId** | **String**|  | 
+ **deleteStickerEntriesRequest** | [**DeleteStickerEntriesRequest**](DeleteStickerEntriesRequest.md)|  | 
 
 ### Return type
 
@@ -599,7 +600,49 @@ void (empty response body)
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
+ - **Accept**: Not defined
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **deleteStickerEntry**
+> deleteStickerEntry(entryId, deleteStickerEntryRequest)
+
+Delete saved sticker entry
+
+### Example
+```dart
+import 'package:messie_api/api.dart';
+
+final api = MessieApi().getDefaultApi();
+final String entryId = 38400000-8cf0-11bd-b23e-10b96e4ef00d; // String | 
+final DeleteStickerEntryRequest deleteStickerEntryRequest = ; // DeleteStickerEntryRequest | 
+
+try {
+    api.deleteStickerEntry(entryId, deleteStickerEntryRequest);
+} catch on DioException (e) {
+    print('Exception when calling DefaultApi->deleteStickerEntry: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **entryId** | **String**|  | 
+ **deleteStickerEntryRequest** | [**DeleteStickerEntryRequest**](DeleteStickerEntryRequest.md)|  | [optional] 
+
+### Return type
+
+void (empty response body)
+
+### Authorization
+
+[bearerAuth](../README.md#bearerAuth)
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
  - **Accept**: Not defined
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

@@ -77,6 +77,7 @@ Class | Method | HTTP request | Description
 [*DefaultApi*](doc/DefaultApi.md) | [**createTodoItem**](doc/DefaultApi.md#createtodoitem) | **POST** /todolists/{listId}/items | Create a new todo item in a list
 [*DefaultApi*](doc/DefaultApi.md) | [**createTodoList**](doc/DefaultApi.md#createtodolist) | **POST** /todolists | Create a new todo list
 [*DefaultApi*](doc/DefaultApi.md) | [**deleteCalendarSource**](doc/DefaultApi.md#deletecalendarsource) | **DELETE** /calendar/sources/{sourceId} | Delete a calendar source and its imported events
+[*DefaultApi*](doc/DefaultApi.md) | [**deleteStickerEntries**](doc/DefaultApi.md#deletestickerentries) | **DELETE** /stickers/entries | Delete multiple saved sticker entries from a pack
 [*DefaultApi*](doc/DefaultApi.md) | [**deleteStickerEntry**](doc/DefaultApi.md#deletestickerentry) | **DELETE** /stickers/entries/{entryId} | Delete saved sticker entry
 [*DefaultApi*](doc/DefaultApi.md) | [**deleteStickerPack**](doc/DefaultApi.md#deletestickerpack) | **DELETE** /stickers/packs/{packId} | Delete sticker pack
 [*DefaultApi*](doc/DefaultApi.md) | [**deleteTodoItem**](doc/DefaultApi.md#deletetodoitem) | **DELETE** /todolists/{listId}/items/{itemId} | Delete a todo item
@@ -134,6 +135,8 @@ Class | Method | HTTP request | Description
  - [CalendarSource](doc/CalendarSource.md)
  - [CollaboratorDetail](doc/CollaboratorDetail.md)
  - [CreateStickerPackRequest](doc/CreateStickerPackRequest.md)
+ - [DeleteStickerEntriesRequest](doc/DeleteStickerEntriesRequest.md)
+ - [DeleteStickerEntryRequest](doc/DeleteStickerEntryRequest.md)
  - [DeleteStickerPackRequest](doc/DeleteStickerPackRequest.md)
  - [EmailListRequest](doc/EmailListRequest.md)
  - [EmailLoginRequest](doc/EmailLoginRequest.md)

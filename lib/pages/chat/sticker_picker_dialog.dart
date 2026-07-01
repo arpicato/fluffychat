@@ -3,10 +3,11 @@
 //
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import 'dart:typed_data';
-
 import 'package:fluffychat/config/app_config.dart';
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/pages/chat/private_sticker_picker_actions.dart';
+import 'package:fluffychat/pages/chat/private_sticker_picker_app_bar_title.dart';
+import 'package:fluffychat/pages/chat/private_sticker_picker_section.dart';
 import 'package:fluffychat/services/private_sticker_library_service.dart';
 import 'package:fluffychat/utils/url_launcher.dart';
 import 'package:fluffychat/widgets/mxc_image.dart';
@@ -33,128 +34,54 @@ class StickerPickerDialog extends StatefulWidget {
 
 class StickerPickerDialogState extends State<StickerPickerDialog> {
   String? searchFilter;
+  String? _selectionPackId;
+  final Set<String> _selectedPrivateEntryIds = <String>{};
+  final Set<String> _deletingPackIds = <String>{};
+  PrivateStickerLibraryLimits? _limits;
+
+  bool _isSelectionModeForPack(String packId) => _selectionPackId == packId;
+
+  void _startSelectionMode(String packId) {
+    setState(() {
+      _selectionPackId = packId;
+      _selectedPrivateEntryIds.clear();
+    });
+  }
+
+  void _clearSelectionMode() {
+    setState(() {
+      _selectionPackId = null;
+      _selectedPrivateEntryIds.clear();
+    });
+  }
+
+  void _togglePrivateEntrySelection(PrivateStickerLibraryEntry entry) {
+    setState(() {
+      if (_selectionPackId != entry.packId) {
+        _selectionPackId = entry.packId;
+        _selectedPrivateEntryIds.clear();
+      }
+      if (!_selectedPrivateEntryIds.add(entry.id)) {
+        _selectedPrivateEntryIds.remove(entry.id);
+      }
+      if (_selectedPrivateEntryIds.isEmpty) {
+        _selectionPackId = null;
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await PrivateStickerLibraryService.instance.refresh(widget.room.client);
-      if (mounted) setState(() {});
-    });
-  }
-
-  Future<void> _showPrivateStickerActions(
-    BuildContext context,
-    PrivateStickerLibraryEntry entry,
-  ) async {
-    final service = PrivateStickerLibraryService.instance;
-    final client = widget.room.client;
-    final packMap = {for (final pack in service.packs(client)) pack.id: pack};
-    final currentPack = packMap[entry.packId];
-    final choice = await showModalBottomSheet<String>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.drive_file_move_outline),
-              title: const Text('Move to pack'),
-              subtitle: currentPack == null ? null : Text(currentPack.name),
-              onTap: () => Navigator.of(context).pop('move'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline),
-              title: const Text('Delete saved sticker'),
-              onTap: () => Navigator.of(context).pop('delete'),
-            ),
-          ],
-        ),
-      ),
-    );
-    if (!mounted || choice == null) return;
-
-    if (choice == 'move') {
-      final packs = service.packs(client);
-      final controller = TextEditingController(text: currentPack?.name ?? '');
-      var pendingPackId = entry.packId;
-      final selectedPackId = await showDialog<String>(
-        context: context,
-        builder: (context) => StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: const Text('Move sticker to pack'),
-            content: DropdownMenu<String>(
-              controller: controller,
-              width: double.infinity,
-              enableFilter: true,
-              enableSearch: true,
-              requestFocusOnTap: true,
-              label: const Text('Sticker pack'),
-              initialSelection: entry.packId,
-              dropdownMenuEntries: packs
-                  .map(
-                    (pack) => DropdownMenuEntry<String>(
-                      value: pack.id,
-                      label: pack.name,
-                    ),
-                  )
-                  .toList(),
-              onSelected: (value) {
-                if (value == null) return;
-                setState(() {
-                  pendingPackId = value;
-                  controller.text = packs.firstWhere((pack) => pack.id == value).name;
-                });
-              },
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () {
-                  Navigator.of(context).pop(pendingPackId);
-                },
-                child: const Text('Move'),
-              ),
-            ],
-          ),
-        ),
-      );
-      if (selectedPackId == null || selectedPackId == entry.packId) return;
-      await service.moveEntryToPack(
-        client: client,
-        entry: entry,
-        packId: selectedPackId,
-      );
-      if (mounted) setState(() {});
-      return;
+    PrivateStickerLibraryService.instance.loadLimits(widget.room.client).then((limits) {
+      if (mounted) setState(() => _limits = limits);
+    }).catchError((_) {});
+    if (PrivateStickerLibraryService.instance.packs(widget.room.client).isEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await PrivateStickerLibraryService.instance.refresh(widget.room.client);
+        if (mounted) setState(() {});
+      });
     }
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete saved sticker?'),
-        content: Text(entry.body),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) return;
-    await service.deleteEntry(
-      client: client,
-      entry: entry,
-    );
-    if (mounted) setState(() {});
   }
 
   @override
@@ -167,7 +94,7 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
         .entries(widget.room.client)
         .where(
           (entry) =>
-              searchFilter?.isEmpty ?? true
+              (searchFilter?.isEmpty ?? true)
                   ? true
                   : (entry.body.toLowerCase().contains(searchFilter!.toLowerCase()) ||
                         entry.code.toLowerCase().contains(searchFilter!.toLowerCase())),
@@ -175,6 +102,10 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
         .toList();
     final privatePacks = {
       for (final pack in privateService.packs(widget.room.client)) pack.id: pack,
+    };
+    final privateEntriesByPack = <String, List<PrivateStickerLibraryEntry>>{
+      for (final packId in privatePacks.keys)
+        packId: privateEntries.where((entry) => entry.packId == packId).toList(),
     };
     final packSlugs = stickerPacks.keys.toList();
 
@@ -268,78 +199,73 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
               scrolledUnderElevation: 0,
               automaticallyImplyLeading: false,
               backgroundColor: Colors.transparent,
-              title: SizedBox(
-                height: 42,
-                child: TextField(
-                  autofocus: false,
-                  decoration: InputDecoration(
-                    filled: true,
-                    hintText: L10n.of(context).search,
-                    prefixIcon: const Icon(Icons.search_outlined),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  onChanged: (s) => setState(() => searchFilter = s),
+              title: PrivateStickerPickerAppBarTitle(
+                limits: _limits,
+                onSearchChanged: (s) => setState(() => searchFilter = s),
+                onCreatePressed: () => showCreateStickerMenu(
+                  context: context,
+                  client: widget.room.client,
+                  onDone: () {
+                    if (mounted) setState(() {});
+                  },
                 ),
               ),
-            ),
-            if (privateEntries.isNotEmpty) ...[
-              for (final packEntry in privatePacks.entries)
-                if (privateEntries.any((entry) => entry.packId == packEntry.key)) ...[
-                  SliverToBoxAdapter(
-                    child: ListTile(
-                      leading: const Icon(Icons.lock_outlined),
-                      title: Text(packEntry.value.name),
-                    ),
-                  ),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    sliver: SliverGrid.builder(
-                      itemCount: privateEntries
-                          .where((entry) => entry.packId == packEntry.key)
-                          .length,
-                      gridDelegate:
-                          const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 84,
-                            mainAxisSpacing: 8.0,
-                            crossAxisSpacing: 8.0,
-                          ),
-                      itemBuilder: (context, index) {
-                        final packEntries = privateEntries
-                            .where((entry) => entry.packId == packEntry.key)
-                            .toList();
-                        final entry = packEntries[index];
-                        return FutureBuilder<Uint8List?>(
-                          future: privateService.loadPreviewBytes(
-                            widget.room.client,
-                            entry,
-                          ),
-                          builder: (context, snapshot) => Tooltip(
-                            message: entry.body,
-                            child: InkWell(
-                              onTap: widget.onPrivateSelected == null
-                                  ? null
-                                  : () => widget.onPrivateSelected!(entry),
-                               onLongPress: () => _showPrivateStickerActions(context, entry),
-                              child: snapshot.data == null
-                                  ? const Center(
-                                      child: CircularProgressIndicator.adaptive(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Image.memory(
-                                      snapshot.data!,
-                                      fit: BoxFit.contain,
-                                      gaplessPlayback: true,
-                                    ),
-                            ),
-                          ),
-                        );
+              ),
+              ...buildPrivateStickerPickerSlivers(
+                context: context,
+                client: widget.room.client,
+                privateService: privateService,
+                privatePacks: privatePacks,
+                privateEntriesByPack: privateEntriesByPack,
+                deletingPackIds: _deletingPackIds,
+                selectionPackId: _selectionPackId,
+                selectedPrivateEntryIds: _selectedPrivateEntryIds,
+                onBulkMovePrivateStickers: (packId, packEntries) =>
+                    bulkMovePrivateStickers(
+                      context: context,
+                      client: widget.room.client,
+                      selectedPrivateEntryIds: _selectedPrivateEntryIds,
+                      packEntries: packEntries,
+                      onDone: () {
+                        if (mounted) _clearSelectionMode();
                       },
                     ),
-                  ),
-                ],
-              if (packSlugs.isNotEmpty) const SliverToBoxAdapter(child: SizedBox(height: 20)),
-            ],
+                onBulkDeletePrivateStickers: (packId, packEntries) =>
+                    bulkDeletePrivateStickers(
+                      context: context,
+                      client: widget.room.client,
+                      packId: packId,
+                      selectedPrivateEntryIds: _selectedPrivateEntryIds,
+                      packEntries: packEntries,
+                      onDone: () {
+                        if (mounted) _clearSelectionMode();
+                      },
+                    ),
+                onStartSelectionMode: _startSelectionMode,
+                onClearSelectionMode: _clearSelectionMode,
+                onStateChange: setState,
+                onDeletePrivatePack: (packId) => deletePrivatePack(
+                  context: context,
+                  client: widget.room.client,
+                  packId: packId,
+                  deletingPackIds: _deletingPackIds,
+                  onStateChange: (fn) {
+                    if (mounted) setState(fn);
+                  },
+                ),
+                onShowPrivateStickerActions: (context, entry) =>
+                    showPrivateStickerActions(
+                      context: context,
+                      client: widget.room.client,
+                      entry: entry,
+                      onDone: () {
+                        if (mounted) setState(() {});
+                      },
+                    ),
+                onTogglePrivateEntrySelection: _togglePrivateEntrySelection,
+                onPrivateSelected: widget.onPrivateSelected,
+              ),
+               if (packSlugs.isNotEmpty) const SliverToBoxAdapter(child: SizedBox(height: 20)),
             if (packSlugs.isEmpty && privateEntries.isEmpty)
               SliverFillRemaining(
                 child: Center(

@@ -29,6 +29,8 @@ export 'package:messie_api/src/model/calendar_import_response.dart';
 export 'package:messie_api/src/model/calendar_source.dart';
 export 'package:messie_api/src/model/collaborator_detail.dart';
 export 'package:messie_api/src/model/create_sticker_pack_request.dart';
+export 'package:messie_api/src/model/delete_sticker_entries_request.dart';
+export 'package:messie_api/src/model/delete_sticker_entry_request.dart';
 export 'package:messie_api/src/model/delete_sticker_pack_request.dart';
 export 'package:messie_api/src/model/email_list_request.dart';
 export 'package:messie_api/src/model/email_login_request.dart';

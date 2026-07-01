@@ -6,10 +6,10 @@
 import 'dart:async';
 
 import 'package:archive/archive.dart';
-import 'package:collection/collection.dart';
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/pages/settings_emotes/emote_pack_archive.dart';
 import 'package:fluffychat/pages/settings_emotes/settings_emotes.dart';
-import 'package:fluffychat/utils/client_manager.dart';
+import 'package:fluffychat/services/private_sticker_library_service.dart';
 import 'package:fluffychat/widgets/adaptive_dialogs/show_ok_cancel_alert_dialog.dart';
 import 'package:fluffychat/widgets/matrix.dart';
 import 'package:flutter/material.dart';
@@ -87,22 +87,21 @@ class _ImportEmoteArchiveDialogState extends State<ImportEmoteArchiveDialog> {
   }
 
   void _importFileMap() {
-    _importMap = Map.fromEntries(
-      widget.archive.files
-          .where((e) => e.isFile)
-          .map((e) => MapEntry(e, e.name.emoteNameFromPath))
-          .sorted((a, b) => a.value.compareTo(b.value)),
-    );
+    _importMap = buildEmoteImportMap(widget.archive);
   }
 
   Future<void> _addEmotePack() async {
     final matrix = Matrix.of(context);
+    final service = PrivateStickerLibraryService.instance;
     setState(() {
       _loading = true;
       _progress = 0;
     });
     final imports = _importMap;
-    final successfulUploads = <String>{};
+    final successfulImports = <String>{};
+
+    await service.refresh(matrix.client);
+    final existingCodes = service.entries(matrix.client).map((entry) => entry.code).toSet();
 
     // check for duplicates first
 
@@ -111,7 +110,7 @@ class _ImportEmoteArchiveDialogState extends State<ImportEmoteArchiveDialog> {
     for (final entry in imports.entries) {
       final imageCode = entry.value;
 
-      if (widget.controller.pack!.images.containsKey(imageCode)) {
+      if (existingCodes.contains(imageCode)) {
         final completer = Completer<OkCancelResult>();
         WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
           final result = await showOkCancelAlertDialog(
@@ -144,50 +143,21 @@ class _ImportEmoteArchiveDialogState extends State<ImportEmoteArchiveDialog> {
       final imageCode = entry.value;
 
       try {
-        var mxcFile = MatrixImageFile(bytes: file.content, name: file.name);
-
-        final thumbnail = (await mxcFile.generateThumbnail(
-          nativeImplementations: ClientManager.nativeImplementations,
-        ));
-        if (thumbnail == null) {
-          Logs().w('Unable to create thumbnail');
-        } else {
-          mxcFile = thumbnail;
-        }
-        final uri = await matrix.client.uploadContent(
-          mxcFile.bytes,
-          filename: mxcFile.name,
-          contentType: mxcFile.mimeType,
+        await service.saveFileAsSticker(
+          client: matrix.client,
+          file: MatrixImageFile(bytes: file.content, name: file.name),
+          name: imageCode,
         );
-
-        final info = <String, dynamic>{...mxcFile.info};
-
-        // normalize width / height to 256, required for stickers
-        if (info['w'] is int && info['h'] is int) {
-          final ratio = info['w'] / info['h'];
-          if (info['w'] > info['h']) {
-            info['w'] = 256;
-            info['h'] = (256.0 / ratio).round();
-          } else {
-            info['h'] = 256;
-            info['w'] = (ratio * 256.0).round();
-          }
-        }
-        widget.controller.pack!.images[imageCode] =
-            ImagePackImageContent.fromJson(<String, dynamic>{
-              'url': uri.toString(),
-              'info': info,
-            });
-        successfulUploads.add(file.name);
+        successfulImports.add(file.name);
+        existingCodes.add(imageCode);
       } catch (e) {
         Logs().d('Could not upload emote $imageCode');
       }
     }
 
     if (!mounted) return;
-    await widget.controller.save(context);
     _importMap.removeWhere(
-      (key, value) => successfulUploads.contains(key.name),
+      (key, value) => successfulImports.contains(key.name),
     );
 
     _loading = false;
@@ -329,23 +299,5 @@ class _ImageFileError extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-extension on String {
-  /// normalizes a file path into its name only replacing any special character
-  /// [^-\w] with an underscore and removing the extension
-  ///
-  /// Used to compute emote name proposal based on file name
-  String get emoteNameFromPath {
-    // ... removing leading path
-    return split(RegExp(r'[/\\]')).last
-        // ... removing file extension
-        .split('.')
-        .first
-        // ... lowering
-        .toLowerCase()
-        // ... replacing unexpected characters
-        .replaceAll(RegExp(r'[^-\w]'), '_');
   }
 }

@@ -121,4 +121,8 @@ void main() {
 
     expect(service.suggestedNameForEvent(event), 'Funny sticker');
   });
+
+  test('private library default pack name remains stable for unified imports', () {
+    expect(privateStickerLibraryDefaultPackName, 'Saved stickers');
+  });
 }

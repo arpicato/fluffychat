@@ -9,6 +9,7 @@ import 'package:archive/archive.dart'
     if (dart.library.io) 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/pages/settings_emotes/emote_pack_archive.dart';
 import 'package:fluffychat/utils/client_manager.dart';
 import 'package:fluffychat/utils/file_selector.dart';
 import 'package:fluffychat/utils/matrix_sdk_extensions/matrix_file_extension.dart';
@@ -328,18 +329,7 @@ class EmotesSettingsController extends State<EmotesSettings> {
           );
 
           setState(() {
-            final info = <String, dynamic>{...file.info};
-            // normalize width / height to 256, required for stickers
-            if (info['w'] is int && info['h'] is int) {
-              final ratio = info['w'] / info['h'];
-              if (info['w'] > info['h']) {
-                info['w'] = 256;
-                info['h'] = (256.0 / ratio).round();
-              } else {
-                info['h'] = 256;
-                info['w'] = (ratio * 256.0).round();
-              }
-            }
+            final info = normalizeEmoteImageInfo(file.info);
             final imageCode = pickedFile.name.split('.').first;
             pack!.images[imageCode] = ImagePackImageContent.fromJson(
               <String, dynamic>{'url': uri.toString(), 'info': info},
@@ -386,7 +376,7 @@ class EmotesSettingsController extends State<EmotesSettings> {
       context: context,
       future: () async {
         final pack = _getPack();
-        final archive = Archive();
+        final archiveEntries = <String, List<int>>{};
         for (final entry in pack.images.entries) {
           final emote = entry.value;
           final name = entry.key;
@@ -395,16 +385,15 @@ class EmotesSettingsController extends State<EmotesSettings> {
             url,
             headers: {'authorization': 'Bearer ${client.accessToken}'},
           );
-
-          archive.addFile(
-            ArchiveFile(name, response.bodyBytes.length, response.bodyBytes),
-          );
+          archiveEntries[name] = response.bodyBytes;
         }
-        final fileName =
-            '${pack.pack.displayName ?? client.userID?.localpart ?? 'emotes'}.zip';
-        final output = ZipEncoder().encode(archive);
+        final fileName = emotePackArchiveFileName(
+          pack.pack.displayName,
+          client.userID?.localpart,
+        );
+        final output = encodeEmotePackArchive(archiveEntries);
 
-        return MatrixFile(name: fileName, bytes: Uint8List.fromList(output));
+        return MatrixFile(name: fileName, bytes: output);
       },
     );
     final file = result.result;

@@ -1321,6 +1321,24 @@ paths:
           description: Invalid input
         "401":
           description: Unauthorized
+    delete:
+      security:
+        - bearerAuth: []
+      summary: Delete multiple saved sticker entries from a pack
+      operationId: deleteStickerEntries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteStickerEntriesRequest"
+      responses:
+        "204":
+          description: Sticker entries deleted
+        "400":
+          description: Invalid input
+        "401":
+          description: Unauthorized
 
   /stickers/entries/{entryId}/move:
     post:
@@ -1362,6 +1380,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteStickerEntryRequest"
       responses:
         "204":
           description: Sticker entry deleted
@@ -1551,6 +1575,26 @@ components:
         pack_id:
           type: string
           format: uuid
+    DeleteStickerEntryRequest:
+      type: object
+      properties:
+        pack_id:
+          type: string
+          format: uuid
+    DeleteStickerEntriesRequest:
+      type: object
+      required:
+        - pack_id
+        - entry_ids
+      properties:
+        pack_id:
+          type: string
+          format: uuid
+        entry_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
     CollaboratorDetail:
       type: object
       required:

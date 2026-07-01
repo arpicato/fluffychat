@@ -21,6 +21,8 @@ import 'package:messie_api/src/model/calendar_import_response.dart';
 import 'package:messie_api/src/model/calendar_source.dart';
 import 'package:messie_api/src/model/collaborator_detail.dart';
 import 'package:messie_api/src/model/create_sticker_pack_request.dart';
+import 'package:messie_api/src/model/delete_sticker_entries_request.dart';
+import 'package:messie_api/src/model/delete_sticker_entry_request.dart';
 import 'package:messie_api/src/model/delete_sticker_pack_request.dart';
 import 'package:messie_api/src/model/email_list_request.dart';
 import 'package:messie_api/src/model/email_login_request.dart';
@@ -1126,11 +1128,85 @@ class DefaultApi {
     return _response;
   }
 
+  /// Delete multiple saved sticker entries from a pack
+  /// 
+  ///
+  /// Parameters:
+  /// * [deleteStickerEntriesRequest] 
+  /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
+  /// * [headers] - Can be used to add additional headers to the request
+  /// * [extras] - Can be used to add flags to the request
+  /// * [validateStatus] - A [ValidateStatus] callback that can be used to determine request success based on the HTTP status of the response
+  /// * [onSendProgress] - A [ProgressCallback] that can be used to get the send progress
+  /// * [onReceiveProgress] - A [ProgressCallback] that can be used to get the receive progress
+  ///
+  /// Returns a [Future]
+  /// Throws [DioException] if API call or serialization fails
+  Future<Response<void>> deleteStickerEntries({ 
+    required DeleteStickerEntriesRequest deleteStickerEntriesRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    final _path = r'/stickers/entries';
+    final _options = Options(
+      method: r'DELETE',
+      headers: <String, dynamic>{
+        ...?headers,
+      },
+      extra: <String, dynamic>{
+        'secure': <Map<String, String>>[
+          {
+            'type': 'http',
+            'scheme': 'bearer',
+            'name': 'bearerAuth',
+          },
+        ],
+        ...?extra,
+      },
+      contentType: 'application/json',
+      validateStatus: validateStatus,
+    );
+
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(DeleteStickerEntriesRequest);
+      _bodyData = _serializers.serialize(deleteStickerEntriesRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
+    final _response = await _dio.request<Object>(
+      _path,
+      data: _bodyData,
+      options: _options,
+      cancelToken: cancelToken,
+      onSendProgress: onSendProgress,
+      onReceiveProgress: onReceiveProgress,
+    );
+
+    return _response;
+  }
+
   /// Delete saved sticker entry
   /// 
   ///
   /// Parameters:
   /// * [entryId] 
+  /// * [deleteStickerEntryRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -1142,6 +1218,7 @@ class DefaultApi {
   /// Throws [DioException] if API call or serialization fails
   Future<Response<void>> deleteStickerEntry({ 
     required String entryId,
+    DeleteStickerEntryRequest? deleteStickerEntryRequest,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -1165,11 +1242,31 @@ class DefaultApi {
         ],
         ...?extra,
       },
+      contentType: 'application/json',
       validateStatus: validateStatus,
     );
 
+    dynamic _bodyData;
+
+    try {
+      const _type = FullType(DeleteStickerEntryRequest);
+      _bodyData = deleteStickerEntryRequest == null ? null : _serializers.serialize(deleteStickerEntryRequest, specifiedType: _type);
+
+    } catch(error, stackTrace) {
+      throw DioException(
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
+        type: DioExceptionType.unknown,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
     final _response = await _dio.request<Object>(
       _path,
+      data: _bodyData,
       options: _options,
       cancelToken: cancelToken,
       onSendProgress: onSendProgress,

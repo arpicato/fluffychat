@@ -19,6 +19,8 @@ doc/CalendarSource.md
 doc/CollaboratorDetail.md
 doc/CreateStickerPackRequest.md
 doc/DefaultApi.md
+doc/DeleteStickerEntriesRequest.md
+doc/DeleteStickerEntryRequest.md
 doc/DeleteStickerPackRequest.md
 doc/EmailListRequest.md
 doc/EmailLoginRequest.md
@@ -88,6 +90,8 @@ lib/src/model/calendar_source.dart
 lib/src/model/collaborator_detail.dart
 lib/src/model/create_sticker_pack_request.dart
 lib/src/model/date.dart
+lib/src/model/delete_sticker_entries_request.dart
+lib/src/model/delete_sticker_entry_request.dart
 lib/src/model/delete_sticker_pack_request.dart
 lib/src/model/email_list_request.dart
 lib/src/model/email_login_request.dart
@@ -131,11 +135,5 @@ lib/src/model/wa_status_response.dart
 lib/src/model/wa_status_response_account.dart
 lib/src/serializers.dart
 pubspec.yaml
-test/create_sticker_pack_request_test.dart
-test/delete_sticker_pack_request_test.dart
-test/move_sticker_entry_request_test.dart
-test/save_sticker_entry_request_test.dart
-test/sticker_entry_list_response_test.dart
-test/sticker_entry_test.dart
-test/sticker_pack_list_response_test.dart
-test/sticker_pack_test.dart
+test/delete_sticker_entries_request_test.dart
+test/delete_sticker_entry_request_test.dart
