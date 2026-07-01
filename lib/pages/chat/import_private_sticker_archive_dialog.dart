@@ -57,6 +57,12 @@ class _ImportPrivateStickerArchiveDialogState
   String? _errorMessage;
   PrivateStickerLibraryLimits? _limits;
 
+  Future<void> _refreshLimits() async {
+    final limits = await service.loadLimits(widget.client);
+    if (!mounted) return;
+    setState(() => _limits = limits);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -67,10 +73,7 @@ class _ImportPrivateStickerArchiveDialogState
       _selectedPackId = _packs.first.id;
       packController.text = _packs.first.name;
     }
-    service.loadLimits(widget.client).then((limits) {
-      if (!mounted) return;
-      setState(() => _limits = limits);
-    }).catchError((_) {});
+    _refreshLimits().catchError((_) {});
   }
 
   @override
@@ -369,6 +372,7 @@ class _ImportPrivateStickerArchiveDialogState
         .toList();
     final failedCount = failedEntries.length;
     final importedCount = successfulImports.length;
+    await _refreshLimits();
 
     if (mounted && failedCount == 0) {
       setState(() {
