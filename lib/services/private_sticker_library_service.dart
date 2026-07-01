@@ -455,11 +455,16 @@ class PrivateStickerLibraryService {
     required MatrixFile file,
     required String name,
     String? packId,
+    void Function(int prepareMs, int uploadMs, int totalMs, int bytes)? onTiming,
   }) async {
     final resolvedPackId = await _resolvePackId(client, packId);
     final resultMap = await bulkUploadFilesAsStickers(
       client: client,
       packId: resolvedPackId,
+      onTiming: (requestId, prepareMs, uploadMs, totalMs, bytes) {
+        if (requestId != 'single') return;
+        onTiming?.call(prepareMs, uploadMs, totalMs, bytes);
+      },
       stickers: [
         (
           requestId: 'single',
@@ -483,6 +488,7 @@ class PrivateStickerLibraryService {
     required String packId,
     required List<({String requestId, MatrixFile file, String name})> stickers,
     void Function(int completed, int total)? onProgress,
+    void Function(String requestId, int prepareMs, int uploadMs, int totalMs, int bytes)? onTiming,
   }) async {
     _activeImportPackIds.add(packId);
     final dio = await _createAuthedDio(client);
@@ -541,6 +547,7 @@ class PrivateStickerLibraryService {
             .skip(start)
             .take(privateStickerLibraryBulkUploadChunkSize)
             .toList();
+        final chunkStarted = DateTime.now();
         final chunkFuture = nextChunkFuture ?? prepareChunk(sourceChunk);
         final nextStart = start + privateStickerLibraryBulkUploadChunkSize;
         if (nextStart < stickers.length) {
@@ -551,6 +558,7 @@ class PrivateStickerLibraryService {
           nextChunkFuture = null;
         }
         final chunk = await chunkFuture;
+        final prepareMs = DateTime.now().difference(chunkStarted).inMilliseconds;
         final payload = {
           'entries': chunk.map((sticker) {
             final contentHash = sha256.convert(sticker.media.file.bytes).toString();
@@ -582,10 +590,12 @@ class PrivateStickerLibraryService {
               ),
             ),
         });
+        final uploadStarted = DateTime.now();
         final response = await dio.post<Map<String, dynamic>>(
           '/stickers/entries/bulk-upload',
           data: formData,
         );
+        final uploadMs = DateTime.now().difference(uploadStarted).inMilliseconds;
         final results = (response.data?['results'] as List?) ?? const [];
         for (final raw in results.whereType<Map>()) {
           final result = Map<String, dynamic>.from(raw);
@@ -598,6 +608,28 @@ class PrivateStickerLibraryService {
             resultMap[requestId] = null;
           } else {
             resultMap[requestId] = result['message'] as String? ?? 'Import failed';
+          }
+          ({
+            String requestId,
+            String name,
+            _PreparedStickerMedia media,
+            _LocallyEncryptedMedia encrypted,
+            String fileName,
+          })? chunkEntry;
+          for (final sticker in chunk) {
+            if (sticker.requestId == requestId) {
+              chunkEntry = sticker;
+              break;
+            }
+          }
+          if (chunkEntry != null) {
+            onTiming?.call(
+              requestId,
+              prepareMs,
+              uploadMs,
+              prepareMs + uploadMs,
+              chunkEntry.media.file.bytes.length,
+            );
           }
         }
         completed += chunk.length;

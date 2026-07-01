@@ -73,25 +73,25 @@ Future<void> importImagesToPrivateStickerPack(
   if (files.isEmpty || !context.mounted) return;
   final result = await showFutureLoadingDialog<void>(
     context: context,
-      futureWithProgress: (setProgress) async {
-        for (final (index, file) in files.indexed) {
-          setProgress(index / files.length);
-          final started = DateTime.now();
-          final bytes = await file.readAsBytes();
-          await PrivateStickerLibraryService.instance.saveFileAsSticker(
-            client: client,
+    futureWithProgress: (setProgress) async {
+      for (final (index, file) in files.indexed) {
+        setProgress(index / files.length);
+        final bytes = await file.readAsBytes();
+        await PrivateStickerLibraryService.instance.saveFileAsSticker(
+          client: client,
             file: MatrixImageFile(
               bytes: bytes,
               name: file.name,
             ),
             name: file.name.split('.').first,
             packId: packId,
+            onTiming: (prepareMs, uploadMs, totalMs, outputBytes) {
+              final message =
+                  'Sticker import single image ${index + 1}/${files.length}: prepare ${prepareMs}ms, upload ${uploadMs}ms, total ${totalMs}ms, input_bytes ${bytes.length}, output_bytes ${outputBytes}';
+              Logs().i(message);
+              print(message);
+            },
           );
-          final elapsedMs = DateTime.now().difference(started).inMilliseconds;
-          final message =
-              'Sticker import single image ${index + 1}/${files.length}: total ${elapsedMs}ms, bytes ${bytes.length}';
-          Logs().i(message);
-          print(message);
           await Future<void>.delayed(Duration.zero);
       }
       setProgress(1);
