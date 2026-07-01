@@ -948,6 +948,58 @@ class PrivateStickerLibraryService {
       );
     }
 
+    if (mimeType == 'image/png') {
+      final pngDimensions = _readPngDimensions(originalFile.bytes);
+      if (pngDimensions != null && !_containsAscii(originalFile.bytes, 'acTL')) {
+        if (pngDimensions.$1 <= privateStickerLibraryMaxDimension &&
+            pngDimensions.$2 <= privateStickerLibraryMaxDimension &&
+            originalFile.bytes.length <= privateStickerLibraryStaticMaxBytes) {
+          final imageFile = MatrixImageFile(
+            bytes: originalFile.bytes,
+            name: originalFile.name,
+            mimeType: originalFile.mimeType,
+            width: pngDimensions.$1,
+            height: pngDimensions.$2,
+          );
+          final previewFile = includePreview
+              ? await imageFile.generateThumbnail(
+                  dimension: privateStickerLibraryPreviewDimension,
+                  customImageResizer: client.customImageResizer,
+                  nativeImplementations: client.nativeImplementations,
+                )
+              : null;
+          return _PreparedStickerMedia(
+            file: imageFile,
+            previewFile: previewFile,
+            animated: false,
+          );
+        }
+        final imageFile = await MatrixImageFile.shrink(
+          bytes: originalFile.bytes,
+          name: originalFile.name,
+          mimeType: originalFile.mimeType,
+          maxDimension: privateStickerLibraryMaxDimension,
+          customImageResizer: client.customImageResizer,
+          nativeImplementations: client.nativeImplementations,
+        );
+        if (imageFile.bytes.length > privateStickerLibraryStaticMaxBytes) {
+          throw UnsupportedError('Saved stickers must be at most 256 KB after resize.');
+        }
+        final previewFile = includePreview
+            ? await imageFile.generateThumbnail(
+                dimension: privateStickerLibraryPreviewDimension,
+                customImageResizer: client.customImageResizer,
+                nativeImplementations: client.nativeImplementations,
+              )
+            : null;
+        return _PreparedStickerMedia(
+          file: imageFile,
+          previewFile: previewFile,
+          animated: false,
+        );
+      }
+    }
+
     if (mimeType == 'image/jpeg' || mimeType == 'image/jpg') {
       final jpegDimensions = _readJpegDimensions(originalFile.bytes);
       if (jpegDimensions != null) {
@@ -1082,25 +1134,19 @@ class PrivateStickerLibraryService {
     if (originalFile.bytes.length > privateStickerLibraryStaticMaxBytes) return null;
     final bytes = originalFile.bytes;
     if (mimeType == 'image/png') {
-      if (bytes.length < 24) return null;
-      const pngSignature = <int>[137, 80, 78, 71, 13, 10, 26, 10];
-      for (var i = 0; i < pngSignature.length; i++) {
-        if (bytes[i] != pngSignature[i]) return null;
-      }
+      final dimensions = _readPngDimensions(bytes);
+      if (dimensions == null) return null;
       if (_containsAscii(bytes, 'acTL')) return null;
-      final width = _readUint32BigEndian(bytes, 16);
-      final height = _readUint32BigEndian(bytes, 20);
-      if (width == null || height == null) return null;
-      if (width > privateStickerLibraryMaxDimension ||
-          height > privateStickerLibraryMaxDimension) {
+      if (dimensions.$1 > privateStickerLibraryMaxDimension ||
+          dimensions.$2 > privateStickerLibraryMaxDimension) {
         return null;
       }
       return MatrixImageFile(
         bytes: bytes,
         name: originalFile.name,
         mimeType: originalFile.mimeType,
-        width: width,
-        height: height,
+        width: dimensions.$1,
+        height: dimensions.$2,
       );
     }
     if (mimeType == 'image/webp') {
@@ -1119,6 +1165,18 @@ class PrivateStickerLibraryService {
       );
     }
     return null;
+  }
+
+  (int, int)? _readPngDimensions(Uint8List bytes) {
+    if (bytes.length < 24) return null;
+    const pngSignature = <int>[137, 80, 78, 71, 13, 10, 26, 10];
+    for (var i = 0; i < pngSignature.length; i++) {
+      if (bytes[i] != pngSignature[i]) return null;
+    }
+    final width = _readUint32BigEndian(bytes, 16);
+    final height = _readUint32BigEndian(bytes, 20);
+    if (width == null || height == null) return null;
+    return (width, height);
   }
 
   bool _containsAscii(Uint8List bytes, String needle) {
