@@ -934,7 +934,8 @@ class PrivateStickerLibraryService {
     MatrixFile originalFile, {
     bool includePreview = true,
   }) async {
-    if (!originalFile.mimeType.toLowerCase().startsWith('image/')) {
+    final mimeType = originalFile.mimeType.toLowerCase();
+    if (!mimeType.startsWith('image/')) {
       throw UnsupportedError('Only image stickers are supported.');
     }
 
@@ -945,6 +946,59 @@ class PrivateStickerLibraryService {
         previewFile: null,
         animated: false,
       );
+    }
+
+    if (mimeType == 'image/jpeg' || mimeType == 'image/jpg') {
+      final jpegDimensions = _readJpegDimensions(originalFile.bytes);
+      if (jpegDimensions != null) {
+        if (originalFile.bytes.length <= privateStickerLibraryStaticMaxBytes &&
+            jpegDimensions.$1 <= privateStickerLibraryMaxDimension &&
+            jpegDimensions.$2 <= privateStickerLibraryMaxDimension) {
+          final imageFile = MatrixImageFile(
+            bytes: originalFile.bytes,
+            name: originalFile.name,
+            mimeType: originalFile.mimeType,
+            width: jpegDimensions.$1,
+            height: jpegDimensions.$2,
+          );
+          final previewFile = includePreview
+              ? await imageFile.generateThumbnail(
+                  dimension: privateStickerLibraryPreviewDimension,
+                  customImageResizer: client.customImageResizer,
+                  nativeImplementations: client.nativeImplementations,
+                )
+              : null;
+          return _PreparedStickerMedia(
+            file: imageFile,
+            previewFile: previewFile,
+            animated: false,
+          );
+        }
+
+        var imageFile = await MatrixImageFile.shrink(
+          bytes: originalFile.bytes,
+          name: originalFile.name,
+          mimeType: originalFile.mimeType,
+          maxDimension: privateStickerLibraryMaxDimension,
+          customImageResizer: client.customImageResizer,
+          nativeImplementations: client.nativeImplementations,
+        );
+        if (imageFile.bytes.length > privateStickerLibraryStaticMaxBytes) {
+          throw UnsupportedError('Saved stickers must be at most 256 KB after resize.');
+        }
+        final previewFile = includePreview
+            ? await imageFile.generateThumbnail(
+                dimension: privateStickerLibraryPreviewDimension,
+                customImageResizer: client.customImageResizer,
+                nativeImplementations: client.nativeImplementations,
+              )
+            : null;
+        return _PreparedStickerMedia(
+          file: imageFile,
+          previewFile: previewFile,
+          animated: false,
+        );
+      }
     }
 
     final animated = await _isAnimatedImage(originalFile.bytes);
@@ -1122,6 +1176,39 @@ class PrivateStickerLibraryService {
       final width = 1 + (((b2 & 0x3F) << 8) | b1);
       final height = 1 + (((b4 & 0x0F) << 10) | (b3 << 2) | ((b2 & 0xC0) >> 6));
       return (width, height);
+    }
+    return null;
+  }
+
+  (int, int)? _readJpegDimensions(Uint8List bytes) {
+    if (bytes.length < 4 || bytes[0] != 0xFF || bytes[1] != 0xD8) return null;
+    var offset = 2;
+    while (offset + 9 < bytes.length) {
+      if (bytes[offset] != 0xFF) {
+        offset++;
+        continue;
+      }
+      while (offset < bytes.length && bytes[offset] == 0xFF) {
+        offset++;
+      }
+      if (offset >= bytes.length) return null;
+      final marker = bytes[offset++];
+      if (marker == 0xD9 || marker == 0xDA) return null;
+      if (offset + 1 >= bytes.length) return null;
+      final segmentLength = (bytes[offset] << 8) | bytes[offset + 1];
+      if (segmentLength < 2 || offset + segmentLength > bytes.length) return null;
+      final isSofMarker = switch (marker) {
+        0xC0 || 0xC1 || 0xC2 || 0xC3 || 0xC5 || 0xC6 || 0xC7 || 0xC9 ||
+        0xCA || 0xCB || 0xCD || 0xCE || 0xCF => true,
+        _ => false,
+      };
+      if (isSofMarker) {
+        if (segmentLength < 7) return null;
+        final height = (bytes[offset + 3] << 8) | bytes[offset + 4];
+        final width = (bytes[offset + 5] << 8) | bytes[offset + 6];
+        return (width, height);
+      }
+      offset += segmentLength;
     }
     return null;
   }
