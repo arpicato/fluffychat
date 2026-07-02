@@ -23,6 +23,7 @@ List<Widget> buildPrivateStickerPickerSlivers({
   required Future<void> Function(String packId, List<PrivateStickerLibraryEntry> packEntries)
   onBulkDeletePrivateStickers,
   required void Function(String packId) onStartSelectionMode,
+  required void Function(PrivateStickerLibraryEntry entry) onStartSelectionModeForEntry,
   required void Function() onClearSelectionMode,
   required void Function(VoidCallback fn) onStateChange,
   required Future<void> Function(String packId) onDeletePrivatePack,
@@ -110,7 +111,7 @@ List<Widget> buildPrivateStickerPickerSlivers({
                         itemBuilder: (context) => [
                           const PopupMenuItem<String>(
                             value: 'select',
-                            child: Text('Select stickers'),
+                            child: Text('Manage stickers'),
                           ),
                           if (packEntry.value.name !=
                               privateStickerLibraryDefaultPackName)
@@ -149,9 +150,13 @@ List<Widget> buildPrivateStickerPickerSlivers({
                         : onPrivateSelected == null
                         ? null
                         : () => onPrivateSelected(entry),
-                    onLongPress: selectionPackId == entry.packId
-                        ? null
-                        : () => onShowPrivateStickerActions(context, entry),
+                    onLongPress: () {
+                      if (selectionPackId == entry.packId) {
+                        onTogglePrivateEntrySelection(entry);
+                        return;
+                      }
+                      onStartSelectionModeForEntry(entry);
+                    },
                     child: snapshot.data == null
                         ? const Center(
                             child: CircularProgressIndicator.adaptive(

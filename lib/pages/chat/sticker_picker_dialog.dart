@@ -53,6 +53,15 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
     });
   }
 
+  void _startSelectionModeForEntry(PrivateStickerLibraryEntry entry) {
+    setState(() {
+      _selectionPackId = entry.packId;
+      _selectedPrivateEntryIds
+        ..clear()
+        ..add(entry.id);
+    });
+  }
+
   void _clearSelectionMode() {
     setState(() {
       _selectionPackId = null;
@@ -248,6 +257,7 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
                       },
                     ),
                 onStartSelectionMode: _startSelectionMode,
+                onStartSelectionModeForEntry: _startSelectionModeForEntry,
                 onClearSelectionMode: _clearSelectionMode,
                 onStateChange: setState,
                 onDeletePrivatePack: (packId) => deletePrivatePack(
