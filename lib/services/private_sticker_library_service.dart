@@ -951,51 +951,11 @@ class PrivateStickerLibraryService {
     if (mimeType == 'image/png') {
       final pngDimensions = _readPngDimensions(originalFile.bytes);
       if (pngDimensions != null && !_containsAscii(originalFile.bytes, 'acTL')) {
-        if (pngDimensions.$1 <= privateStickerLibraryMaxDimension &&
-            pngDimensions.$2 <= privateStickerLibraryMaxDimension &&
-            originalFile.bytes.length <= privateStickerLibraryStaticMaxBytes) {
-          final imageFile = MatrixImageFile(
-            bytes: originalFile.bytes,
-            name: originalFile.name,
-            mimeType: originalFile.mimeType,
-            width: pngDimensions.$1,
-            height: pngDimensions.$2,
-          );
-          final previewFile = includePreview
-              ? await imageFile.generateThumbnail(
-                  dimension: privateStickerLibraryPreviewDimension,
-                  customImageResizer: client.customImageResizer,
-                  nativeImplementations: client.nativeImplementations,
-                )
-              : null;
-          return _PreparedStickerMedia(
-            file: imageFile,
-            previewFile: previewFile,
-            animated: false,
-          );
-        }
-        final imageFile = await MatrixImageFile.shrink(
-          bytes: originalFile.bytes,
-          name: originalFile.name,
-          mimeType: originalFile.mimeType,
-          maxDimension: privateStickerLibraryMaxDimension,
-          customImageResizer: client.customImageResizer,
-          nativeImplementations: client.nativeImplementations,
-        );
-        if (imageFile.bytes.length > privateStickerLibraryStaticMaxBytes) {
-          throw UnsupportedError('Saved stickers must be at most 256 KB after resize.');
-        }
-        final previewFile = includePreview
-            ? await imageFile.generateThumbnail(
-                dimension: privateStickerLibraryPreviewDimension,
-                customImageResizer: client.customImageResizer,
-                nativeImplementations: client.nativeImplementations,
-              )
-            : null;
-        return _PreparedStickerMedia(
-          file: imageFile,
-          previewFile: previewFile,
-          animated: false,
+        return _prepareKnownStaticImage(
+          client,
+          originalFile,
+          dimensions: pngDimensions,
+          includePreview: includePreview,
         );
       }
     }
@@ -1003,52 +963,23 @@ class PrivateStickerLibraryService {
     if (mimeType == 'image/jpeg' || mimeType == 'image/jpg') {
       final jpegDimensions = _readJpegDimensions(originalFile.bytes);
       if (jpegDimensions != null) {
-        if (originalFile.bytes.length <= privateStickerLibraryStaticMaxBytes &&
-            jpegDimensions.$1 <= privateStickerLibraryMaxDimension &&
-            jpegDimensions.$2 <= privateStickerLibraryMaxDimension) {
-          final imageFile = MatrixImageFile(
-            bytes: originalFile.bytes,
-            name: originalFile.name,
-            mimeType: originalFile.mimeType,
-            width: jpegDimensions.$1,
-            height: jpegDimensions.$2,
-          );
-          final previewFile = includePreview
-              ? await imageFile.generateThumbnail(
-                  dimension: privateStickerLibraryPreviewDimension,
-                  customImageResizer: client.customImageResizer,
-                  nativeImplementations: client.nativeImplementations,
-                )
-              : null;
-          return _PreparedStickerMedia(
-            file: imageFile,
-            previewFile: previewFile,
-            animated: false,
-          );
-        }
-
-        var imageFile = await MatrixImageFile.shrink(
-          bytes: originalFile.bytes,
-          name: originalFile.name,
-          mimeType: originalFile.mimeType,
-          maxDimension: privateStickerLibraryMaxDimension,
-          customImageResizer: client.customImageResizer,
-          nativeImplementations: client.nativeImplementations,
+        return _prepareKnownStaticImage(
+          client,
+          originalFile,
+          dimensions: jpegDimensions,
+          includePreview: includePreview,
         );
-        if (imageFile.bytes.length > privateStickerLibraryStaticMaxBytes) {
-          throw UnsupportedError('Saved stickers must be at most 256 KB after resize.');
-        }
-        final previewFile = includePreview
-            ? await imageFile.generateThumbnail(
-                dimension: privateStickerLibraryPreviewDimension,
-                customImageResizer: client.customImageResizer,
-                nativeImplementations: client.nativeImplementations,
-              )
-            : null;
-        return _PreparedStickerMedia(
-          file: imageFile,
-          previewFile: previewFile,
-          animated: false,
+      }
+    }
+
+    if (mimeType == 'image/webp') {
+      final webpDimensions = _readWebpDimensions(originalFile.bytes);
+      if (webpDimensions != null) {
+        return _prepareKnownStaticImage(
+          client,
+          originalFile,
+          dimensions: webpDimensions,
+          includePreview: includePreview,
         );
       }
     }
@@ -1103,6 +1034,61 @@ class PrivateStickerLibraryService {
         nativeImplementations: client.nativeImplementations,
       );
     }
+    if (imageFile.bytes.length > privateStickerLibraryStaticMaxBytes) {
+      throw UnsupportedError('Saved stickers must be at most 256 KB after resize.');
+    }
+    final previewFile = includePreview
+        ? await imageFile.generateThumbnail(
+            dimension: privateStickerLibraryPreviewDimension,
+            customImageResizer: client.customImageResizer,
+            nativeImplementations: client.nativeImplementations,
+          )
+        : null;
+    return _PreparedStickerMedia(
+      file: imageFile,
+      previewFile: previewFile,
+      animated: false,
+    );
+  }
+
+  Future<_PreparedStickerMedia> _prepareKnownStaticImage(
+    Client client,
+    MatrixFile originalFile, {
+    required (int, int) dimensions,
+    required bool includePreview,
+  }) async {
+    if (originalFile.bytes.length <= privateStickerLibraryStaticMaxBytes &&
+        dimensions.$1 <= privateStickerLibraryMaxDimension &&
+        dimensions.$2 <= privateStickerLibraryMaxDimension) {
+      final imageFile = MatrixImageFile(
+        bytes: originalFile.bytes,
+        name: originalFile.name,
+        mimeType: originalFile.mimeType,
+        width: dimensions.$1,
+        height: dimensions.$2,
+      );
+      final previewFile = includePreview
+          ? await imageFile.generateThumbnail(
+              dimension: privateStickerLibraryPreviewDimension,
+              customImageResizer: client.customImageResizer,
+              nativeImplementations: client.nativeImplementations,
+            )
+          : null;
+      return _PreparedStickerMedia(
+        file: imageFile,
+        previewFile: previewFile,
+        animated: false,
+      );
+    }
+
+    final imageFile = await MatrixImageFile.shrink(
+      bytes: originalFile.bytes,
+      name: originalFile.name,
+      mimeType: originalFile.mimeType,
+      maxDimension: privateStickerLibraryMaxDimension,
+      customImageResizer: client.customImageResizer,
+      nativeImplementations: client.nativeImplementations,
+    );
     if (imageFile.bytes.length > privateStickerLibraryStaticMaxBytes) {
       throw UnsupportedError('Saved stickers must be at most 256 KB after resize.');
     }
