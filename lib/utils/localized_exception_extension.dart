@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:fluffychat/l10n/l10n.dart';
+import 'package:fluffychat/services/messie_error_service.dart';
 import 'package:fluffychat/utils/other_party_can_receive.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -101,6 +102,9 @@ extension LocalizedExceptionExtension on Object {
     if (this is FormatException &&
         exceptionContext == ExceptionContext.checkServerSupportInfo) {
       return L10n.of(context).noContactInformationProvided;
+    }
+    if (this is MessieUserException) {
+      return (this as MessieUserException).userMessage;
     }
     if (this is String) return toString();
     if (this is UiaException) return toString();

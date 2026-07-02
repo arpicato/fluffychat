@@ -130,6 +130,7 @@ Future<void> deletePrivatePack({
   required String packId,
   required Set<String> deletingPackIds,
   required void Function(VoidCallback fn) onStateChange,
+  required Future<void> Function() onDone,
 }) async {
   final service = PrivateStickerLibraryService.instance;
   PrivateStickerPack? pack;
@@ -174,6 +175,7 @@ Future<void> deletePrivatePack({
       packId: packId,
       moveEntriesToDefault: false,
     );
+    await onDone();
     onStateChange(() {});
   } finally {
     onStateChange(() => deletingPackIds.remove(packId));

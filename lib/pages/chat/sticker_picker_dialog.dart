@@ -39,12 +39,26 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
   final Set<String> _deletingPackIds = <String>{};
   PrivateStickerLibraryLimits? _limits;
 
+  Future<void> _refreshLimits() async {
+    final limits = await PrivateStickerLibraryService.instance.loadLimits(widget.room.client);
+    if (mounted) setState(() => _limits = limits);
+  }
+
   bool _isSelectionModeForPack(String packId) => _selectionPackId == packId;
 
   void _startSelectionMode(String packId) {
     setState(() {
       _selectionPackId = packId;
       _selectedPrivateEntryIds.clear();
+    });
+  }
+
+  void _startSelectionModeForEntry(PrivateStickerLibraryEntry entry) {
+    setState(() {
+      _selectionPackId = entry.packId;
+      _selectedPrivateEntryIds
+        ..clear()
+        ..add(entry.id);
     });
   }
 
@@ -73,9 +87,7 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
   @override
   void initState() {
     super.initState();
-    PrivateStickerLibraryService.instance.loadLimits(widget.room.client).then((limits) {
-      if (mounted) setState(() => _limits = limits);
-    }).catchError((_) {});
+    _refreshLimits().catchError((_) {});
     if (PrivateStickerLibraryService.instance.packs(widget.room.client).isEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await PrivateStickerLibraryService.instance.refresh(widget.room.client);
@@ -205,7 +217,8 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
                 onCreatePressed: () => showCreateStickerMenu(
                   context: context,
                   client: widget.room.client,
-                  onDone: () {
+                  onDone: () async {
+                    await _refreshLimits();
                     if (mounted) setState(() {});
                   },
                 ),
@@ -226,7 +239,8 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
                       client: widget.room.client,
                       selectedPrivateEntryIds: _selectedPrivateEntryIds,
                       packEntries: packEntries,
-                      onDone: () {
+                      onDone: () async {
+                        await _refreshLimits();
                         if (mounted) _clearSelectionMode();
                       },
                     ),
@@ -237,11 +251,13 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
                       packId: packId,
                       selectedPrivateEntryIds: _selectedPrivateEntryIds,
                       packEntries: packEntries,
-                      onDone: () {
+                      onDone: () async {
+                        await _refreshLimits();
                         if (mounted) _clearSelectionMode();
                       },
                     ),
                 onStartSelectionMode: _startSelectionMode,
+                onStartSelectionModeForEntry: _startSelectionModeForEntry,
                 onClearSelectionMode: _clearSelectionMode,
                 onStateChange: setState,
                 onDeletePrivatePack: (packId) => deletePrivatePack(
@@ -252,13 +268,15 @@ class StickerPickerDialogState extends State<StickerPickerDialog> {
                   onStateChange: (fn) {
                     if (mounted) setState(fn);
                   },
+                  onDone: _refreshLimits,
                 ),
                 onShowPrivateStickerActions: (context, entry) =>
                     showPrivateStickerActions(
                       context: context,
                       client: widget.room.client,
                       entry: entry,
-                      onDone: () {
+                      onDone: () async {
+                        await _refreshLimits();
                         if (mounted) setState(() {});
                       },
                     ),

@@ -455,15 +455,32 @@ class PrivateStickerLibraryService {
     required MatrixFile file,
     required String name,
     String? packId,
+    void Function(int prepareMs, int uploadMs, int totalMs, int bytes)? onTiming,
   }) async {
-    final prepared = await _prepareMedia(client, file);
     final resolvedPackId = await _resolvePackId(client, packId);
-    await _savePreparedSticker(
+    final resultMap = await bulkUploadFilesAsStickers(
       client: client,
-      prepared: prepared,
-      name: name,
       packId: resolvedPackId,
+      onTiming: (requestId, prepareMs, uploadMs, totalMs, bytes) {
+        if (requestId != 'single') return;
+        onTiming?.call(prepareMs, uploadMs, totalMs, bytes);
+      },
+      stickers: [
+        (
+          requestId: 'single',
+          file: file,
+          name: name,
+        ),
+      ],
     );
+    final error = resultMap['single'];
+    if (error != null && error.isNotEmpty) {
+      throw MessieUserException(
+        kind: MessieErrorKind.server,
+        userMessage: error,
+        operation: 'Save sticker to library',
+      );
+    }
   }
 
   Future<Map<String, String?>> bulkUploadFilesAsStickers({
@@ -471,6 +488,7 @@ class PrivateStickerLibraryService {
     required String packId,
     required List<({String requestId, MatrixFile file, String name})> stickers,
     void Function(int completed, int total)? onProgress,
+    void Function(String requestId, int prepareMs, int uploadMs, int totalMs, int bytes)? onTiming,
   }) async {
     _activeImportPackIds.add(packId);
     final dio = await _createAuthedDio(client);
@@ -529,6 +547,7 @@ class PrivateStickerLibraryService {
             .skip(start)
             .take(privateStickerLibraryBulkUploadChunkSize)
             .toList();
+        final chunkStarted = DateTime.now();
         final chunkFuture = nextChunkFuture ?? prepareChunk(sourceChunk);
         final nextStart = start + privateStickerLibraryBulkUploadChunkSize;
         if (nextStart < stickers.length) {
@@ -539,6 +558,7 @@ class PrivateStickerLibraryService {
           nextChunkFuture = null;
         }
         final chunk = await chunkFuture;
+        final prepareMs = DateTime.now().difference(chunkStarted).inMilliseconds;
         final payload = {
           'entries': chunk.map((sticker) {
             final contentHash = sha256.convert(sticker.media.file.bytes).toString();
@@ -570,10 +590,12 @@ class PrivateStickerLibraryService {
               ),
             ),
         });
+        final uploadStarted = DateTime.now();
         final response = await dio.post<Map<String, dynamic>>(
           '/stickers/entries/bulk-upload',
           data: formData,
         );
+        final uploadMs = DateTime.now().difference(uploadStarted).inMilliseconds;
         final results = (response.data?['results'] as List?) ?? const [];
         for (final raw in results.whereType<Map>()) {
           final result = Map<String, dynamic>.from(raw);
@@ -586,6 +608,28 @@ class PrivateStickerLibraryService {
             resultMap[requestId] = null;
           } else {
             resultMap[requestId] = result['message'] as String? ?? 'Import failed';
+          }
+          ({
+            String requestId,
+            String name,
+            _PreparedStickerMedia media,
+            _LocallyEncryptedMedia encrypted,
+            String fileName,
+          })? chunkEntry;
+          for (final sticker in chunk) {
+            if (sticker.requestId == requestId) {
+              chunkEntry = sticker;
+              break;
+            }
+          }
+          if (chunkEntry != null) {
+            onTiming?.call(
+              requestId,
+              prepareMs,
+              uploadMs,
+              prepareMs + uploadMs,
+              chunkEntry.media.file.bytes.length,
+            );
           }
         }
         completed += chunk.length;
@@ -630,85 +674,6 @@ class PrivateStickerLibraryService {
       orElse: () => availablePacks.first,
     );
     return preferred.id;
-  }
-
-  Future<void> _savePreparedSticker({
-    required Client client,
-    required _PreparedStickerMedia prepared,
-    required String name,
-    required String packId,
-  }) async {
-    final uploadedFile = await _uploadEncryptedMedia(client, prepared.file);
-    final uploadedPreview = prepared.previewFile == null
-        ? null
-        : await _uploadEncryptedMedia(client, prepared.previewFile!);
-
-    final apiClient = await _createApiClient(client);
-    try {
-      final contentHash = sha256.convert(prepared.file.bytes).toString();
-      final request = api.SaveStickerEntryRequest(
-        (builder) => builder
-          ..packId = packId
-          ..contentHash = contentHash
-          ..body = name
-          ..encryptedFile.replace(
-            Map<String, JsonObject?>.fromEntries(
-              uploadedFile.fileJson.entries.map(
-                (entry) => MapEntry(entry.key, JsonObject(entry.value)),
-              ),
-            ),
-          )
-          ..info.replace(
-            Map<String, JsonObject?>.fromEntries(
-              uploadedFile.info.entries.map(
-                (entry) => MapEntry(entry.key, JsonObject(entry.value)),
-              ),
-            ),
-          )
-          ..thumbnailEncryptedFile = (uploadedPreview?.fileJson == null)
-              ? null
-              : MapBuilder<String, JsonObject?>(
-                  Map<String, JsonObject?>.fromEntries(
-                    uploadedPreview!.fileJson.entries.map(
-                      (entry) => MapEntry(entry.key, JsonObject(entry.value)),
-                    ),
-                  ),
-                )
-          ..thumbnailInfo = (uploadedPreview?.info == null)
-              ? null
-              : MapBuilder<String, JsonObject?>(
-                  Map<String, JsonObject?>.fromEntries(
-                    uploadedPreview!.info.entries.map(
-                      (entry) => MapEntry(entry.key, JsonObject(entry.value)),
-                    ),
-                  ),
-                )
-          ..animated = prepared.animated
-          ..sizeBytes = prepared.file.bytes.length
-          ..mxcUri = uploadedFile.fileJson['url'] as String
-          ..mediaId = Uri.parse(uploadedFile.fileJson['url'] as String).pathSegments.last,
-      );
-      final response = await apiClient.defaultApi.saveStickerEntry(
-        saveStickerEntryRequest: request,
-      );
-      final savedEntry = response.data == null
-          ? throw Exception('Backend returned invalid sticker entry payload.')
-          : _entriesFromApi(
-              api.StickerEntryListResponse(
-                (builder) => builder..entries.add(response.data!),
-              ),
-            ).first;
-      _upsertEntryInCache(client, savedEntry);
-      _previewCache.remove(savedEntry.id);
-    } on DioException catch (error) {
-      throw await _errorService.fromDio(
-        'messie/stickers',
-        'Save sticker to library',
-        error,
-      );
-    } finally {
-      apiClient.dispose();
-    }
   }
 
   Future<MatrixFile> _loadBestAvailableSourceFile(Event event) async {
@@ -969,7 +934,8 @@ class PrivateStickerLibraryService {
     MatrixFile originalFile, {
     bool includePreview = true,
   }) async {
-    if (!originalFile.mimeType.toLowerCase().startsWith('image/')) {
+    final mimeType = originalFile.mimeType.toLowerCase();
+    if (!mimeType.startsWith('image/')) {
       throw UnsupportedError('Only image stickers are supported.');
     }
 
@@ -980,6 +946,42 @@ class PrivateStickerLibraryService {
         previewFile: null,
         animated: false,
       );
+    }
+
+    if (mimeType == 'image/png') {
+      final pngDimensions = _readPngDimensions(originalFile.bytes);
+      if (pngDimensions != null && !_containsAscii(originalFile.bytes, 'acTL')) {
+        return _prepareKnownStaticImage(
+          client,
+          originalFile,
+          dimensions: pngDimensions,
+          includePreview: includePreview,
+        );
+      }
+    }
+
+    if (mimeType == 'image/jpeg' || mimeType == 'image/jpg') {
+      final jpegDimensions = _readJpegDimensions(originalFile.bytes);
+      if (jpegDimensions != null) {
+        return _prepareKnownStaticImage(
+          client,
+          originalFile,
+          dimensions: jpegDimensions,
+          includePreview: includePreview,
+        );
+      }
+    }
+
+    if (mimeType == 'image/webp') {
+      final webpDimensions = _readWebpDimensions(originalFile.bytes);
+      if (webpDimensions != null) {
+        return _prepareKnownStaticImage(
+          client,
+          originalFile,
+          dimensions: webpDimensions,
+          includePreview: includePreview,
+        );
+      }
     }
 
     final animated = await _isAnimatedImage(originalFile.bytes);
@@ -1049,6 +1051,61 @@ class PrivateStickerLibraryService {
     );
   }
 
+  Future<_PreparedStickerMedia> _prepareKnownStaticImage(
+    Client client,
+    MatrixFile originalFile, {
+    required (int, int) dimensions,
+    required bool includePreview,
+  }) async {
+    if (originalFile.bytes.length <= privateStickerLibraryStaticMaxBytes &&
+        dimensions.$1 <= privateStickerLibraryMaxDimension &&
+        dimensions.$2 <= privateStickerLibraryMaxDimension) {
+      final imageFile = MatrixImageFile(
+        bytes: originalFile.bytes,
+        name: originalFile.name,
+        mimeType: originalFile.mimeType,
+        width: dimensions.$1,
+        height: dimensions.$2,
+      );
+      final previewFile = includePreview
+          ? await imageFile.generateThumbnail(
+              dimension: privateStickerLibraryPreviewDimension,
+              customImageResizer: client.customImageResizer,
+              nativeImplementations: client.nativeImplementations,
+            )
+          : null;
+      return _PreparedStickerMedia(
+        file: imageFile,
+        previewFile: previewFile,
+        animated: false,
+      );
+    }
+
+    final imageFile = await MatrixImageFile.shrink(
+      bytes: originalFile.bytes,
+      name: originalFile.name,
+      mimeType: originalFile.mimeType,
+      maxDimension: privateStickerLibraryMaxDimension,
+      customImageResizer: client.customImageResizer,
+      nativeImplementations: client.nativeImplementations,
+    );
+    if (imageFile.bytes.length > privateStickerLibraryStaticMaxBytes) {
+      throw UnsupportedError('Saved stickers must be at most 256 KB after resize.');
+    }
+    final previewFile = includePreview
+        ? await imageFile.generateThumbnail(
+            dimension: privateStickerLibraryPreviewDimension,
+            customImageResizer: client.customImageResizer,
+            nativeImplementations: client.nativeImplementations,
+          )
+        : null;
+    return _PreparedStickerMedia(
+      file: imageFile,
+      previewFile: previewFile,
+      animated: false,
+    );
+  }
+
   Future<bool> _isAnimatedImage(Uint8List bytes) async {
     try {
       final codec = await ui.instantiateImageCodec(bytes);
@@ -1063,25 +1120,19 @@ class PrivateStickerLibraryService {
     if (originalFile.bytes.length > privateStickerLibraryStaticMaxBytes) return null;
     final bytes = originalFile.bytes;
     if (mimeType == 'image/png') {
-      if (bytes.length < 24) return null;
-      const pngSignature = <int>[137, 80, 78, 71, 13, 10, 26, 10];
-      for (var i = 0; i < pngSignature.length; i++) {
-        if (bytes[i] != pngSignature[i]) return null;
-      }
+      final dimensions = _readPngDimensions(bytes);
+      if (dimensions == null) return null;
       if (_containsAscii(bytes, 'acTL')) return null;
-      final width = _readUint32BigEndian(bytes, 16);
-      final height = _readUint32BigEndian(bytes, 20);
-      if (width == null || height == null) return null;
-      if (width > privateStickerLibraryMaxDimension ||
-          height > privateStickerLibraryMaxDimension) {
+      if (dimensions.$1 > privateStickerLibraryMaxDimension ||
+          dimensions.$2 > privateStickerLibraryMaxDimension) {
         return null;
       }
       return MatrixImageFile(
         bytes: bytes,
         name: originalFile.name,
         mimeType: originalFile.mimeType,
-        width: width,
-        height: height,
+        width: dimensions.$1,
+        height: dimensions.$2,
       );
     }
     if (mimeType == 'image/webp') {
@@ -1100,6 +1151,18 @@ class PrivateStickerLibraryService {
       );
     }
     return null;
+  }
+
+  (int, int)? _readPngDimensions(Uint8List bytes) {
+    if (bytes.length < 24) return null;
+    const pngSignature = <int>[137, 80, 78, 71, 13, 10, 26, 10];
+    for (var i = 0; i < pngSignature.length; i++) {
+      if (bytes[i] != pngSignature[i]) return null;
+    }
+    final width = _readUint32BigEndian(bytes, 16);
+    final height = _readUint32BigEndian(bytes, 20);
+    if (width == null || height == null) return null;
+    return (width, height);
   }
 
   bool _containsAscii(Uint8List bytes, String needle) {
@@ -1161,6 +1224,39 @@ class PrivateStickerLibraryService {
     return null;
   }
 
+  (int, int)? _readJpegDimensions(Uint8List bytes) {
+    if (bytes.length < 4 || bytes[0] != 0xFF || bytes[1] != 0xD8) return null;
+    var offset = 2;
+    while (offset + 9 < bytes.length) {
+      if (bytes[offset] != 0xFF) {
+        offset++;
+        continue;
+      }
+      while (offset < bytes.length && bytes[offset] == 0xFF) {
+        offset++;
+      }
+      if (offset >= bytes.length) return null;
+      final marker = bytes[offset++];
+      if (marker == 0xD9 || marker == 0xDA) return null;
+      if (offset + 1 >= bytes.length) return null;
+      final segmentLength = (bytes[offset] << 8) | bytes[offset + 1];
+      if (segmentLength < 2 || offset + segmentLength > bytes.length) return null;
+      final isSofMarker = switch (marker) {
+        0xC0 || 0xC1 || 0xC2 || 0xC3 || 0xC5 || 0xC6 || 0xC7 || 0xC9 ||
+        0xCA || 0xCB || 0xCD || 0xCE || 0xCF => true,
+        _ => false,
+      };
+      if (isSofMarker) {
+        if (segmentLength < 7) return null;
+        final height = (bytes[offset + 3] << 8) | bytes[offset + 4];
+        final width = (bytes[offset + 5] << 8) | bytes[offset + 6];
+        return (width, height);
+      }
+      offset += segmentLength;
+    }
+    return null;
+  }
+
   bool _matchesAscii(Uint8List bytes, int offset, String needle) {
     if (offset + needle.length > bytes.length) return false;
     final codes = needle.codeUnits;
@@ -1168,19 +1264,6 @@ class PrivateStickerLibraryService {
       if (bytes[offset + i] != codes[i]) return false;
     }
     return true;
-  }
-
-  Future<_UploadedEncryptedMedia> _uploadEncryptedMedia(Client client, MatrixFile file) async {
-    final encrypted = await file.encrypt();
-    final uploadResp = await client.uploadContent(
-      encrypted.data,
-      filename: file.name,
-      contentType: file.mimeType,
-    );
-    return _UploadedEncryptedMedia(
-      fileJson: _encryptedFileToJson(encrypted, uploadResp, file.mimeType),
-      info: file.info,
-    );
   }
 
   Future<_LocallyEncryptedMedia> _encryptMediaLocally(MatrixFile file) async {
@@ -1219,13 +1302,6 @@ class PrivateStickerLibraryService {
     }
     return decrypted;
   }
-}
-
-class _UploadedEncryptedMedia {
-  _UploadedEncryptedMedia({required this.fileJson, required this.info});
-
-  final Map<String, dynamic> fileJson;
-  final Map<String, dynamic> info;
 }
 
 class _LocallyEncryptedMedia {
